@@ -1,0 +1,2921 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#00ccbc">
+<title>Rider Tracker PRO — Manuale Utente v2.0</title>
+<style>
+/* ── RESET ── */
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+
+/* ── VARIABLES ── */
+:root{
+  --teal:#00ccbc;
+  --teal-bg:#e8faf8;
+  --dark:#1a1a2e;
+  --orange:#f97316;
+  --warn-bg:#fff7ed;
+  --danger-bg:#fef2f2;
+  --purple:#7c3aed;
+  --purple-bg:#f3effe;
+  --gray:#f5f5f5;
+  --border:#d0d0d0;
+  --text:#1a1a1a;
+  --dim:#666;
+  --white:#fff;
+}
+
+/* ── BASE ── */
+body{
+  font-family:Arial,Helvetica,sans-serif;
+  font-size:15px;
+  line-height:1.65;
+  color:var(--text);
+  background:#fdfdfd;
+  padding-top:52px;
+}
+
+/* ── TOP BAR ── */
+.topbar{
+  position:fixed;top:0;left:0;right:0;z-index:200;
+  background:var(--dark);height:52px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 16px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.25);
+}
+.topbar-brand{
+  font-size:15px;font-weight:700;color:#fff;
+  display:flex;align-items:center;gap:5px;
+}
+.topbar-brand .t{color:var(--teal)}
+.topbar-brand .b{
+  background:var(--teal);color:var(--dark);
+  font-size:10px;font-weight:900;
+  padding:2px 7px;border-radius:4px;
+}
+.menu-btn{
+  background:none;border:none;cursor:pointer;
+  display:flex;flex-direction:column;gap:5px;padding:6px;
+}
+.menu-btn span{display:block;width:22px;height:2px;background:#fff;border-radius:2px;transition:all .25s}
+.menu-btn.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.menu-btn.open span:nth-child(2){opacity:0}
+.menu-btn.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+
+/* ── DRAWER ── */
+.drawer{
+  position:fixed;top:52px;left:0;right:0;bottom:0;
+  background:var(--dark);z-index:150;
+  overflow-y:auto;
+  transform:translateX(-100%);
+  transition:transform .28s cubic-bezier(.4,0,.2,1);
+  padding:8px 0 40px;
+}
+.drawer.open{transform:translateX(0)}
+.drawer-sec{
+  padding:14px 20px 5px;
+  font-size:10px;font-weight:700;color:var(--teal);
+  text-transform:uppercase;letter-spacing:2px;
+}
+.drawer a{
+  display:block;padding:9px 20px;
+  color:#aaa;text-decoration:none;font-size:14px;
+  border-left:3px solid transparent;
+  transition:all .15s;
+}
+.drawer a:active,.drawer a.active{
+  color:var(--teal);border-left-color:var(--teal);
+  background:rgba(0,204,188,0.08);
+}
+
+/* ── HERO ── */
+.hero{
+  background:var(--dark);
+  padding:32px 20px 28px;
+  text-align:center;
+}
+.hero-badge{
+  display:inline-block;
+  background:rgba(0,204,188,0.12);border:1px solid rgba(0,204,188,0.3);
+  border-radius:100px;padding:3px 14px;
+  font-size:11px;font-weight:700;color:var(--teal);
+  text-transform:uppercase;letter-spacing:1.5px;margin-bottom:14px;
+}
+.hero h1{
+  font-family:Arial,sans-serif;
+  font-size:32px;font-weight:900;color:#fff;
+  letter-spacing:-1px;line-height:1.1;margin-bottom:8px;
+}
+.hero h1 .r{color:var(--teal)}
+.hero h1 .pro{
+  display:inline-block;background:var(--teal);color:var(--dark);
+  font-size:22px;padding:2px 10px;border-radius:6px;
+  margin-left:6px;vertical-align:middle;
+}
+.hero-sub{font-size:13px;color:#888;margin-bottom:16px;line-height:1.5}
+.hero-meta{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.hero-tag{
+  font-size:11px;color:#777;
+  background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);
+  border-radius:100px;padding:3px 12px;
+}
+.hero-tag span{color:var(--teal);font-weight:600}
+
+/* ── TOC ── */
+.toc-wrap{background:#fafafa;border-bottom:1px solid var(--border)}
+.toc-lang{
+  font-size:12px;font-weight:700;color:var(--teal);
+  padding:12px 16px 6px;text-transform:uppercase;letter-spacing:1px;
+}
+.toc-item{
+  display:flex;align-items:center;gap:8px;
+  padding:9px 16px;border-bottom:1px solid #ebebeb;
+  text-decoration:none;color:var(--text);font-size:14px;
+}
+.toc-item:active{background:var(--teal-bg)}
+.toc-num{color:var(--teal);font-weight:700;font-size:11px;min-width:24px}
+.toc-arr{margin-left:auto;color:#ccc;font-size:13px}
+
+/* ── LANG DIVIDER ── */
+.lang-div{
+  background:var(--dark);color:var(--teal);
+  font-size:16px;font-weight:700;text-align:center;
+  padding:13px 20px;
+}
+
+/* ── CHAPTER CONTAINER ── */
+.chapter{scroll-margin-top:60px}
+.chap-hdr{padding:22px 16px 0}
+.chap-num-lbl{
+  font-size:10px;font-weight:700;color:var(--teal);
+  text-transform:uppercase;letter-spacing:2px;margin-bottom:4px;
+}
+.chap-title{
+  font-size:21px;font-weight:700;color:var(--dark);
+  padding-bottom:10px;
+  border-bottom:3px solid var(--teal);
+  margin-bottom:14px;
+}
+.chap-body{padding:4px 16px 28px}
+.chap-div{height:5px;background:linear-gradient(to right,var(--teal),transparent)}
+
+/* ── HEADINGS (from docx styles) ── */
+h1{
+  font-family:Arial,sans-serif;
+  font-size:21px;font-weight:700;color:var(--dark);
+  margin:0;padding:22px 16px 0;
+  border-bottom:3px solid var(--teal);
+  padding-bottom:10px;
+  scroll-margin-top:60px;
+}
+h2{
+  font-family:Arial,sans-serif;
+  font-size:16px;font-weight:700;color:var(--teal);
+  margin:20px 16px 8px;
+}
+h3{
+  font-family:Arial,sans-serif;
+  font-size:14px;font-weight:700;color:#444;
+  margin:16px 16px 6px;
+}
+h4{font-size:13px;font-weight:700;color:#555;margin:14px 16px 5px}
+
+/* ── PARAGRAPH & LISTS ── */
+p{
+  margin:0 16px 12px;
+  font-size:14.5px;line-height:1.65;color:#222;
+}
+p strong{color:var(--dark)}
+p em{font-style:italic}
+ul,ol{margin:6px 32px 12px;padding:0}
+ul{list-style:disc}
+ol{list-style:decimal}
+li{font-size:14.5px;color:#333;line-height:1.6;padding:2px 0}
+li strong{color:var(--dark)}
+
+/* ── TABLES ── */
+.tbl-outer{overflow-x:auto;margin:10px 16px 16px;border-radius:0;-webkit-overflow-scrolling:touch}
+table{
+  width:100%;min-width:280px;
+  border-collapse:collapse;
+  font-size:13px;
+  border:1px solid #000;
+}
+thead th{
+  background:var(--teal-bg);
+  color:var(--teal);
+  font-weight:700;font-size:12px;
+  padding:8px 10px;text-align:left;
+  border:1px solid #000;
+}
+/* Pandoc puts body rows in thead for this docx - handle both */
+tr.header th,tr.header td{
+  background:var(--teal-bg);color:var(--teal);
+  font-weight:700;padding:8px 10px;
+  border:1px solid #000;font-size:12px;
+}
+tr.odd td,tr.odd th{
+  background:var(--white);
+  padding:8px 10px;border:1px solid #000;
+  vertical-align:top;line-height:1.5;
+}
+tr.even td,tr.even th{
+  background:var(--gray);
+  padding:8px 10px;border:1px solid #000;
+  vertical-align:top;line-height:1.5;
+}
+tbody tr td:first-child,tbody tr th:first-child{font-weight:700;color:var(--dark)}
+/* Callout tables (single column) */
+tr.callout-tip th{
+  background:var(--teal-bg);color:#1a5c58;
+  border-left:4px solid var(--teal);border-top:1px solid #b2e4df;
+  border-right:1px solid #b2e4df;border-bottom:1px solid #b2e4df;
+  font-weight:normal;padding:12px 14px;
+  font-size:13.5px;line-height:1.55;
+}
+tr.callout-warn th{
+  background:var(--warn-bg);color:#7c3300;
+  border-left:4px solid var(--orange);border-top:1px solid #fcd5a5;
+  border-right:1px solid #fcd5a5;border-bottom:1px solid #fcd5a5;
+  font-weight:normal;padding:12px 14px;
+  font-size:13.5px;line-height:1.55;
+}
+tr.callout-danger th{
+  background:var(--danger-bg);color:#7f1d1d;
+  border-left:4px solid #ef4444;border-top:1px solid #fbb0b0;
+  border-right:1px solid #fbb0b0;border-bottom:1px solid #fbb0b0;
+  font-weight:normal;padding:12px 14px;
+  font-size:13.5px;line-height:1.55;
+}
+tr.callout-new th{
+  background:var(--purple-bg);color:#4c1d95;
+  border-left:4px solid var(--purple);border-top:1px solid #d8b4fe;
+  border-right:1px solid #d8b4fe;border-bottom:1px solid #d8b4fe;
+  font-weight:normal;padding:12px 14px;
+  font-size:13.5px;line-height:1.55;
+}
+/* pandoc puts callouts as single-th tables without tr class */
+table:has(thead tr:only-child th) thead tr th:not(.header th){
+  background:var(--teal-bg);color:#1a5c58;
+  border-left:4px solid var(--teal);
+  font-weight:normal;padding:12px 14px;font-size:13.5px;
+}
+
+/* ── NEW BADGE ── */
+.new-badge{
+  display:inline-block;
+  background:var(--purple-bg);border:1px solid rgba(124,58,237,0.3);
+  color:var(--purple);font-size:9px;font-weight:700;
+  padding:1px 7px;border-radius:100px;
+  text-transform:uppercase;letter-spacing:1px;
+  vertical-align:middle;margin-left:6px;
+}
+
+/* ── BACK TO TOP ── */
+.back-top{
+  position:fixed;bottom:20px;right:16px;
+  width:44px;height:44px;background:var(--teal);
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:20px;box-shadow:0 4px 12px rgba(0,204,188,.4);
+  text-decoration:none;color:var(--dark);
+  opacity:0;transition:opacity .3s;z-index:100;
+}
+.back-top.vis{opacity:1}
+
+/* ── FOOTER ── */
+.footer{
+  background:var(--dark);color:#888;text-align:center;
+  font-size:12px;padding:28px 20px;line-height:1.8;
+}
+.footer strong{color:var(--teal)}
+
+/* ── TABLET ── */
+@media(min-width:600px){
+  body{font-size:16px}
+  h1,h2,h3,h4{padding-left:24px;margin-left:0}
+  p,ul,ol{margin-left:24px;margin-right:24px}
+  h2{margin-left:24px}h3{margin-left:24px}
+  .tbl-outer{margin-left:24px;margin-right:24px}
+  .chap-hdr{padding:28px 24px 0}
+  .chap-body{padding:4px 24px 28px}
+  .toc-item{padding:11px 24px}
+}
+
+/* ── PRINT ── */
+@media print{
+  .topbar,.drawer,.back-top{display:none!important}
+  body{padding-top:0;font-size:11pt}
+  h1,h2,h3{page-break-after:avoid}
+}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <span class="t">RIDER</span>&nbsp;TRACKER&nbsp;<span class="b">PRO</span>
+  </div>
+  <button class="menu-btn" id="menuBtn" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</div>
+
+<!-- DRAWER -->
+<nav class="drawer" id="drawer">
+  <div class="drawer-sec">🇮🇹 Italiano</div>
+  <a href="#capitolo-1-cosè-rider-tracker-pro" class="nav-link">1. Cos'è Rider Tracker Pro?</a>
+  <a href="#capitolo-2-prima-configurazione" class="nav-link">2. Prima Configurazione</a>
+  <a href="#capitolo-3-schermata-principale-la-dashboard" class="nav-link">3. Dashboard</a>
+  <a href="#capitolo-4-registrare-un-turno-pulsante-turno" class="nav-link">4. Registrare un Turno</a>
+  <a href="#capitolo-5-registrare-un-rifornimento-pulsante-fuel" class="nav-link">5. Rifornimento</a>
+  <a href="#capitolo-6-distanza-extra-pulsante-extra" class="nav-link">6. Distanza Extra</a>
+  <a href="#capitolo-7-storico-pulsante-storico" class="nav-link">7. Storico</a>
+  <a href="#capitolo-8-report-mensile-riepilogo-grafico-stampa" class="nav-link">8. Report Mensile</a>
+  <a href="#capitolo-9-grafici-di-resa" class="nav-link">9. Grafici di Resa</a>
+  <a href="#capitolo-10-impostazioni-icona" class="nav-link">10. Impostazioni</a>
+  <a href="#capitolo-11-backup-ripristino" class="nav-link">11. Backup &amp; Ripristino</a>
+  <a href="#capitolo-12-reset-database-reset-db" class="nav-link">12. Reset Database</a>
+  <a href="#capitolo-13-selezione-lingua" class="nav-link">13. Selezione Lingua</a>
+  <a href="#capitolo-14-esempi-pratici" class="nav-link">14. Esempi Pratici</a>
+  <div class="drawer-sec" style="margin-top:10px">🇺🇸 English</div>
+  <a href="#chapter-1-what-is-rider-tracker-pro" class="nav-link">1. What is Rider Tracker Pro?</a>
+  <a href="#chapter-2-getting-started-first-setup" class="nav-link">2. Getting Started</a>
+  <a href="#chapter-3-home-screen-the-dashboard" class="nav-link">3. Dashboard</a>
+  <a href="#chapter-4-recording-a-shift-shift-button" class="nav-link">4. Recording a Shift</a>
+  <a href="#chapter-5-recording-a-refuel-fuel-button" class="nav-link">5. Recording a Refuel</a>
+  <a href="#chapter-6-extra-distance-extra-button" class="nav-link">6. Extra Distance</a>
+  <a href="#chapter-7-history-view-history-button" class="nav-link">7. History View</a>
+  <a href="#chapter-8-monthly-report-summary-chart-print" class="nav-link">8. Monthly Report</a>
+  <a href="#chapter-9-analytics-charts" class="nav-link">9. Analytics Charts</a>
+  <a href="#chapter-10-settings-gear-icon" class="nav-link">10. Settings</a>
+  <a href="#chapter-11-backup-restore" class="nav-link">11. Backup &amp; Restore</a>
+  <a href="#chapter-12-reset-database-reset-db" class="nav-link">12. Reset Database</a>
+  <a href="#chapter-13-language-selection" class="nav-link">13. Language Selection</a>
+  <a href="#chapter-14-practical-examples" class="nav-link">14. Practical Examples</a>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">Manuale Utente · User Manual</div>
+  <h1 style="border:none;padding:0;margin:0 0 8px;font-size:32px;color:#fff">
+    <span class="r">RIDER</span> TRACKER<span class="pro">PRO</span>
+  </h1>
+  <p class="hero-sub" style="margin:0 0 16px">Gestione professionale turni per lavoratori gig economy<br>Professional shift tracking for gig economy workers</p>
+  <div class="hero-meta">
+    <span class="hero-tag">Version <span>2.0</span></span>
+    <span class="hero-tag">© 2026 <span>Marco Carbone</span></span>
+    <span class="hero-tag">🇮🇹 🇺🇸 Bilingue</span>
+    <span class="hero-tag">Offline <span>✓</span></span>
+  </div>
+</div>
+
+<!-- TOC -->
+<div class="toc-wrap">
+  <div class="toc-lang">🇮🇹 Indice — Italiano</div>
+  <a href="#capitolo-1-cosè-rider-tracker-pro" class="toc-item"><span class="toc-num">01</span>Cos'è Rider Tracker Pro?<span class="toc-arr">›</span></a>
+  <a href="#capitolo-2-prima-configurazione" class="toc-item"><span class="toc-num">02</span>Prima Configurazione<span class="toc-arr">›</span></a>
+  <a href="#capitolo-3-schermata-principale-la-dashboard" class="toc-item"><span class="toc-num">03</span>Schermata Principale — Dashboard<span class="toc-arr">›</span></a>
+  <a href="#capitolo-4-registrare-un-turno-pulsante-turno" class="toc-item"><span class="toc-num">04</span>Registrare un Turno (pulsante TURNO)<span class="toc-arr">›</span></a>
+  <a href="#capitolo-5-registrare-un-rifornimento-pulsante-fuel" class="toc-item"><span class="toc-num">05</span>Registrare un Rifornimento (pulsante FUEL)<span class="toc-arr">›</span></a>
+  <a href="#capitolo-6-distanza-extra-pulsante-extra" class="toc-item"><span class="toc-num">06</span>Distanza Extra (pulsante EXTRA)<span class="toc-arr">›</span></a>
+  <a href="#capitolo-7-storico-pulsante-storico" class="toc-item"><span class="toc-num">07</span>Storico (pulsante STORICO)<span class="toc-arr">›</span></a>
+  <a href="#capitolo-8-report-mensile-riepilogo-grafico-stampa" class="toc-item"><span class="toc-num">08</span>Report Mensile (RIEPILOGO / GRAFICO / STAMPA)<span class="toc-arr">›</span></a>
+  <a href="#capitolo-9-grafici-di-resa" class="toc-item"><span class="toc-num">09</span>Grafici di Resa<span class="toc-arr">›</span></a>
+  <a href="#capitolo-10-impostazioni-icona" class="toc-item"><span class="toc-num">10</span>Impostazioni (icona ⚙️)<span class="toc-arr">›</span></a>
+  <a href="#capitolo-11-backup-ripristino" class="toc-item"><span class="toc-num">11</span>Backup &amp; Ripristino<span class="toc-arr">›</span></a>
+  <a href="#capitolo-12-reset-database-reset-db" class="toc-item"><span class="toc-num">12</span>Reset Database (RESET DB)<span class="toc-arr">›</span></a>
+  <a href="#capitolo-13-selezione-lingua" class="toc-item"><span class="toc-num">13</span>Selezione Lingua<span class="toc-arr">›</span></a>
+  <a href="#capitolo-14-esempi-pratici" class="toc-item"><span class="toc-num">14</span>Esempi Pratici<span class="toc-arr">›</span></a>
+  <div class="toc-lang" style="margin-top:6px">🇺🇸 Table of Contents — English</div>
+  <a href="#chapter-1-what-is-rider-tracker-pro" class="toc-item"><span class="toc-num">01</span>What is Rider Tracker Pro?<span class="toc-arr">›</span></a>
+  <a href="#chapter-2-getting-started-first-setup" class="toc-item"><span class="toc-num">02</span>Getting Started — First Setup<span class="toc-arr">›</span></a>
+  <a href="#chapter-3-home-screen-the-dashboard" class="toc-item"><span class="toc-num">03</span>Home Screen — Dashboard<span class="toc-arr">›</span></a>
+  <a href="#chapter-4-recording-a-shift-shift-button" class="toc-item"><span class="toc-num">04</span>Recording a Shift (SHIFT button)<span class="toc-arr">›</span></a>
+  <a href="#chapter-5-recording-a-refuel-fuel-button" class="toc-item"><span class="toc-num">05</span>Recording a Refuel (FUEL button)<span class="toc-arr">›</span></a>
+  <a href="#chapter-6-extra-distance-extra-button" class="toc-item"><span class="toc-num">06</span>Extra Distance (EXTRA button)<span class="toc-arr">›</span></a>
+  <a href="#chapter-7-history-view-history-button" class="toc-item"><span class="toc-num">07</span>History View (HISTORY button)<span class="toc-arr">›</span></a>
+  <a href="#chapter-8-monthly-report-summary-chart-print" class="toc-item"><span class="toc-num">08</span>Monthly Report (SUMMARY / CHART / PRINT)<span class="toc-arr">›</span></a>
+  <a href="#chapter-9-analytics-charts" class="toc-item"><span class="toc-num">09</span>Analytics Charts<span class="toc-arr">›</span></a>
+  <a href="#chapter-10-settings-gear-icon" class="toc-item"><span class="toc-num">10</span>Settings (⚙️ gear icon)<span class="toc-arr">›</span></a>
+  <a href="#chapter-11-backup-restore" class="toc-item"><span class="toc-num">11</span>Backup &amp; Restore<span class="toc-arr">›</span></a>
+  <a href="#chapter-12-reset-database-reset-db" class="toc-item"><span class="toc-num">12</span>Reset Database (RESET DB)<span class="toc-arr">›</span></a>
+  <a href="#chapter-13-language-selection" class="toc-item"><span class="toc-num">13</span>Language Selection<span class="toc-arr">›</span></a>
+  <a href="#chapter-14-practical-examples" class="toc-item"><span class="toc-num">14</span>Practical Examples<span class="toc-arr">›</span></a>
+</div>
+
+<!-- BODY CONTENT (from docx + new paragraphs) -->
+<div id="main-content">
+trong>RIDER</strong></p>
+<p><strong>TRACKER</strong></p>
+<p><strong>PRO</strong></p>
+<p><em>User Manual — Manuale Utente</em></p>
+<p>Version 2.0 | © 2026 Marco Carbone</p>
+<h1 id="table-of-contents-indice"><strong>TABLE OF CONTENTS /
+INDICE</strong></h1>
+<p>ENGLISH SECTION</p>
+<p><strong>1.</strong> What is Rider Tracker Pro?</p>
+<p><strong>2.</strong> Getting Started — First Setup</p>
+<p><strong>3.</strong> Home Screen — Dashboard</p>
+<p><strong>4.</strong> Recording a Shift (SHIFT button)</p>
+<p><strong>5.</strong> Recording a Refuel (FUEL button)</p>
+<p><strong>6.</strong> Extra Distance (EXTRA button)</p>
+<p><strong>7.</strong> History View (HISTORY button)</p>
+<p><strong>8.</strong> Monthly Report (SUMMARY / CHART / PRINT)</p>
+<p><strong>9.</strong> Analytics Charts</p>
+<p><strong>10.</strong> Settings (⚙️ gear icon)</p>
+<p><strong>11.</strong> Backup &amp; Restore</p>
+<p><strong>12.</strong> Reset Database (RESET DB)</p>
+<p><strong>13.</strong> Language Selection</p>
+<p><strong>14.</strong> Practical Examples</p>
+<p>SEZIONE ITALIANA</p>
+<p><strong>1.</strong> Cos'è Rider Tracker Pro?</p>
+<p><strong>2.</strong> Prima Configurazione</p>
+<p><strong>3.</strong> Schermata Principale — Dashboard</p>
+<p><strong>4.</strong> Registrare un Turno (pulsante TURNO)</p>
+<p><strong>5.</strong> Registrare un Rifornimento (pulsante FUEL)</p>
+<p><strong>6.</strong> Distanza Extra (pulsante EXTRA)</p>
+<p><strong>7.</strong> Storico (pulsante STORICO)</p>
+<p><strong>8.</strong> Report Mensile (RIEPILOGO / GRAFICO / STAMPA)</p>
+<p><strong>9.</strong> Grafici di Resa</p>
+<p><strong>10.</strong> Impostazioni (icona ⚙️)</p>
+<p><strong>11.</strong> Backup &amp; Ripristino</p>
+<p><strong>12.</strong> Reset Database (RESET DB)</p>
+<p><strong>13.</strong> Selezione Lingua</p>
+<p><strong>14.</strong> Esempi Pratici</p>
+<p><strong>🇮🇹 MANUALE UTENTE IN ITALIANO</strong></p>
+<h1 id="capitolo-1-cosè-rider-tracker-pro"><strong>Capitolo 1 — Cos'è
+Rider Tracker Pro?</strong></h1>
+<p>Rider Tracker Pro è un'applicazione di gestione professionale
+progettata specificamente per i lavoratori della gig economy: fattorini
+per la consegna del cibo, autisti taxi e ride-hailing, corrieri, o
+qualsiasi professionista che utilizza un veicolo per guadagnare turno
+per turno.</p>
+<p>L'app funziona completamente offline nel browser, salvando tutti i
+dati sul dispositivo (localStorage). Non è necessario alcun account,
+server o abbonamento. Tutto è privato e memorizzato localmente.</p>
+<h2 id="a-chi-è-destinata"><strong>A chi è destinata?</strong></h2>
+<ul>
+<li><blockquote>
+<p>Rider per consegne (cibo, pacchi, documenti)</p>
+</blockquote></li>
+<li><blockquote>
+<p>Autisti Uber, Lyft, Bolt, Free Now</p>
+</blockquote></li>
+<li><blockquote>
+<p>Autisti NCC (Noleggio Con Conducente)</p>
+</blockquote></li>
+<li><blockquote>
+<p>Chiunque voglia tracciare entrate e costi carburante turno per
+turno</p>
+</blockquote></li>
+</ul>
+<h2 id="cosa-fa"><strong>Cosa fa?</strong></h2>
+<ul>
+<li><blockquote>
+<p>Registra ogni turno lavorativo con lordo, ore, distanza e consumo
+carburante</p>
+</blockquote></li>
+<li><blockquote>
+<p>Tiene traccia di ogni rifornimento con tipo carburante, importo speso
+e prezzo unitario</p>
+</blockquote></li>
+<li><blockquote>
+<p>Registra distanza extra percorsa al di fuori dei turni normali</p>
+</blockquote></li>
+<li><blockquote>
+<p>Calcola automaticamente il netto dopo tasse e deduzione
+carburante</p>
+</blockquote></li>
+<li><blockquote>
+<p>Mostra il progresso in tempo reale verso un obiettivo mensile di
+reddito</p>
+</blockquote></li>
+<li><blockquote>
+<p>Genera un report mensile dettagliato con tabelle e analisi di
+efficienza</p>
+</blockquote></li>
+<li><blockquote>
+<p>Visualizza grafici di tendenza di guadagno per ora e guadagno per
+km</p>
+</blockquote></li>
+<li><blockquote>
+<p>Supporta backup e ripristino completo dei dati</p>
+</blockquote></li>
+<li><blockquote>
+<p>Interfaccia bilingue: Italiano 🇮🇹 e Inglese 🇺🇸</p>
+</blockquote></li>
+<li><blockquote>
+<p>Unità di misura completamente configurabili: km/mi, L/gal, kg/lb,
+€/$/ £, L/100km/MPG</p>
+</blockquote></li>
+</ul>
+<h1 id="capitolo-2-prima-configurazione"><strong>Capitolo 2 — Prima
+Configurazione</strong></h1>
+<p>Quando apri l'app per la prima volta, la dashboard mostra ovunque
+degli zero. Prima di registrare il primo turno, è fortemente consigliato
+configurare le unità di misura e le preferenze personali.</p>
+<h2 id="passo-1-scegli-la-lingua"><strong>Passo 1 — Scegli la
+lingua</strong></h2>
+<p>In cima all'app trovi due bandiere: 🇮🇹 e 🇺🇸. Tocca la bandiera della
+lingua preferita. L'intera interfaccia si aggiornerà istantaneamente.
+Ogni lingua conserva le proprie impostazioni indipendenti.</p>
+<h2 id="passo-2-apri-le-impostazioni"><strong>Passo 2 — Apri le
+Impostazioni (⚙️)</strong></h2>
+<p>Tocca l'icona a forma di ingranaggio ⚙️ accanto alle bandiere. Si
+aprirà il pannello Impostazioni con le seguenti opzioni:</p>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>Distanza</strong></th>
+<th>Scegli tra Chilometri (km) o Miglia (mi). Influisce su tutti i campi
+distanza nell'app, compresi storico, report e placeholder.</th>
+</tr>
+<tr class="header">
+<th><strong>Volume</strong></th>
+<th>Scegli tra Litri (L), Galloni US (gal) o Galloni UK (gal). Influisce
+sulla visualizzazione delle quantità di carburante.</th>
+</tr>
+<tr class="odd">
+<th><strong>Massa</strong></th>
+<th>Scegli tra Chilogrammi (kg) o Libbre (lbs). Usata per le quantità di
+metano (CNG) e olio nella miscela.</th>
+</tr>
+<tr class="header">
+<th><strong>Valuta</strong></th>
+<th>Scegli Euro (€), Dollaro USA ($) o Sterlina britannica (£). Tutti i
+valori monetari vengono mostrati in questa valuta.</th>
+</tr>
+<tr class="odd">
+<th><strong>Formato Consumo</strong></th>
+<th>Scegli come mostrare il consumo: L/100km (default), km/L
+(efficienza), MPG US o MPG UK.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<p>Dopo aver selezionato le preferenze, tocca SALVA E APPLICA. L'app
+ricalcola e aggiorna immediatamente tutte le visualizzazioni.</p>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>💡 Importante:</strong> Le impostazioni sono salvate per
+lingua. Se passi tra italiano e inglese, ogni lingua ricorda le proprie
+preferenze di unità.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h1 id="capitolo-3-schermata-principale-la-dashboard"><strong>Capitolo 3
+— Schermata Principale: La Dashboard</strong></h1>
+<p>La dashboard è la schermata principale di Rider Tracker Pro. Mostra
+sempre i dati del mese di calendario corrente. Ogni valore si aggiorna
+automaticamente quando aggiungi o elimini un turno o un
+rifornimento.</p>
+<h2 id="schede-superiori-guadagni"><strong>Schede Superiori —
+Guadagni</strong></h2>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>LORDO GUADAGNATO</strong></th>
+<th>Totale lordo (prima delle tasse e del carburante) di tutti i turni
+del mese corrente. È la somma di tutti i valori 'Lordo guadagnato' che
+hai inserito.</th>
+</tr>
+<tr class="header">
+<th><strong>NETTO GUADAGNATO</strong></th>
+<th>Lordo meno la percentuale di tassazione meno i costi carburante. È
+il tuo guadagno effettivo del mese.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h2 id="schede-medie-dati-lavorativi"><strong>Schede Medie — Dati
+Lavorativi</strong></h2>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>ORE TOT LAVORO</strong></th>
+<th>Ore totali lavorate in tutti i turni del mese corrente.</th>
+</tr>
+<tr class="header">
+<th><strong>Q.TÀ CONSUMO</strong></th>
+<th>Totale carburante consumato in tutti i turni (calcolato da km ×
+consumo). Se hai turni con diversi tipi di carburante nello stesso mese,
+questa scheda mostra 'MULTI' ed è cliccabile per vedere il dettaglio per
+tipo.</th>
+</tr>
+<tr class="odd">
+<th><strong>MEDIA CONSUMI</strong></th>
+<th>Efficienza media del carburante per il mese, mostrata nell'unità
+scelta (L/100km, MPG, ecc.). Toccabile per il dettaglio se vengono usati
+più carburanti.</th>
+</tr>
+<tr class="header">
+<th><strong>SPESA CARBURANTE</strong></th>
+<th>Costo totale carburante del mese, calcolato dai dati di consumo e
+prezzo di ogni turno.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h2 id="schede-inferiori-obiettivo-e-tasse"><strong>Schede Inferiori —
+Obiettivo e Tasse</strong></h2>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>OBIETTIVO NETTO</strong></th>
+<th>Inserisci il tuo obiettivo mensile di reddito (netto, al netto di
+tasse e carburante). L'app calcolerà quanto lordo devi ancora
+guadagnare. Campo modificabile in qualsiasi momento.</th>
+</tr>
+<tr class="header">
+<th><strong>TASSAZIONE %</strong></th>
+<th>Inserisci la tua aliquota fiscale come percentuale (es. 26 per il
+26%). Viene usata per calcolare il netto e il lordo mancante.
+Modificabile in qualsiasi momento.</th>
+</tr>
+<tr class="odd">
+<th><strong>LORDO MANCANTE</strong></th>
+<th>Il lordo che ti manca per raggiungere l'obiettivo netto, tenendo
+conto della tassazione e dei costi carburante attuali. Mostra 0,00
+quando hai già raggiunto l'obiettivo.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h2 id="barra-di-progresso-e-striscia-info"><strong>Barra di Progresso e
+Striscia Info</strong></h2>
+<p>Sotto le schede, una barra di progresso turchese mostra quanto sei
+vicino all'obiettivo netto mensile (in percentuale). A sinistra della
+barra c'è l'orologio in tempo reale (data e ora). A destra c'è la tua
+media netta guadagnata per ora questo mese.</p>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>💡 Esempio:</strong> Hai un obiettivo di €1.500 netto con il
+26% di tasse e €120 di costi carburante. L'app calcola che hai bisogno
+di €2.189 lordi. Se finora hai guadagnato €800 lordi, la barra mostra
+36% e il LORDO MANCANTE mostra €1.389.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h1 id="capitolo-4-registrare-un-turno-pulsante-turno"><strong>Capitolo
+4 — Registrare un Turno (Pulsante TURNO)</strong></h1>
+<p>Tocca il pulsante TURNO nella barra di navigazione inferiore (icona
+verde con cerchio +). Si apre la finestra Nuovo Turno dove puoi
+registrare i dettagli di un turno lavorativo completato.</p>
+<h2 id="selettore-data"><strong>Selettore Data</strong></h2>
+<p>Tre menu a tendina in cima alla finestra ti permettono di selezionare
+giorno, mese e anno del turno. Vengono preimpostati alla data odierna.
+Non puoi inserire una data futura — l'app mostrerà un avviso.</p>
+<h2 id="selettore-mezzo"><strong>Selettore Mezzo</strong></h2>
+<p>Tocca il menu mezzo per scegliere il tipo di veicolo:</p>
+<ul>
+<li><blockquote>
+<p>🚗 Auto</p>
+</blockquote></li>
+<li><blockquote>
+<p>🏍️ Moto</p>
+</blockquote></li>
+<li><blockquote>
+<p>⚡ Bici elettrica</p>
+</blockquote></li>
+<li><blockquote>
+<p>🚲 Bici</p>
+</blockquote></li>
+<li><blockquote>
+<p>🛴 Monopattino</p>
+</blockquote></li>
+</ul>
+<p>L'app ricorda la tua ultima selezione e la precompila la volta
+successiva.</p>
+<h2 id="selettore-carburante"><strong>Selettore Carburante</strong></h2>
+<p>Tocca il menu carburante per scegliere il carburante del turno:</p>
+<ul>
+<li><blockquote>
+<p>⛽ Benzina — carburante standard</p>
+</blockquote></li>
+<li><blockquote>
+<p>🛢️ Gasolio — diesel</p>
+</blockquote></li>
+<li><blockquote>
+<p>🔵 GPL — gas di petrolio liquefatto</p>
+</blockquote></li>
+<li><blockquote>
+<p>💨 Metano — gas naturale compresso (CNG), misurato in kg o lbs</p>
+</blockquote></li>
+<li><blockquote>
+<p>🔀 Miscela — miscela bifase (olio + benzina). Vedi Capitolo 5 per la
+configurazione.</p>
+</blockquote></li>
+</ul>
+<p>Il placeholder del campo consumo si aggiorna immediatamente in base
+al carburante scelto e alle impostazioni unità.</p>
+<h2 id="campi-di-inserimento"><strong>Campi di Inserimento</strong></h2>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>Lordo guadagnato</strong></th>
+<th>L'importo lordo totale guadagnato nel turno, prima di tasse e
+carburante. Inserisci nella valuta selezionata. Esempio: 48,50</th>
+</tr>
+<tr class="header">
+<th><strong>Ore lavorate</strong></th>
+<th>Il numero di ore lavorate. Accetta decimali. Esempio: 5,5 per 5 ore
+e 30 minuti.</th>
+</tr>
+<tr class="odd">
+<th><strong>KM percorsi / Miglia percorse</strong></th>
+<th>La distanza coperta durante il turno nell'unità scelta (km o mi).
+L'app converte e memorizza internamente in km.</th>
+</tr>
+<tr class="header">
+<th><strong>Consumo (L/100km)</strong></th>
+<th>Il consumo di carburante del veicolo per questo turno. Il
+placeholder si adatta alle impostazioni: L/100km, km/L, MPG US, MPG UK,
+ecc. Esempio: 6,5 se la tua auto consuma 6,5L ogni 100km.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+
+<h2 id="stima-automatica-del-consumo"><strong>Stima Automatica del Consumo</strong> <span class="new-badge">NUOVO</span></h2>
+<p>Se non hai un computer di bordo, non è necessario conoscere a memoria il consumo del tuo veicolo. Ogni volta che apri la finestra Nuovo Turno, l'app <strong>calcola automaticamente una stima del consumo</strong> partendo dalla cronologia completa dei tuoi rifornimenti e dei turni già registrati per quel tipo di carburante.</p>
+<p><strong>Come funziona il calcolo:</strong> L'app legge tutti i rifornimenti del tipo di carburante selezionato e divide l'importo speso per il prezzo al litro, ottenendo il totale litri acquistati. Poi somma tutti i km dei turni che usano lo stesso carburante. Infine calcola: <em>(litri totali ÷ km totali) × 100</em> = consumo medio in L/100km, che viene poi convertito nell'unità impostata nelle Impostazioni (MPG, km/L, gal/100mi, ecc.).</p>
+<p>Una piccola riga di suggerimento appare sotto il campo consumo indicando quanti rifornimenti e turni hanno contribuito alla stima:</p>
+<div class="tbl-outer"><table>
+<colgroup><col style="width: 100%" /></colgroup>
+<thead>
+<tr class="callout-new"><th><strong>✦ Esempio suggerimento:</strong> <em>~media da 5 riforniment. · 18 turni</em><br>Il campo viene pre-compilato con il valore calcolato, ma rimane completamente modificabile — puoi sempre inserire un numero diverso prima di salvare.</th></tr>
+</thead><tbody></tbody>
+</table></div>
+<p>Se i dati sono insufficienti (meno di 30 km accumulati per quel tipo di carburante), il suggerimento mostra <em>"(dati insufficienti — inserisci manualmente)"</em> in grigio e il campo rimane vuoto per la compilazione manuale.</p>
+<div class="tbl-outer"><table>
+<colgroup><col style="width: 29%" /><col style="width: 70%" /></colgroup>
+<thead>
+<tr class="header"><th><strong>Condizione</strong></th><th><strong>Comportamento</strong></th></tr>
+</thead>
+<tbody>
+<tr class="odd"><td><strong>Metano / CNG</strong></td><td>Nessuna stima automatica (la quantità in kg viene sempre inserita manualmente)</td></tr>
+<tr class="even"><td><strong>Bici / Monopattino</strong></td><td>Il campo consumo non è mostrato — nessuna stima necessaria</td></tr>
+<tr class="odd"><td><strong>Meno di 30 km di dati</strong></td><td>Campo vuoto; il suggerimento mostra "dati insufficienti — inserisci manualmente"</td></tr>
+<tr class="even"><td><strong>Dati sufficienti disponibili</strong></td><td>Campo pre-compilato con la media storica; il suggerimento mostra le fonti usate</td></tr>
+<tr class="odd"><td><strong>Cambio tipo carburante</strong></td><td>La stima si ricalcola automaticamente per il nuovo carburante selezionato</td></tr>
+</tbody>
+</table></div>
+<div class="tbl-outer"><table>
+<colgroup><col style="width: 100%" /></colgroup>
+<thead>
+<tr class="callout-tip"><th><strong>💡 Esempio pratico:</strong> Hai uno scooter 125cc senza display consumi. Dopo 4 rifornimenti (totale 16 L) e 470 km di turni, l'app calcola 16 ÷ 470 × 100 = <strong>3,4 L/100km</strong>. Questo valore viene pre-compilato automaticamente ogni volta che apri un nuovo turno. La stima migliora in precisione man mano che registri più rifornimenti.</th></tr>
+</thead><tbody></tbody>
+</table></div>
+<h2 id="pulsante-salva"><strong>Pulsante SALVA</strong></h2>
+<p>Toccando SALVA il turno viene memorizzato. Se non esiste ancora
+nessun rifornimento per il tipo di carburante scelto, l'app chiederà di
+inserire un Prezzo Iniziale (vedi Capitolo 5). Questo prezzo verrà usato
+per calcolare il costo carburante del turno.</p>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>💡 Esempio:</strong> Hai completato un turno di consegna di
+4 ore, guadagnato €55, percorso 72 km, il tuo veicolo ha un consumo
+medio di 6,2 L/100km. Inserisci: Lordo=55, Ore=4, KM=72, Consumo=6,2.
+L'app calcola il quantitativo carburante (72×6,2/100=4,46L) e il costo
+automaticamente.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h2 id="mese-con-più-carburanti"><strong>Mese con Più
+Carburanti</strong></h2>
+<p>Se registri turni con diversi tipi di carburante nello stesso mese
+(es. alcuni con benzina e alcuni con metano), le schede Q.TÀ CONSUMO e
+MEDIA CONSUMI mostrano 'MULTI'. Toccandole si apre un popup con il
+dettaglio per tipo di carburante.</p>
+<h1
+id="capitolo-5-registrare-un-rifornimento-pulsante-fuel"><strong>Capitolo
+5 — Registrare un Rifornimento (Pulsante FUEL)</strong></h1>
+<p>Tocca il pulsante FUEL nella barra di navigazione inferiore (icona
+arancione pompa carburante). Si apre la finestra Rifornimento per
+registrare un acquisto di carburante. Il prezzo del rifornimento viene
+usato dall'app per calcolare i costi nei turni successivi.</p>
+<h2 id="selettore-data-1"><strong>Selettore Data</strong></h2>
+<p>Come per i turni — scegli giorno, mese, anno. Non può essere una data
+futura.</p>
+<h2 id="selettore-carburante-1"><strong>Selettore
+Carburante</strong></h2>
+<p>Seleziona il tipo di carburante rifornito: Benzina, Gasolio, GPL,
+Metano o Miscela. Il placeholder del campo prezzo si aggiornerà per
+mostrare l'unità corretta (€/L, $/gal, $/kg, ecc.).</p>
+<h2 id="campi-standard"><strong>Campi Standard</strong></h2>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>Speso</strong></th>
+<th>L'importo totale speso al distributore. Esempio: 42,80 per
+€42,80</th>
+</tr>
+<tr class="header">
+<th><strong>Prezzo unitario</strong></th>
+<th>Il prezzo al litro, gallone o kg. Esempio: 1,85 per €1,85/L. L'app
+formatta automaticamente questo campo durante la digitazione.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h2 id="miscela-campi-aggiuntivi"><strong>Miscela — Campi
+Aggiuntivi</strong></h2>
+<p>Quando selezioni 'Miscela' come tipo carburante, appaiono due campi
+extra:</p>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>% Miscela</strong></th>
+<th>La percentuale di olio nel miscuglio. I motori a due tempi usano
+tipicamente dall'1 al 4%. Esempio: 2 per una miscela al 2%.</th>
+</tr>
+<tr class="header">
+<th><strong>Prezzo olio (€/kg)</strong></th>
+<th>Il prezzo per kg (o lb) dell'olio usato nella miscela. Viene usato
+per calcolare il costo totale della miscela in modo accurato.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h2 id="finestra-prezzo-iniziale"><strong>Finestra Prezzo
+Iniziale</strong></h2>
+<p>Se tocchi SALVA nel turno e non è stato ancora registrato nessun
+rifornimento per quel tipo di carburante, appare una finestra speciale
+che chiede di inserire il prezzo iniziale del carburante. Questo prezzo
+sarà usato per i calcoli dei costi fino al primo rifornimento reale. Per
+la Miscela, questa finestra mostra anche i campi % Miscela e Prezzo
+olio.</p>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>💡 Consiglio:</strong> Registra un rifornimento prima del
+primo turno del mese per garantire che il calcolo del costo carburante
+sia accurato fin dal primo giorno. Puoi rifornire più volte al mese —
+l'app usa sempre il prezzo del rifornimento più recente per ogni tipo di
+carburante.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h1 id="capitolo-6-distanza-extra-pulsante-extra"><strong>Capitolo 6 —
+Distanza Extra (Pulsante EXTRA)</strong></h1>
+<p>Tocca il pulsante EXTRA nella barra di navigazione inferiore (icona
+turchese della strada). Registra distanza percorsa al di fuori dei turni
+normali — ad esempio spostamenti per raggiungere la zona di lavoro,
+commissioni effettuate con il veicolo da lavoro, o qualsiasi altra
+percorrenza che vuoi tracciare.</p>
+<h2 id="campi"><strong>Campi</strong></h2>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>Data</strong></th>
+<th>Giorno, mese, anno dell'attività extra.</th>
+</tr>
+<tr class="header">
+<th><strong>Tipo carburante</strong></th>
+<th>Il carburante usato per la distanza extra. Stessa lista dei
+turni.</th>
+</tr>
+<tr class="odd">
+<th><strong>Distanza extra (km/mi)</strong></th>
+<th>La distanza percorsa. Inserita e visualizzata nell'unità
+scelta.</th>
+</tr>
+<tr class="header">
+<th><strong>Consumo medio</strong></th>
+<th>Il consumo del veicolo per questa distanza extra. Il placeholder si
+adatta alle impostazioni unità.</th>
+</tr>
+<tr class="odd">
+<th><strong>Descrizione (opzionale)</strong></th>
+<th>Una nota libera per descrivere lo scopo della distanza extra.
+Esempio: 'Trasferta aeroporto' o 'Spostamento zona lavoro'.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<p>Quando salvato, il calcolo del costo carburante usa il prezzo
+dell'ultimo rifornimento del tipo selezionato. La quantità viene stimata
+dalla distanza e dal consumo medio inseriti.</p>
+<p>Nel Report Mensile, la distanza extra appare nella sezione
+MONITORAGGIO EXTRA LAVORO, separata dai km dei turni, con il proprio
+subtotale per km e costi carburante.</p>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>💡 Esempio:</strong> Hai percorso 15 km per raggiungere la
+zona di consegna prima del primo turno. Registralo come Extra: 15 km,
+consumo 6,2 L/100km, descrizione 'Spostamento zona'. Il costo carburante
+(~0,93L × prezzo) viene registrato e mostrato nel report.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h1 id="capitolo-7-storico-pulsante-storico"><strong>Capitolo 7 —
+Storico (Pulsante STORICO)</strong></h1>
+<p>Tocca il pulsante STORICO nella barra di navigazione inferiore (icona
+bianca dell'orologio). La vista Storico mostra tutte le voci registrate
+— turni, rifornimenti e distanze extra — raggruppate per mese.</p>
+<h2 id="struttura"><strong>Struttura</strong></h2>
+<p>La lista è divisa in due sezioni:</p>
+<ul>
+<li><blockquote>
+<p><strong>Mese Corrente:</strong> Tutte le voci del mese di calendario
+corrente appaiono in cima, in ordine cronologico inverso (le più recenti
+per prime).</p>
+</blockquote></li>
+<li><blockquote>
+<p><strong>Archivio:</strong> Tutti i mesi precedenti sono raggruppati
+per anno. Ogni anno ha un'intestazione con i totali annuali. Ogni mese è
+comprimibile — tocca l'intestazione del mese per espandere/comprimere le
+voci.</p>
+</blockquote></li>
+</ul>
+<h2 id="tipi-di-voci-e-cosa-mostrano"><strong>Tipi di Voci e Cosa
+Mostrano</strong></h2>
+<h3 id="voce-turno-bordo-verde-turchese"><strong>Voce Turno (bordo 🟢
+verde-turchese)</strong></h3>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>Intestazione</strong></th>
+<th>TURNO • NOME MEZZO (es. TURNO • AUTO)</th>
+</tr>
+<tr class="header">
+<th><strong>Data e ora</strong></th>
+<th>Giorno/mese e ora di registrazione</th>
+</tr>
+<tr class="odd">
+<th><strong>Riga principale</strong></th>
+<th>Netto guadagnato • netto guadagnato per ora</th>
+</tr>
+<tr class="header">
+<th><strong>Riga secondaria</strong></th>
+<th>Lordo / ore / distanza / consumo con icona carburante</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h3 id="voce-rifornimento-bordo-arancione"><strong>Voce Rifornimento
+(bordo 🟠 arancione)</strong></h3>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>Intestazione</strong></th>
+<th>Nome e icona tipo carburante (es. ⛽ BENZINA)</th>
+</tr>
+<tr class="header">
+<th><strong>Data</strong></th>
+<th>Giorno/mese</th>
+</tr>
+<tr class="odd">
+<th><strong>Riga principale</strong></th>
+<th>Importo totale speso (nella tua valuta)</th>
+</tr>
+<tr class="header">
+<th><strong>Riga secondaria</strong></th>
+<th>Quantità • prezzo unitario. Per la Miscela: mostra anche % olio e
+quantità olio.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h3 id="voce-distanza-extra-bordo-turchese"><strong>Voce Distanza Extra
+(bordo 🩵 turchese)</strong></h3>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>Intestazione</strong></th>
+<th>KM Extra / MI Extra (in base all'unità scelta) con icona
+carburante</th>
+</tr>
+<tr class="header">
+<th><strong>Data</strong></th>
+<th>Giorno/mese</th>
+</tr>
+<tr class="odd">
+<th><strong>Riga principale</strong></th>
+<th>Distanza percorsa • costo carburante per questo extra</th>
+</tr>
+<tr class="header">
+<th><strong>Riga secondaria</strong></th>
+<th>Consumo medio • descrizione (se inserita)</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h2 id="eliminare-una-voce"><strong>Eliminare una Voce</strong></h2>
+<p>Ogni voce nello storico ha un'icona rossa del cestino 🗑️ sul lato
+destro. Toccala e conferma nella finestra di eliminazione per rimuovere
+permanentemente la voce. Tutti i totali della dashboard si aggiorneranno
+immediatamente.</p>
+<h2 id="gruppi-di-mesi-comprimibili-archivio"><strong>Gruppi di Mesi
+Comprimibili (Archivio)</strong></h2>
+<p>I mesi passati appaiono come sezioni comprimibili. L'intestazione di
+ogni mese mostra il nome del mese più i totali lordo, netto e ore. Tocca
+il chevron ▸ per espandere le singole voci. Tocca di nuovo per
+comprimere.</p>
+<h2 id="totali-annuali"><strong>Totali Annuali</strong></h2>
+<p>Ogni gruppo annuale nell'archivio mostra i totali annuali: lordo
+totale, netto totale e ore totali. Puoi eliminare i dati di un intero
+anno usando l'icona elimina accanto all'intestazione dell'anno (con
+finestra di conferma).</p>
+<h1
+id="capitolo-8-report-mensile-riepilogo-grafico-stampa"><strong>Capitolo
+8 — Report Mensile (RIEPILOGO / GRAFICO / STAMPA)</strong></h1>
+<p>Il pulsante RIEPILOGO/GRAFICO/STAMPA in fondo alla schermata apre il
+Report Mensile del mese corrente. Dall'archivio dello Storico puoi
+aprire il report di qualsiasi mese passato toccando l'icona grafico
+accanto all'intestazione del mese.</p>
+<h2 id="sezioni-del-report"><strong>Sezioni del Report</strong></h2>
+<h3 id="dettaglio-turni"><strong>1. Dettaglio Turni</strong></h3>
+<p>Una tabella che elenca ogni turno del mese con le seguenti
+colonne:</p>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>Data</strong></th>
+<th>GG/MM</th>
+</tr>
+<tr class="header">
+<th><strong>Lordo</strong></th>
+<th>Lordo guadagnato nella tua valuta</th>
+</tr>
+<tr class="odd">
+<th><strong>Netto</strong></th>
+<th>Netto guadagnato dopo tasse e costi carburante</th>
+</tr>
+<tr class="header">
+<th><strong>Ore</strong></th>
+<th>Ore lavorate</th>
+</tr>
+<tr class="odd">
+<th><strong>KM / MI</strong></th>
+<th>Distanza percorsa (nella tua unità)</th>
+</tr>
+<tr class="header">
+<th><strong>C/100 o MPG</strong></th>
+<th>Consumo carburante (nel tuo formato)</th>
+</tr>
+<tr class="odd">
+<th><strong>T</strong></th>
+<th>Abbreviazione icona tipo carburante</th>
+</tr>
+<tr class="header">
+<th><strong>Q</strong></th>
+<th>Quantità carburante. Per metano in kg/lb. Per miscela in litri
+benzina + kg olio.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h3 id="dettaglio-rifornimenti"><strong>2. Dettaglio
+Rifornimenti</strong></h3>
+<p>Una tabella di tutti i rifornimenti del mese:</p>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>Data</strong></th>
+<th>GG/MM/AAAA</th>
+</tr>
+<tr class="header">
+<th><strong>Tipo</strong></th>
+<th>Tipo carburante con icona</th>
+</tr>
+<tr class="odd">
+<th><strong>Spesa</strong></th>
+<th>Importo speso</th>
+</tr>
+<tr class="header">
+<th><strong>Prezzo</strong></th>
+<th>Prezzo unitario (€/L, $/gal, $/kg, ecc.)</th>
+</tr>
+<tr class="odd">
+<th><strong>Q.tà</strong></th>
+<th>Quantità (L, gal, kg, lb secondo tipo carburante e
+impostazioni)</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h3 id="analisi-efficienza-operativa"><strong>3. Analisi Efficienza
+Operativa</strong></h3>
+<p>Il mese è diviso in periodi settimanali (S1, S2, S3, S4). Per ogni
+periodo:</p>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>Periodo</strong></th>
+<th>Etichetta settimana (S1, S2, ecc.)</th>
+</tr>
+<tr class="header">
+<th><strong>Turni</strong></th>
+<th>Numero di turni nella settimana</th>
+</tr>
+<tr class="odd">
+<th><strong>KM / MI</strong></th>
+<th>Distanza totale</th>
+</tr>
+<tr class="header">
+<th><strong>Media</strong></th>
+<th>Consumo medio carburante per la settimana</th>
+</tr>
+<tr class="odd">
+<th><strong>Carburante</strong></th>
+<th>Costo carburante totale per la settimana</th>
+</tr>
+<tr class="header">
+<th><strong>Netto</strong></th>
+<th>Guadagno netto per la settimana</th>
+</tr>
+<tr class="odd">
+<th><strong>€/H</strong></th>
+<th>Guadagno netto per ora per la settimana</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h3 id="monitoraggio-extra-lavoro"><strong>4. Monitoraggio Extra
+Lavoro</strong></h3>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>KM EXTRA / MI EXTRA</strong></th>
+<th>Distanza extra totale percorsa nel mese</th>
+</tr>
+<tr class="header">
+<th><strong>Spesa carburante</strong></th>
+<th>Costo carburante per la distanza extra</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h3 id="riepilogo-generale-turni"><strong>5. Riepilogo Generale
+Turni</strong></h3>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>Ore totali</strong></th>
+<th>Ore totali lavorate nel mese</th>
+</tr>
+<tr class="header">
+<th><strong>KM TURNI / MI TURNI</strong></th>
+<th>Km/mi totali solo dai turni</th>
+</tr>
+<tr class="odd">
+<th><strong>TOTALE KM / MI</strong></th>
+<th>Km/mi turni + km/mi extra sommati</th>
+</tr>
+<tr class="header">
+<th><strong>Spesa carburante</strong></th>
+<th>Costo carburante totale dai turni</th>
+</tr>
+<tr class="odd">
+<th><strong>COSTO MEDIO/KM o MI</strong></th>
+<th>Costo carburante medio per unità di distanza</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h3 id="riepilogo-finanziario"><strong>6. Riepilogo
+Finanziario</strong></h3>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>Lordo totale</strong></th>
+<th>Somma di tutti i guadagni lordi</th>
+</tr>
+<tr class="header">
+<th><strong>Tassazione (X%)</strong></th>
+<th>Importo tasse dedotto</th>
+</tr>
+<tr class="odd">
+<th><strong>Carburante</strong></th>
+<th>Costo carburante totale dedotto</th>
+</tr>
+<tr class="header">
+<th><strong>NETTO TOTALE</strong></th>
+<th>Pagamento finale dopo tutte le deduzioni</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h2 id="pulsanti-del-report"><strong>Pulsanti del Report</strong></h2>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>ESPORTA BACKUP</strong></th>
+<th>Scarica un file .json di backup di tutti i tuoi dati (vedi Capitolo
+11)</th>
+</tr>
+<tr class="header">
+<th><strong>IMPORTA BACKUP</strong></th>
+<th>Ripristina i dati da un file .json di backup esportato in
+precedenza</th>
+</tr>
+<tr class="odd">
+<th><strong>STAMPA</strong></th>
+<th>Apre il dialogo di stampa di sistema per stampare o salvare come
+PDF</th>
+</tr>
+<tr class="header">
+<th><strong>ANALISI RESA</strong></th>
+<th>Apre i grafici di tendenza guadagni per il mese (vedi Capitolo
+9)</th>
+</tr>
+<tr class="odd">
+<th><strong>CHIUDI</strong></th>
+<th>Torna alla dashboard principale</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h1 id="capitolo-9-grafici-di-resa"><strong>Capitolo 9 — Grafici di
+Resa</strong></h1>
+<p>Tocca il pulsante ANALISI RESA nel Report Mensile per aprire due
+grafici a linee che visualizzano le performance di guadagno per i turni
+del mese.</p>
+<h2 id="grafico-1-netto-per-ora-h"><strong>Grafico 1 — Netto per Ora
+(€/H)</strong></h2>
+<p>Questo grafico traccia il netto per ora per ogni singolo turno, in
+ordine di data. Ti aiuta a identificare quali giorni sono stati più
+efficienti (maggiore guadagno per ora lavorata). La linea è disegnata in
+turchese, con un riempimento morbido sotto.</p>
+<h2 id="grafico-2-netto-per-kmmi"><strong>Grafico 2 — Netto per
+KM/MI</strong></h2>
+<p>Questo grafico traccia il netto per unità di distanza per ogni turno.
+Ti aiuta a identificare quali turni hanno dato il miglior ritorno
+economico per chilometro o miglio percorso.</p>
+<p>Entrambi i grafici sono interattivi — puoi toccare i punti dati per
+vedere i valori esatti. L'asse orizzontale mostra la data di ogni turno
+(GG/MM). L'asse verticale mostra il valore nella valuta e unità
+scelte.</p>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>💡 Come usarli:</strong> Se noti che i turni del mercoledì
+mostrano costantemente un €/H più alto rispetto al sabato, potresti
+voler privilegiare il lavoro del mercoledì. Un calo improvviso nel
+guadagno per km potrebbe indicare un aumento inatteso del consumo
+carburante.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<p>Tocca CHIUDI per tornare al Report Mensile.</p>
+<h1 id="capitolo-10-impostazioni-icona"><strong>Capitolo 10 —
+Impostazioni (Icona ⚙️)</strong></h1>
+<p>Tocca l'icona ⚙️ in cima alla schermata principale per aprire il
+pannello Impostazioni. Qui configuri tutte le unità di misura e le
+preferenze di visualizzazione.</p>
+<h2 id="tutte-le-impostazioni-spiegate"><strong>Tutte le Impostazioni
+Spiegate</strong></h2>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>Distanza</strong></th>
+<th>Chilometri (km) — unità metrica standard.Miglia (mi) — usata in USA,
+UK e altri paesi.Scegliendo miglia si aggiornano tutti i campi distanza,
+etichette, voci storico e colonne report.</th>
+</tr>
+<tr class="header">
+<th><strong>Volume</strong></th>
+<th>Litri (L) — volume metrico standard.Galloni US (gal) — 1 gallone US
+= 3,785 L, usato in USA.Galloni UK (gal) — 1 gallone UK = 4,546 L, usato
+storicamente in UK.Influisce sulla visualizzazione quantità carburante
+ovunque.</th>
+</tr>
+<tr class="odd">
+<th><strong>Massa</strong></th>
+<th>Chilogrammi (kg) — per quantità metano (CNG) e olio.Libbre (lbs) —
+usate in USA e UK.Influisce sulla visualizzazione delle quantità di
+metano e olio nella miscela.</th>
+</tr>
+<tr class="header">
+<th><strong>Valuta</strong></th>
+<th>Euro (€), Dollaro USA ($) o Sterlina britannica (£).Tutti i valori
+monetari mostreranno il simbolo selezionato.</th>
+</tr>
+<tr class="odd">
+<th><strong>Formato Consumo</strong></th>
+<th>L/100km — litri per 100 km (standard europeo). Più basso = più
+efficiente.km/L — chilometri per litro. Più alto = più efficiente.MPG
+(US) — miglia per gallone US. Più alto = più efficiente.MPG (UK) —
+miglia per gallone UK. Più alto = più efficiente.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h2 id="salva-e-applica"><strong>SALVA E APPLICA</strong></h2>
+<p>Dopo aver effettuato le modifiche, tocca sempre SALVA E APPLICA.
+L'intera app ricalcola e aggiorna immediatamente tutti i valori
+visualizzati, i placeholder, le intestazioni delle colonne e le
+etichette del report.</p>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>⚠️ Nota:</strong> Le impostazioni sono indipendenti per
+lingua. Le impostazioni in italiano sono memorizzate separatamente da
+quelle in inglese. Se cambi lingua, verifica che le tue unità siano
+configurate correttamente anche per quella lingua.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h1 id="capitolo-11-backup-ripristino"><strong>Capitolo 11 — Backup
+&amp; Ripristino</strong></h1>
+<p>Rider Tracker Pro memorizza tutti i dati nel localStorage del
+browser. Sebbene sia affidabile per l'uso normale, può essere svuotato
+se pulisci i dati del browser, reinstalli l'app o cambi dispositivo. Il
+sistema di backup ti permette di esportare e importare tutti i tuoi dati
+come file JSON.</p>
+<h2 id="notifica-automatica-di-backup"><strong>Notifica Automatica di
+Backup</strong></h2>
+<p>Dopo ogni aggiunta o eliminazione di un turno, rifornimento o
+distanza extra, l'app può mostrare un popup suggerimento backup: 'I tuoi
+dati sono stati modificati. Vuoi scaricare un backup di sicurezza?' Puoi
+scegliere SCARICA per salvare subito un backup, o NON ORA per
+ignorare.</p>
+<h2 id="export-backup-manuale"><strong>Export Backup
+Manuale</strong></h2>
+<p>Apri il Report Mensile (pulsante RIEPILOGO) e tocca ESPORTA BACKUP.
+Verrà scaricato un file chiamato backup_AAAA-MM-GG.json sul tuo
+dispositivo. Conserva questo file in un posto sicuro — contiene il
+database completo di tutti i tuoi dati.</p>
+<h2 id="ripristino-da-backup-importa"><strong>Ripristino da Backup
+(Importa)</strong></h2>
+<p>Apri il Report Mensile e tocca IMPORTA BACKUP. Seleziona il file
+.json di backup dal tuo dispositivo. L'app caricherà tutti i dati dal
+file e si ricaricherà. Tutti i dati esistenti saranno sostituiti dal
+contenuto del backup.</p>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>⚠️ Attenzione:</strong> L'importazione di un backup
+sostituisce completamente tutti i dati attuali. Assicurati di importare
+il file corretto. Considera di esportare prima un nuovo backup prima di
+importarne uno vecchio.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h2 id="notifica-fine-mese"><strong>Notifica Fine Mese</strong></h2>
+<p>Il 1° giorno di ogni nuovo mese, all'apertura dell'app, appare un
+popup di notifica che ti ricorda che il mese è terminato e ti chiede se
+vuoi stampare il report. Questo è anche un buon momento per esportare un
+backup.</p>
+<h1 id="capitolo-12-reset-database-reset-db"><strong>Capitolo 12 — Reset
+Database (RESET DB)</strong></h1>
+<p>Il pulsante RESET DB si trova all'estrema destra della barra di
+navigazione inferiore, visualizzato come una piccola cassaforte con un
+lucchetto. Questa funzione è protetta da un meccanismo a doppio tocco
+per prevenire eliminazioni accidentali.</p>
+<h2 id="come-resettare"><strong>Come Resettare</strong></h2>
+<ol start="4" type="1">
+<li><blockquote>
+<p>Tocca l'icona della cassaforte una volta — la porta della cassaforte
+si animerà aprendosi e il lucchetto si sbloccherà.</p>
+</blockquote></li>
+<li><blockquote>
+<p>Immediatamente (entro 1 secondo) toccala di nuovo — apparirà una
+finestra di conferma.</p>
+</blockquote></li>
+<li><blockquote>
+<p>Tocca OK per confermare. TUTTI i dati saranno eliminati
+permanentemente e l'app si ricaricherà.</p>
+</blockquote></li>
+</ol>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>⚠️ IRREVERSIBILE:</strong> Il reset del database elimina
+tutti i turni, rifornimenti, distanze extra, obiettivi e impostazioni
+fiscali. Questa azione NON PUÒ essere annullata. Esporta sempre un
+backup prima di resettare.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h1 id="capitolo-13-selezione-lingua"><strong>Capitolo 13 — Selezione
+Lingua</strong></h1>
+<p>Rider Tracker Pro supporta due lingue: Italiano (🇮🇹) e Inglese (🇺🇸).
+Le bandiere delle lingue sono visualizzate in cima alla schermata
+principale.</p>
+<p>Toccare una bandiera cambia istantaneamente tutto il testo
+dell'interfaccia, le etichette, i pulsanti, gli avvisi e le intestazioni
+del report in quella lingua. La bandiera della lingua attiva appare con
+piena opacità; quella inattiva è attenuata.</p>
+<p>Ogni lingua ha le proprie impostazioni indipendenti (unità, valuta,
+ecc.) memorizzate separatamente. Puoi quindi avere preferenze di unità
+diverse per ogni lingua, anche se è consigliato mantenerle coerenti.</p>
+<p>L'ultima lingua selezionata viene salvata automaticamente e verrà
+ripristinata alla riapertura dell'app.</p>
+<h1 id="capitolo-14-esempi-pratici"><strong>Capitolo 14 — Esempi
+Pratici</strong></h1>
+<h2
+id="esempio-1-una-settimana-tipica-per-un-rider-di-consegne"><strong>Esempio
+1: Una Settimana Tipica per un Rider di Consegne</strong></h2>
+<p>Marco fa consegne di cibo con uno scooter a due tempi a benzina
+miscela. Impostazioni: km, Litri, kg, €, L/100km.</p>
+<p>Lunedì: Fa un rifornimento — spende €8,50, prezzo €1,82/L, miscela
+2%, prezzo olio €12/kg. Lo registra come voce FUEL.</p>
+<p>Turno lunedì: 4,5 ore, €52 lordo, 78 km, consumo 3,2 L/100km. Lo
+registra come TURNO con mezzo Monopattino, carburante Miscela.</p>
+<p>Turno mercoledì: 3 ore, €38 lordo, 61 km, 3,2 L/100km.</p>
+<p>Venerdì: Percorre 8 km per ritirare materiale (non è un turno). Lo
+registra come EXTRA: 8 km, 3,2 L/100km, descrizione 'Ritiro
+materiale'.</p>
+<p>Risultato: Dashboard mostra lordo ~€90, Q.tà consumo ~2,2L (miscela),
+media consumi come formato per miscela, media oraria netta, e progresso
+verso il suo obiettivo di €800/mese.</p>
+<h2
+id="esempio-2-autista-uber-con-auto-bifuel-cngbenzina"><strong>Esempio
+2: Autista Uber con Auto Bifuel CNG/Benzina</strong></h2>
+<p>Sara guida un'auto bifuel metano/benzina. Alterna tra i due
+carburanti in base alla disponibilità.</p>
+<p>Registra due tipi di rifornimento: Metano (kg, al metanodotto) e
+Benzina (litri, al distributore). Quando registra i turni, seleziona il
+carburante attivo durante quel turno.</p>
+<p>A fine mese, la scheda Q.TÀ CONSUMO mostra 'MULTI'. Toccandola
+appare: 'Metano: 18,4 kg | Benzina: 12,1 L'. Nel report, la colonna Q
+per ogni turno mostra kg (per i turni a metano) o L (per i turni a
+benzina).</p>
+<h2 id="esempio-3-rider-italiano-con-obiettivo-e-tasse"><strong>Esempio
+3: Rider Italiano con Obiettivo e Tasse</strong></h2>
+<p>Luca è un rider con partita IVA al regime forfettario (15% di
+tassazione). Vuole guadagnare €1.200 netti al mese.</p>
+<p>Inserisce: Obiettivo Netto = 1200, Tassazione % = 15. Con €150 di
+costi carburante mensili stimati, l'app calcola: lordo necessario =
+(1200 + 150) / (1 - 0,15) = €1.588,24.</p>
+<p>Quando Luca raggiunge €800 di lordo, la barra di progresso mostra il
+50,4% (poiché €800 genera (800×0,85) - 150 = €530 netti su €1.200
+obiettivo). Il LORDO MANCANTE mostra €788,24.</p>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>📌 Nota finale:</strong> Rider Tracker Pro è uno strumento
+di monitoraggio personale. I calcoli fiscali sono indicativi — consulta
+sempre un commercialista per la gestione fiscale ufficiale della tua
+attività.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<p><strong>RIDER TRACKER PRO</strong></p>
+<p><em>Version 2.0 — User Manual / Manuale Utente</em></p>
+<p>© 2026 Marco Carbone | facebook.com/madmaddj</p>
+<p><strong>🇺🇸 ENGLISH USER MANUAL</strong></p>
+<h1 id="chapter-1-what-is-rider-tracker-pro"><strong>Chapter 1 — What is
+Rider Tracker Pro?</strong></h1>
+<p>Rider Tracker Pro is a professional management application designed
+specifically for gig economy workers: food delivery riders, taxi and
+ride-hailing drivers, courier drivers, or any professional who uses a
+vehicle to earn income on a shift basis.</p>
+<p>The app runs entirely offline in the browser, saving all data on your
+device (localStorage). No account, no server, no subscription is
+required. Everything is private and stored locally.</p>
+<h2 id="who-is-it-for"><strong>Who is it for?</strong></h2>
+<ul>
+<li><blockquote>
+<p>Delivery riders (food, packages, documents)</p>
+</blockquote></li>
+<li><blockquote>
+<p>Uber, Lyft, Bolt, Free Now drivers</p>
+</blockquote></li>
+<li><blockquote>
+<p>Private-hire vehicle (PHV) drivers</p>
+</blockquote></li>
+<li><blockquote>
+<p>Anyone who tracks income and fuel costs shift by shift</p>
+</blockquote></li>
+</ul>
+<h2 id="what-does-it-do"><strong>What does it do?</strong></h2>
+<ul>
+<li><blockquote>
+<p>Records every work shift with gross earnings, hours, distance, and
+fuel consumption</p>
+</blockquote></li>
+<li><blockquote>
+<p>Tracks every refuel with fuel type, amount spent, and price per
+unit</p>
+</blockquote></li>
+<li><blockquote>
+<p>Records extra distance driven outside of normal shifts</p>
+</blockquote></li>
+<li><blockquote>
+<p>Calculates net earnings automatically after tax and fuel
+deductions</p>
+</blockquote></li>
+<li><blockquote>
+<p>Shows live progress toward a monthly income target</p>
+</blockquote></li>
+<li><blockquote>
+<p>Generates a detailed monthly report with tables and efficiency
+analysis</p>
+</blockquote></li>
+<li><blockquote>
+<p>Displays trend charts of earnings per hour and earnings per km</p>
+</blockquote></li>
+<li><blockquote>
+<p>Supports full backup and restore of all data</p>
+</blockquote></li>
+<li><blockquote>
+<p>Bilingual interface: Italian 🇮🇹 and English 🇺🇸</p>
+</blockquote></li>
+<li><blockquote>
+<p>Fully configurable units: km/mi, L/gal, kg/lb, €/$/ £,
+L/100km/MPG</p>
+</blockquote></li>
+</ul>
+<h1 id="chapter-2-getting-started-first-setup"><strong>Chapter 2 —
+Getting Started: First Setup</strong></h1>
+<p>When you open the app for the first time, the dashboard shows zeros
+everywhere. Before recording your first shift, it is strongly
+recommended to configure your units and preferences.</p>
+<h2 id="step-1-choose-your-language"><strong>Step 1 — Choose your
+language</strong></h2>
+<p>At the top of the app you will see two flags: 🇮🇹 and 🇺🇸. Tap the flag
+of your preferred language. The entire interface will switch instantly.
+Each language stores its own independent settings.</p>
+<h2 id="step-2-open-settings"><strong>Step 2 — Open Settings
+(⚙️)</strong></h2>
+<p>Tap the gear icon ⚙️ located next to the flags. The Settings panel
+will open with the following options:</p>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>Distance</strong></th>
+<th>Choose between Kilometers (km) or Miles (mi). This affects all
+distance displays throughout the app including history, report, and
+placeholders.</th>
+</tr>
+<tr class="header">
+<th><strong>Volume</strong></th>
+<th>Choose between Liters (L), US Gallons (gal), or UK Gallons (gal).
+Affects fuel quantity display everywhere.</th>
+</tr>
+<tr class="odd">
+<th><strong>Mass</strong></th>
+<th>Choose between Kilograms (kg) or Pounds (lbs). Used for CNG
+(methane) fuel quantities and oil in mix fuel.</th>
+</tr>
+<tr class="header">
+<th><strong>Currency</strong></th>
+<th>Choose Euro (€), US Dollar ($), or British Pound (£). All monetary
+values will display in this currency.</th>
+</tr>
+<tr class="odd">
+<th><strong>Consumption Format</strong></th>
+<th>Choose how fuel efficiency is shown: L/100km (default), km/L
+(efficiency), MPG US, or MPG UK. Affects consumption placeholders and
+display in history and report.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<p>After selecting your preferences, tap SAVE &amp; APPLY. The app will
+recalculate and refresh all displays immediately.</p>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>💡 Important:</strong> Settings are saved per language. If
+you switch between Italian and English, each language remembers its own
+unit preferences.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h1 id="chapter-3-home-screen-the-dashboard"><strong>Chapter 3 — Home
+Screen: The Dashboard</strong></h1>
+<p>The dashboard is the main screen of Rider Tracker Pro. It always
+shows data for the current calendar month. Every value updates
+automatically when you add or delete a shift or refuel.</p>
+<h2 id="top-cards-earnings"><strong>Top Cards — Earnings</strong></h2>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>GROSS EARNED</strong></th>
+<th>Total gross (pre-tax, pre-fuel) income for all shifts in the current
+month. This is the sum of all 'Gross earned' values you entered.</th>
+</tr>
+<tr class="header">
+<th><strong>NET EARNED</strong></th>
+<th>Gross earnings minus the taxation percentage minus fuel costs. This
+is your actual take-home pay for the month.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h2 id="middle-cards-work-data"><strong>Middle Cards — Work
+Data</strong></h2>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>HOURS WORKED</strong></th>
+<th>Total hours worked across all shifts this month.</th>
+</tr>
+<tr class="header">
+<th><strong>FUEL QTY</strong></th>
+<th>Total fuel consumed across all shifts (calculated from km ×
+consumption). If you have shifts with different fuel types in the same
+month, this card shows 'MULTI' and is tappable to see the breakdown per
+fuel type.</th>
+</tr>
+<tr class="odd">
+<th><strong>AVG CONSUMPTION</strong></th>
+<th>Average fuel efficiency for the month, displayed in the unit you
+chose in Settings (L/100km, MPG, etc.). Tap to see breakdown if multiple
+fuel types are in use.</th>
+</tr>
+<tr class="header">
+<th><strong>FUEL COST</strong></th>
+<th>Total fuel cost for the month, calculated from the consumption and
+price recorded in each shift.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h2 id="bottom-cards-target-tax"><strong>Bottom Cards — Target &amp;
+Tax</strong></h2>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>NET TARGET</strong></th>
+<th>Enter your monthly income goal (net, after tax and fuel). The app
+will calculate how much gross you still need to earn. This field is
+editable at any time.</th>
+</tr>
+<tr class="header">
+<th><strong>TAXATION %</strong></th>
+<th>Enter your tax rate as a percentage (e.g. 20 for 20%). Used to
+calculate net earnings and the gross shortfall. Editable at any
+time.</th>
+</tr>
+<tr class="odd">
+<th><strong>GROSS SHORTFALL</strong></th>
+<th>The gross amount you still need to earn to reach your net target,
+accounting for your tax rate and current fuel costs. Shows 0.00 when you
+have already reached your goal.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h2 id="progress-bar-info-strip"><strong>Progress Bar &amp; Info
+Strip</strong></h2>
+<p>Below the cards, a teal progress bar shows how close you are to your
+monthly net target (as a percentage). To the left of the bar is the live
+clock (date and time). To the right is your average net earnings per
+hour this month.</p>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>💡 Example:</strong> You have a target of $2,000 net with
+25% tax and $150 fuel costs. The app calculates that you need $2,867
+gross. If you have earned $1,200 gross so far, the progress bar shows
+41% and GROSS SHORTFALL shows $1,667.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h1 id="chapter-4-recording-a-shift-shift-button"><strong>Chapter 4 —
+Recording a Shift (SHIFT Button)</strong></h1>
+<p>Tap the SHIFT button in the bottom navigation bar (green icon with a
++ circle). This opens the New Shift modal window where you record the
+details of a completed work shift.</p>
+<h2 id="date-selector"><strong>Date Selector</strong></h2>
+<p>Three dropdown menus at the top of the modal let you select the day,
+month, and year of the shift. They default to today's date. You cannot
+enter a future date — the app will alert you.</p>
+<h2 id="vehicle-selector"><strong>Vehicle Selector</strong></h2>
+<p>Tap the vehicle dropdown to choose your vehicle type:</p>
+<ul>
+<li><blockquote>
+<p>🚗 Car</p>
+</blockquote></li>
+<li><blockquote>
+<p>🏍️ Motorcycle</p>
+</blockquote></li>
+<li><blockquote>
+<p>⚡ E-Bike (electric bicycle)</p>
+</blockquote></li>
+<li><blockquote>
+<p>🚲 Bike</p>
+</blockquote></li>
+<li><blockquote>
+<p>🛴 E-Scooter</p>
+</blockquote></li>
+</ul>
+<p>The app remembers your last selection and pre-fills it next time.</p>
+<h2 id="fuel-type-selector"><strong>Fuel Type Selector</strong></h2>
+<p>Tap the fuel dropdown to choose the fuel for this shift:</p>
+<ul>
+<li><blockquote>
+<p>⛽ Gasoline — standard petrol</p>
+</blockquote></li>
+<li><blockquote>
+<p>🛢️ Diesel — diesel fuel</p>
+</blockquote></li>
+<li><blockquote>
+<p>🔵 GPL — liquid petroleum gas (LPG)</p>
+</blockquote></li>
+<li><blockquote>
+<p>💨 CNG — compressed natural gas (methane), measured in kg or lbs</p>
+</blockquote></li>
+<li><blockquote>
+<p>🔀 Mix — two-stroke mix (oil + gasoline blend). See Chapter 5 for mix
+refuel setup.</p>
+</blockquote></li>
+</ul>
+<p>The consumption placeholder updates immediately to reflect your
+chosen fuel and unit settings.</p>
+<h2 id="input-fields"><strong>Input Fields</strong></h2>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>Gross earned</strong></th>
+<th>The total gross amount you earned in this shift, before tax and fuel
+deductions. Enter in your selected currency. Example: 48.50</th>
+</tr>
+<tr class="header">
+<th><strong>Hours</strong></th>
+<th>The number of hours you worked. Accepts decimals. Example: 5.5 for 5
+hours 30 minutes.</th>
+</tr>
+<tr class="odd">
+<th><strong>KM driven / Miles driven</strong></th>
+<th>The distance covered during this shift in your chosen unit (km or
+mi). The app converts and stores this internally in km.</th>
+</tr>
+<tr class="header">
+<th><strong>Consumption (L/100km)</strong></th>
+<th>Your vehicle's fuel consumption for this shift. The placeholder
+adapts to your settings: L/100km, km/L, MPG US, MPG UK, gal/100mi, etc.
+Example: 6.5 if your car uses 6.5L per 100km.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+
+<h2 id="automatic-consumption-estimate"><strong>Automatic Consumption Estimate</strong> <span class="new-badge">NEW</span></h2>
+<p>If you do not have an onboard trip computer, you don't need to know your vehicle's fuel consumption by heart. Every time you open the New Shift window, the app <strong>automatically calculates an estimated consumption value</strong> from your complete refuel and shift history for that fuel type.</p>
+<p><strong>How the calculation works:</strong> The app reads all refuels for the selected fuel type and divides the total euros spent by the price per liter to obtain the total liters purchased. It then sums all kilometres from every shift that used the same fuel type. Finally it computes: <em>(total litres ÷ total km) × 100</em> = average consumption in L/100km, which is then converted to whatever unit you have set in Settings (MPG, km/L, gal/100mi, etc.).</p>
+<p>A small hint line appears beneath the consumption field showing how many refuels and shifts contributed to the estimate:</p>
+<div class="tbl-outer"><table>
+<colgroup><col style="width: 100%" /></colgroup>
+<thead>
+<tr class="callout-new"><th><strong>✦ Example hint:</strong> <em>~avg from 5 refuel(s) · 18 shifts</em><br>The field is pre-filled with the calculated value but remains fully editable — you can always type a different number before saving.</th></tr>
+</thead><tbody></tbody>
+</table></div>
+<p>If there is insufficient data (less than 30 km accumulated for that fuel type), the hint shows <em>"(insufficient data — enter manually)"</em> in grey and the field is left empty for manual entry.</p>
+<div class="tbl-outer"><table>
+<colgroup><col style="width: 29%" /><col style="width: 70%" /></colgroup>
+<thead>
+<tr class="header"><th><strong>Condition</strong></th><th><strong>Behaviour</strong></th></tr>
+</thead>
+<tbody>
+<tr class="odd"><td><strong>CNG / Methane</strong></td><td>No auto-estimate (quantity in kg is always entered manually)</td></tr>
+<tr class="even"><td><strong>Bike / E-Scooter</strong></td><td>Consumption field not shown — no estimate needed</td></tr>
+<tr class="odd"><td><strong>Less than 30 km of data</strong></td><td>Field left empty; hint says "insufficient data — enter manually"</td></tr>
+<tr class="even"><td><strong>Sufficient data available</strong></td><td>Field pre-filled with historical average; hint shows source count</td></tr>
+<tr class="odd"><td><strong>Fuel type changed</strong></td><td>Estimate recalculates automatically for the newly selected fuel</td></tr>
+</tbody>
+</table></div>
+<div class="tbl-outer"><table>
+<colgroup><col style="width: 100%" /></colgroup>
+<thead>
+<tr class="callout-tip"><th><strong>💡 Practical example:</strong> You ride a 125cc scooter with no dashboard computer. After 4 refuels (total 16 L) and 470 km across your shifts, the app calculates 16 ÷ 470 × 100 = <strong>3.4 L/100km</strong>. This value is pre-filled automatically every time you open a new shift. The estimate improves in accuracy as you record more refuels.</th></tr>
+</thead><tbody></tbody>
+</table></div>
+<h2 id="save-button"><strong>SAVE Button</strong></h2>
+<p>Tapping SAVE stores the shift. If no previous refuel exists for the
+chosen fuel type, the app will prompt you to enter an Initial Price (see
+Chapter 5). This price is used to calculate your fuel cost for this
+shift.</p>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>💡 Example:</strong> You completed a 4-hour delivery shift,
+earned $62, drove 85 miles, and your car averages 32 MPG. Enter:
+Gross=62, Hours=4, Miles=85, Consumption=32. The app calculates fuel
+quantity (85÷32=2.66 gal) and fuel cost automatically.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h2 id="multi-fuel-month"><strong>Multi-Fuel Month</strong></h2>
+<p>If you record shifts with different fuel types in the same month
+(e.g., some gasoline shifts and some CNG shifts), the FUEL QTY and AVG
+CONSUMPTION cards on the dashboard will show 'MULTI'. Tapping them opens
+a detail popup showing quantities and efficiency broken down per fuel
+type.</p>
+<h1 id="chapter-5-recording-a-refuel-fuel-button"><strong>Chapter 5 —
+Recording a Refuel (FUEL Button)</strong></h1>
+<p>Tap the FUEL button in the bottom navigation bar (orange fuel pump
+icon). This opens the Refuel modal to record a fuel purchase. The refuel
+price is used by the app to calculate fuel costs in subsequent
+shifts.</p>
+<h2 id="date-selector-1"><strong>Date Selector</strong></h2>
+<p>Same as the shift modal — choose day, month, year. Cannot be a future
+date.</p>
+<h2 id="fuel-type-selector-1"><strong>Fuel Type Selector</strong></h2>
+<p>Select the type of fuel you are refueling: Gasoline, Diesel, GPL,
+CNG, or Mix. The price field placeholder will update to show the correct
+unit (€/L, $/gal, $/kg, etc.).</p>
+<h2 id="standard-refuel-fields"><strong>Standard Refuel
+Fields</strong></h2>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>Spent (amount)</strong></th>
+<th>The total amount of money spent at the pump. Example: $42.80</th>
+</tr>
+<tr class="header">
+<th><strong>Price per unit</strong></th>
+<th>The price per liter, gallon, or kg. Example: 1.82 for €1.82/L. The
+app auto-formats this field as you type (inserts the decimal
+automatically).</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h2 id="mix-fuel-additional-fields"><strong>Mix Fuel — Additional
+Fields</strong></h2>
+<p>When you select 'Mix' as the fuel type, two extra fields appear:</p>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>% Mix</strong></th>
+<th>The percentage of oil in the fuel mixture. Typical two-stroke
+engines use 1–4%. Example: 2 for a 2% oil mix.</th>
+</tr>
+<tr class="header">
+<th><strong>Oil price (€/kg)</strong></th>
+<th>The price per kg (or lb) of the oil used in the mixture. This is
+used to calculate the total mix cost accurately.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h2 id="initial-price-dialog"><strong>Initial Price Dialog</strong></h2>
+<p>If you tap SAVE on a Shift modal and no refuel has been recorded yet
+for that fuel type, a special dialog appears asking you to enter the
+initial fuel price. This is the price that will be used for cost
+calculations until your first real refuel is recorded. For Mix fuel,
+this dialog also shows the % Mix and Oil price fields.</p>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>💡 Tip:</strong> Record a refuel before your first shift of
+the month to ensure the fuel cost calculation is accurate from day one.
+You can refuel multiple times per month — the app always uses the price
+from the most recent refuel for each fuel type.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h1 id="chapter-6-extra-distance-extra-button"><strong>Chapter 6 — Extra
+Distance (EXTRA Button)</strong></h1>
+<p>Tap the EXTRA button in the bottom navigation bar (teal road icon).
+This records additional distance driven outside of normal work shifts —
+for example, commuting to/from the work zone, personal errands done with
+the work vehicle, or any other non-shift mileage you want to track.</p>
+<h2 id="fields"><strong>Fields</strong></h2>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>Date</strong></th>
+<th>Day, month, year of the extra activity.</th>
+</tr>
+<tr class="header">
+<th><strong>Fuel type</strong></th>
+<th>The fuel type used for the extra distance. Selects from the same
+list as shifts.</th>
+</tr>
+<tr class="odd">
+<th><strong>Extra distance (km/mi)</strong></th>
+<th>The distance driven. Displayed and entered in your chosen unit (km
+or miles).</th>
+</tr>
+<tr class="header">
+<th><strong>Average consumption</strong></th>
+<th>Your vehicle's fuel consumption for this extra distance. Placeholder
+adapts to your unit settings (L/100km, MPG, etc.).</th>
+</tr>
+<tr class="odd">
+<th><strong>Description (optional)</strong></th>
+<th>A free text note to describe what the extra distance was for.
+Example: 'Airport run' or 'Commute'.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<p>When saved, the extra distance calculates its fuel cost using the
+most recent refuel price for the selected fuel type. The fuel quantity
+is estimated from the distance and average consumption you entered.</p>
+<p>In the Monthly Report, extra distance appears in the EXTRA WORK
+MONITORING section, separate from shift kilometres, with its own
+subtotal for kilometres and fuel costs.</p>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>💡 Example:</strong> You drove 12 miles to reach your
+delivery zone before your first shift. Log this as Extra Distance: 12
+mi, consumption 32 MPG, Description 'Commute to zone'. The fuel cost
+(~0.38 gal × price) is recorded and shown in the report.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h1 id="chapter-7-history-view-history-button"><strong>Chapter 7 —
+History View (HISTORY Button)</strong></h1>
+<p>Tap the HISTORY button in the bottom navigation bar (white clock
+icon). The History view shows all recorded entries — shifts, refuels,
+and extra distances — grouped by month.</p>
+<h2 id="structure"><strong>Structure</strong></h2>
+<p>The list is divided into two sections:</p>
+<ul>
+<li><blockquote>
+<p><strong>Current Month:</strong> All entries for the current calendar
+month appear at the top, listed in reverse chronological order (newest
+first).</p>
+</blockquote></li>
+<li><blockquote>
+<p><strong>Archive:</strong> All previous months are grouped by year.
+Each year has a header showing annual totals. Each month is collapsible
+— tap the month header to expand/collapse its entries.</p>
+</blockquote></li>
+</ul>
+<h2 id="entry-types-and-what-they-show"><strong>Entry Types and What
+They Show</strong></h2>
+<h3 id="shift-entry-teal-border"><strong>Shift Entry (🟢 teal
+border)</strong></h3>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>Header</strong></th>
+<th>SHIFT • VEHICLE NAME (e.g. SHIFT • CAR)</th>
+</tr>
+<tr class="header">
+<th><strong>Date &amp; Time</strong></th>
+<th>Day/month and time the entry was saved</th>
+</tr>
+<tr class="odd">
+<th><strong>Main line</strong></th>
+<th>Net earnings • Net earnings per hour</th>
+</tr>
+<tr class="header">
+<th><strong>Sub-line</strong></th>
+<th>Gross / hours / distance / consumption with fuel icon</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h3 id="refuel-entry-orange-border"><strong>Refuel Entry (🟠 orange
+border)</strong></h3>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>Header</strong></th>
+<th>Fuel type name and icon (e.g. ⛽ GASOLINE)</th>
+</tr>
+<tr class="header">
+<th><strong>Date</strong></th>
+<th>Day/month</th>
+</tr>
+<tr class="odd">
+<th><strong>Main line</strong></th>
+<th>Total amount spent (in your currency)</th>
+</tr>
+<tr class="header">
+<th><strong>Sub-line</strong></th>
+<th>Quantity • price per unit. For Mix fuel: also shows oil percentage
+and oil quantity.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h3 id="extra-distance-entry-teal-border"><strong>Extra Distance Entry
+(🩵 teal border)</strong></h3>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>Header</strong></th>
+<th>Extra KM / Extra MI (based on your unit setting) with fuel icon</th>
+</tr>
+<tr class="header">
+<th><strong>Date</strong></th>
+<th>Day/month</th>
+</tr>
+<tr class="odd">
+<th><strong>Main line</strong></th>
+<th>Distance covered • fuel cost for this extra</th>
+</tr>
+<tr class="header">
+<th><strong>Sub-line</strong></th>
+<th>Average consumption • description (if entered)</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h2 id="deleting-an-entry"><strong>Deleting an Entry</strong></h2>
+<p>Each entry in the history has a red trash icon 🗑️ on the right side.
+Tap it and confirm the deletion dialog to permanently remove that entry.
+This will update all totals on the dashboard immediately.</p>
+<h2 id="collapsible-month-groups-archive"><strong>Collapsible Month
+Groups (Archive)</strong></h2>
+<p>Past months are shown as collapsible sections. The header of each
+month shows the month name plus the gross and net totals and total hours
+for that month. Tap the chevron ▸ to expand and see individual entries.
+Tap again to collapse.</p>
+<h2 id="year-totals"><strong>Year Totals</strong></h2>
+<p>Each year group in the archive shows annual totals: total gross,
+total net, and total hours across all months of that year. You can
+delete an entire year's data using the delete icon next to the year
+header (with confirmation dialog).</p>
+<h1 id="chapter-8-monthly-report-summary-chart-print"><strong>Chapter 8
+— Monthly Report (SUMMARY / CHART / PRINT)</strong></h1>
+<p>The SUMMARY/CHART/PRINT button at the bottom of the screen opens the
+Monthly Report for the current month. From the History view's archive,
+you can open the report for any past month by tapping the chart icon
+next to a month header.</p>
+<h2 id="report-sections"><strong>Report Sections</strong></h2>
+<h3 id="detail-shifts-table"><strong>1. Detail Shifts
+Table</strong></h3>
+<p>A table listing every shift of the month with the following
+columns:</p>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>Date</strong></th>
+<th>DD/MM</th>
+</tr>
+<tr class="header">
+<th><strong>Gross</strong></th>
+<th>Gross earned in your currency</th>
+</tr>
+<tr class="odd">
+<th><strong>Net</strong></th>
+<th>Net earned after tax and fuel costs</th>
+</tr>
+<tr class="header">
+<th><strong>Hours</strong></th>
+<th>Hours worked</th>
+</tr>
+<tr class="odd">
+<th><strong>KM / MI</strong></th>
+<th>Distance driven (in your unit)</th>
+</tr>
+<tr class="header">
+<th><strong>C/100 or MPG</strong></th>
+<th>Fuel consumption (in your format)</th>
+</tr>
+<tr class="odd">
+<th><strong>T</strong></th>
+<th>Fuel type abbreviation icon</th>
+</tr>
+<tr class="header">
+<th><strong>Q</strong></th>
+<th>Fuel quantity. For CNG shown in kg/lb. For Mix shown as liters
+benzine + kg oil.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h3 id="detail-refuels-table"><strong>2. Detail Refuels
+Table</strong></h3>
+<p>A table of all refuels of the month:</p>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>Date</strong></th>
+<th>DD/MM/YYYY</th>
+</tr>
+<tr class="header">
+<th><strong>Type</strong></th>
+<th>Fuel type with icon</th>
+</tr>
+<tr class="odd">
+<th><strong>Cost</strong></th>
+<th>Amount spent</th>
+</tr>
+<tr class="header">
+<th><strong>Price</strong></th>
+<th>Price per unit (€/L, $/gal, $/kg, etc.)</th>
+</tr>
+<tr class="odd">
+<th><strong>Qty</strong></th>
+<th>Quantity (L, gal, kg, lb depending on fuel type and settings)</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h3 id="operational-efficiency-analysis"><strong>3. Operational
+Efficiency Analysis</strong></h3>
+<p>The month is divided into weekly periods (W1, W2, W3, W4). For each
+period:</p>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>Period</strong></th>
+<th>Week label (W1, W2, etc.)</th>
+</tr>
+<tr class="header">
+<th><strong>Shifts</strong></th>
+<th>Number of shifts in that week</th>
+</tr>
+<tr class="odd">
+<th><strong>KM / MI</strong></th>
+<th>Total distance</th>
+</tr>
+<tr class="header">
+<th><strong>Average</strong></th>
+<th>Average fuel consumption for the week</th>
+</tr>
+<tr class="odd">
+<th><strong>Fuel cost</strong></th>
+<th>Total fuel cost for the week</th>
+</tr>
+<tr class="header">
+<th><strong>Net</strong></th>
+<th>Net earnings for the week</th>
+</tr>
+<tr class="odd">
+<th><strong>€/H or $/H</strong></th>
+<th>Net earnings per hour for the week</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h3 id="extra-work-monitoring"><strong>4. Extra Work
+Monitoring</strong></h3>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>Extra KM / MI</strong></th>
+<th>Total extra distance driven this month</th>
+</tr>
+<tr class="header">
+<th><strong>Fuel expense</strong></th>
+<th>Fuel cost for the extra distance</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h3 id="general-shifts-summary"><strong>5. General Shifts
+Summary</strong></h3>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>Hours worked</strong></th>
+<th>Total hours this month</th>
+</tr>
+<tr class="header">
+<th><strong>Shift KM / MI</strong></th>
+<th>Total km/mi from shifts only</th>
+</tr>
+<tr class="odd">
+<th><strong>Total KM / MI</strong></th>
+<th>Shift km/mi + extra km/mi combined</th>
+</tr>
+<tr class="header">
+<th><strong>Fuel expense</strong></th>
+<th>Total fuel cost from shifts</th>
+</tr>
+<tr class="odd">
+<th><strong>AVG COST/KM or MI</strong></th>
+<th>Average fuel cost per unit distance</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h3 id="financial-summary"><strong>6. Financial Summary</strong></h3>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>Total gross</strong></th>
+<th>Sum of all gross earnings</th>
+</tr>
+<tr class="header">
+<th><strong>Taxation (X%)</strong></th>
+<th>Tax amount deducted</th>
+</tr>
+<tr class="odd">
+<th><strong>Fuel cost</strong></th>
+<th>Total fuel cost deducted</th>
+</tr>
+<tr class="header">
+<th><strong>NET TOTAL</strong></th>
+<th>Final take-home pay after all deductions</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h2 id="report-buttons"><strong>Report Buttons</strong></h2>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>EXPORT BACKUP</strong></th>
+<th>Downloads a .json backup file of all your data (see Chapter 11)</th>
+</tr>
+<tr class="header">
+<th><strong>IMPORT BACKUP</strong></th>
+<th>Restores data from a previously exported .json backup file</th>
+</tr>
+<tr class="odd">
+<th><strong>PRINT</strong></th>
+<th>Opens the system print dialog to print or save as PDF</th>
+</tr>
+<tr class="header">
+<th><strong>ANALYTICS</strong></th>
+<th>Opens the earnings trend charts for this month (see Chapter 9)</th>
+</tr>
+<tr class="odd">
+<th><strong>CLOSE</strong></th>
+<th>Returns to the main dashboard</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h1 id="chapter-9-analytics-charts"><strong>Chapter 9 — Analytics
+Charts</strong></h1>
+<p>Tap the ANALYTICS button inside the Monthly Report to open two line
+charts that visualize your earnings performance across the shifts of the
+month.</p>
+<h2 id="chart-1-net-earnings-per-hour-h-or-h"><strong>Chart 1 — Net
+Earnings per Hour (€/H or $/H)</strong></h2>
+<p>This chart plots your net earnings per hour for each individual
+shift, in date order. It helps you identify which days were most
+efficient (highest earnings per hour worked). The line is drawn in teal,
+with a soft fill below it.</p>
+<h2 id="chart-2-net-earnings-per-kmmi"><strong>Chart 2 — Net Earnings
+per KM/MI</strong></h2>
+<p>This chart plots your net earnings per unit of distance for each
+shift. It helps you identify which shifts gave the best financial return
+per kilometre or mile driven.</p>
+<p>Both charts are interactive — you can hover/tap on data points to see
+exact values. The horizontal axis shows the date of each shift (DD/MM).
+The vertical axis shows the value in your chosen currency and unit.</p>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>💡 How to use it:</strong> If you notice that Wednesday
+shifts consistently show a higher €/H than Saturday shifts, you may want
+to prioritize working on Wednesdays. Similarly, a sudden dip in earnings
+per km could indicate an unexpected increase in fuel consumption.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<p>Tap CLOSE to return to the Monthly Report.</p>
+<h1 id="chapter-10-settings-gear-icon"><strong>Chapter 10 — Settings (⚙️
+Gear Icon)</strong></h1>
+<p>Tap the ⚙️ icon at the top of the main screen to open the Settings
+panel. This is where you configure all units and display
+preferences.</p>
+<h2 id="all-settings-explained"><strong>All Settings
+Explained</strong></h2>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>FIELD / CAMPO</strong></th>
+<th><strong>DESCRIPTION / DESCRIZIONE</strong></th>
+</tr>
+<tr class="odd">
+<th><strong>Distance</strong></th>
+<th>Kilometers (km) — standard metric unit used in most of the
+world.Miles (mi) — used in the USA, UK, and some other
+countries.Choosing miles will update all distance fields, labels,
+history entries, and report columns.</th>
+</tr>
+<tr class="header">
+<th><strong>Volume</strong></th>
+<th>Liters (L) — standard metric volume.Gallons US (gal) — 1 US gallon =
+3.785 L, used in the USA.Gallons UK (gal) — 1 UK gallon = 4.546 L, used
+historically in the UK.Affects fuel quantity display in refuels,
+history, and report.</th>
+</tr>
+<tr class="odd">
+<th><strong>Mass</strong></th>
+<th>Kilograms (kg) — used for CNG (methane) and oil quantities.Pounds
+(lbs) — used in the USA and UK.Affects the display of methane fuel
+quantities and oil in mix fuel.</th>
+</tr>
+<tr class="header">
+<th><strong>Currency</strong></th>
+<th>Euro (€), US Dollar ($), or British Pound (£).All monetary values
+(earnings, fuel costs, prices) will display in the selected symbol.</th>
+</tr>
+<tr class="odd">
+<th><strong>Consumption Format</strong></th>
+<th>L/100km — liters per 100 km (standard in Europe). Lower = more
+efficient.km/L — kilometers per liter (used in some Asian countries).
+Higher = more efficient.MPG (US) — miles per US gallon. Higher = more
+efficient.MPG (UK) — miles per UK gallon. Higher = more efficient.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h2 id="save-apply"><strong>SAVE &amp; APPLY</strong></h2>
+<p>After making changes, always tap SAVE &amp; APPLY. The entire app
+immediately recalculates and refreshes all displayed values,
+placeholders, column headers, and report labels to match your new
+settings.</p>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>⚠️ Note:</strong> Settings are independent per language. The
+English settings are stored separately from the Italian settings. If you
+switch languages, check that your units are configured correctly for
+that language too.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h1 id="chapter-11-backup-restore"><strong>Chapter 11 — Backup &amp;
+Restore</strong></h1>
+<p>Rider Tracker Pro stores all data in your browser's localStorage.
+While this is reliable for normal use, it can be cleared if you clear
+your browser data, reinstall the app, or change devices. The backup
+system lets you export and import all your data as a JSON file.</p>
+<h2 id="automatic-backup-prompt"><strong>Automatic Backup
+Prompt</strong></h2>
+<p>After every time you add or delete a shift, refuel, or extra distance
+entry, the app may display a backup suggestion popup: 'Your data has
+been modified. Do you want to download a backup?' You can choose
+DOWNLOAD to save a backup immediately, or NOT NOW to dismiss.</p>
+<h2 id="manual-backup-export"><strong>Manual Backup Export</strong></h2>
+<p>Open the Monthly Report (SUMMARY button) and tap EXPORT BACKUP. A
+file named backup_YYYY-MM-DD.json will be downloaded to your device.
+Keep this file safe — it contains the complete database of all your
+data.</p>
+<h2 id="restore-from-backup-import"><strong>Restore from Backup
+(Import)</strong></h2>
+<p>Open the Monthly Report and tap IMPORT BACKUP. Select the .json
+backup file from your device. The app will load all data from the file
+and reload. All existing data will be replaced by the backup
+content.</p>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>⚠️ Warning:</strong> Importing a backup completely replaces
+all current data. Make sure you are importing the correct file. Consider
+exporting a new backup first before importing an old one.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h2 id="end-of-month-notification"><strong>End-of-Month
+Notification</strong></h2>
+<p>On the 1st day of each new month, when you open the app, a
+notification popup will appear reminding you that the month has ended
+and asking if you want to print the report. This is a good time to also
+export a backup.</p>
+<h1 id="chapter-12-reset-database-reset-db"><strong>Chapter 12 — Reset
+Database (RESET DB)</strong></h1>
+<p>The RESET DB button is located at the far right of the bottom
+navigation bar, displayed as a miniature safe with a lock icon. This
+feature is protected by a double-tap mechanism to prevent accidental
+deletion.</p>
+<h2 id="how-to-reset"><strong>How to Reset</strong></h2>
+<p>To reset the database:</p>
+<ol type="1">
+<li><blockquote>
+<p>Tap the safe icon once — the safe door will animate open and the lock
+will unlock.</p>
+</blockquote></li>
+<li><blockquote>
+<p>Immediately (within 1 second) tap it again — a confirmation dialog
+will appear.</p>
+</blockquote></li>
+<li><blockquote>
+<p>Tap OK to confirm. ALL data will be permanently deleted and the app
+will reload.</p>
+</blockquote></li>
+</ol>
+<div class="tbl-outer"><table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>⚠️ IRREVERSIBLE:</strong> A database reset deletes all
+shifts, refuels, extra distances, targets, and tax settings. This action
+CANNOT be undone. Always export a backup before resetting.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table></div>
+<h1 id="chapter-13-language-selection"><strong>Chapter 13 — Language
+Selection</strong></h1>
+<p>Rider Tracker Pro supports two languages: Italian (🇮🇹) and English
+(🇺🇸). The language flags are displayed at the top of the main
+screen.</p>
+<p>Tapping a flag instantly switches all interface text, labels,
+buttons, alerts, and report headers to that language. The active
+language flag appears at full opacity; the inactive one is dimmed.</p>
+<p>Each language has its own independent settings (units, currency,
+etc.) stored separately. This means you can have different unit
+preferences for each language, though it is recommended to keep them
+consistent.</p>
+<p>The last selected language is saved automatically and will be
+restored when you reopen the app.</p>
+<h1 id="chapter-14-practical-examples"><strong>Chapter 14 — Practical
+Examples</strong></h1>
+<h2
+id="example-1-a-typical-week-for-a-food-delivery-rider"><strong>Example
+1: A Typical Week for a Food Delivery Rider</strong></h2>
+<p>Marco is a delivery rider using a scooter with a 50cc two-stroke
+engine (Mix fuel). His settings: km, Liters, kg, €, L/100km.</p>
+<p>Monday: He refuels — spends €8.50, price €1.82/L, mix 2%, oil price
+€12/kg. He logs this as a FUEL entry.</p>
+<p>Monday shift: 4.5 hours, €52 gross, 78 km, consumption 3.2 L/100km.
+He logs this as SHIFT with vehicle Scooter, fuel Mix.</p>
+<p>Wednesday shift: 3 hours, €38 gross, 61 km, 3.2 L/100km.</p>
+<p>Friday: He drives 8 km to pick up supplies (not a shift). He logs
+this as EXTRA: 8 km, 3.2 L/100km, description 'Supply pickup'.</p>
+<p>Result: Dashboard shows gross ~€90, fuel qty ~2.2L (mix), avg
+consumption shown as formatted for mix, hourly net rate, and progress
+toward his €800/month target.</p>
+<h2
+id="example-2-a-ride-hailing-driver-with-dual-fuel-car"><strong>Example
+2: A Ride-Hailing Driver with Dual-Fuel Car</strong></h2>
+<p>Sarah drives a CNG/gasoline dual-fuel car. She switches between CNG
+and gasoline depending on availability.</p>
+<p>She records two types of refuels: CNG (kg, at the gas station) and
+Gasoline (liters, at the pump). When she records shifts, she selects the
+fuel type that was active during that shift.</p>
+<p>At month end, the FUEL QTY card shows 'MULTI'. Tapping it reveals:
+'CNG: 18.4 kg | Gasoline: 12.1 L'. The report Q column for each shift
+shows kg (for CNG shifts) or L (for gasoline shifts).</p>
+<h2 id="example-3-uk-driver-using-miles-and-mpg"><strong>Example 3: UK
+Driver Using Miles and MPG</strong></h2>
+<p>James drives in the UK. He sets: Distance=Miles, Volume=Gallons UK,
+Mass=kg, Currency=GBP (£), Consumption=MPG (UK).</p>
+<p>When logging a shift: field shows 'Miles driven' and 'MPG (UK)'. He
+enters 47 miles and 45.2 MPG. The app calculates: 47÷45.2 = 1.04 UK
+gallons consumed. Fuel cost = 1.04 × price/gallon.</p>
+<p>The Monthly Report shows all columns in miles, gallons, and £. The
+efficiency table shows MPG per week.</p>
+</div><!-- /main-content -->
+
+<!-- FOOTER -->
+<div class="footer">
+  <strong>RIDER TRACKER PRO</strong><br>
+  Version 2.0 — User Manual / Manuale Utente<br>
+  © 2026 Marco Carbone · facebook.com/madmaddj
+</div>
+
+<!-- BACK TO TOP -->
+<a href="#" class="back-top" id="backTop" aria-label="Torna su">↑</a>
+
+<script>
+// ── HAMBURGER MENU ──────────────────────────────────────────
+const menuBtn = document.getElementById('menuBtn');
+const drawer  = document.getElementById('drawer');
+menuBtn.addEventListener('click', () => {
+  menuBtn.classList.toggle('open');
+  drawer.classList.toggle('open');
+});
+document.querySelectorAll('.drawer a').forEach(a => {
+  a.addEventListener('click', () => {
+    menuBtn.classList.remove('open');
+    drawer.classList.remove('open');
+  });
+});
+document.addEventListener('click', e => {
+  if (!drawer.contains(e.target) && !menuBtn.contains(e.target)) {
+    menuBtn.classList.remove('open');
+    drawer.classList.remove('open');
+  }
+});
+
+// ── BACK TO TOP ─────────────────────────────────────────────
+const bt = document.getElementById('backTop');
+window.addEventListener('scroll', () => {
+  bt.classList.toggle('vis', window.scrollY > 400);
+}, {passive:true});
+bt.addEventListener('click', e => { e.preventDefault(); window.scrollTo({top:0,behavior:'smooth'}); });
+</script>
+</body>
+</html>
