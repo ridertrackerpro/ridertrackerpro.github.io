@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#000000">
+    <title>RIDER TRACKER PRO</title>
+
+<link rel="icon" href="./logo-app.jpg" type="image/jpeg">
+<link rel="apple-touch-icon" href="./logo-app.jpg">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="apple-touch-icon" href="./logo-app.jpg">
+    <style>
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+        
+        body { 
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #000;
+    color: #fff;
+    height: 100vh;
+    width: 100%;
+    overflow: hidden;
+        }
+        
+#pwaInstallScreen {
+    height: 100vh;
+    width: 100%;
+    background: #000;
+    padding: 40px 25px;
+    overflow: hidden;
+}
+        
+        .install-container {
+            max-width: 450px;
+            margin: 0 auto;
+            animation: fadeInUp 0.6s ease-out;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .logo-container {
+            text-align: center;
+            margin-bottom: 30px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+        
+        .logo-container img {
+            width: 100%;
+            max-width: 220px;
+            height: auto;
+            filter: drop-shadow(0 10px 40px rgba(0, 204, 188, 0.3));
+        }
+        
+        .install-text {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .install-text h1 {
+            font-size: 22px;
+            font-weight: 800;
+            color: #00CCBC;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+        }
+        
+        .install-text p {
+            font-size: 15px;
+            color: #aaa;
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+        
+        .install-text .highlight {
+            color: #00CCBC;
+            font-weight: 700;
+        }
+        
+        #installButton {
+            width: 100%;
+            padding: 16px 30px;
+            background: linear-gradient(135deg, #00CCBC 0%, #00a89e 100%);
+            color: #000;
+            border: none;
+            border-radius: 16px;
+            font-size: 17px;
+            font-weight: 900;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 204, 188, 0.4);
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+        
+        #installButton:active {
+            transform: scale(0.97);
+            box-shadow: 0 5px 20px rgba(0, 204, 188, 0.3);
+        }
+        
+        #installButton i {
+            font-size: 20px;
+        }
+        
+        .features-list {
+            margin-bottom: 25px;
+        }
+        
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            border: 1px solid rgba(0, 204, 188, 0.1);
+        }
+        
+        .feature-item i {
+            color: #00CCBC;
+            font-size: 18px;
+            width: 22px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        
+        .feature-item span {
+            color: #ccc;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        
+        .install-note {
+            padding: 14px;
+            background: rgba(255, 77, 77, 0.1);
+            border: 1px solid rgba(255, 77, 77, 0.3);
+            border-radius: 12px;
+            font-size: 12px;
+            color: #ff4d4d;
+            line-height: 1.5;
+            margin-bottom: 40px;
+        }
+        
+        .install-note strong {
+            display: inline-block;
+            margin-bottom: 4px;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .ios-instructions {
+            margin-top: 20px;
+            margin-bottom: 20px;
+            padding: 16px;
+            background: rgba(0, 204, 188, 0.1);
+            border: 1px solid rgba(0, 204, 188, 0.3);
+            border-radius: 12px;
+            font-size: 13px;
+            color: #00CCBC;
+            line-height: 1.6;
+            display: none;
+        }
+        
+        .ios-instructions.show {
+            display: block;
+            animation: fadeInUp 0.4s ease-out;
+        }
+        
+        .ios-instructions strong {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .ios-instructions ol {
+            margin-left: 20px;
+            margin-top: 8px;
+        }
+        
+        .ios-instructions li {
+            margin-bottom: 6px;
+        }
+        
+        /* Media query per schermi piccoli */
+        @media (max-height: 700px) {
+            #pwaInstallScreen {
+                padding: 30px 20px;
+            }
+            
+            .logo-container {
+                margin-bottom: 20px;
+            }
+            
+            .logo-container img {
+                max-width: 180px;
+            }
+            
+            .install-text h1 {
+                font-size: 20px;
+            }
+            
+            .install-text {
+                margin-bottom: 20px;
+            }
+            
+            .features-list {
+                margin-bottom: 20px;
+            }
+            
+            .feature-item {
+                padding: 10px;
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="pwaInstallScreen">
+        <div class="install-container">
+            <div class="logo-container" id="logoContainer">
+    <img src="./logo-app.jpg" alt="Rider Tracker Pro" id="mainLogo">
+
+    <div id="facebookWarning" style="display:none; text-align:center; animation: fadeInUp 0.6s ease-out;">
+        <div style="
+            background: rgba(255, 77, 77, 0.08);
+            border: 1px solid rgba(255, 77, 77, 0.4);
+            border-radius: 16px;
+            padding: 25px 18px;
+            max-width: 100%;
+        ">
+            <h2 style="
+                font-size:18px;
+                font-weight:800;
+                color:#ff4d4d;
+                margin-bottom:12px;
+                text-transform:uppercase;
+            ">
+                Apertura da Facebook rilevata
+            </h2>
+
+            <p style="font-size:14px; color:#ccc; line-height:1.6; margin-bottom:10px;">
+                Per installare correttamente Rider Tracker Pro è necessario aprire il link direttamente nel browser del dispositivo.
+            </p>
+
+            <p style="font-size:14px; color:#ccc; line-height:1.6;">
+                Tocchi i <strong>tre puntini in alto a destra</strong> e selezioni <strong>"Apri nel browser"</strong>.
+            </p>
+        </div>
+    </div>
+</div>
+            
+            <div class="install-text">
+                <h1>Rider Tracker Pro</h1>
+                <p>Per installare l'app <span class="highlight">GRATUITAMENTE</span></p>
+                <p>clicca sul pulsante qui sotto</p>
+            </div>
+            
+            <button id="installButton">
+                <i class="fas fa-download"></i>
+                INSTALLA APP
+            </button>
+            
+            <div class="features-list">
+                <div class="feature-item">
+                    <i class="fas fa-mobile-alt"></i>
+                    <span>Accesso rapido dalla home del telefono</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-wifi"></i>
+                    <span>Funziona anche offline</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Traccia tutti i tuoi turni e guadagni</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-lock"></i>
+                    <span>I tuoi dati sono salvati in sicurezza</span>
+                </div>
+            </div>
+            
+            <div class="ios-instructions" id="iosInstructions">
+                <strong><i class="fab fa-apple"></i> Stai usando iOS/Safari?</strong>
+                <p>Per installare l'app su iPhone/iPad:</p>
+                <ol>
+                    <li>Tocca il pulsante "Condividi" <i class="fas fa-share"></i> in basso</li>
+                    <li>Scorri e seleziona "Aggiungi a Home"</li>
+                    <li>Tocca "Aggiungi" in alto a destra</li>
+                </ol>
+            </div>
+            
+            <div class="install-note">
+                <strong><i class="fas fa-info-circle"></i> Nota:</strong> L'app è disponibile SOLO come PWA installabile. Una volta installata, la troverai sulla home del tuo dispositivo come una normale app.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let deferredPrompt;
+        const installScreen = document.getElementById('pwaInstallScreen');
+        const installButton = document.getElementById('installButton');
+        const iosInstructions = document.getElementById('iosInstructions');
+        const facebookWarning = document.getElementById('facebookWarning');
+const mainLogo = document.getElementById('mainLogo');
+
+const referrer = document.referrer.toLowerCase();
+const urlParams = new URLSearchParams(window.location.search);
+const fromFacebook = referrer.includes('facebook.com') || urlParams.has('fbclid');
+
+if (fromFacebook) {
+    mainLogo.style.display = 'none';
+    facebookWarning.style.display = 'block';
+}
+        
+        function isAppInstalled() {
+            return window.matchMedia('(display-mode: standalone)').matches || 
+                   window.navigator.standalone === true;
+        }
+        
+        if (isAppInstalled()) {
+            window.location.href = './app.html';
+        }
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installButton.style.display = 'flex';
+        });
+        
+        installButton.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    console.log('App installata con successo');
+                }
+                deferredPrompt = null;
+            } else {
+                iosInstructions.classList.add('show');
+            }
+        });
+        
+        window.addEventListener('appinstalled', () => {
+            console.log('PWA installata');
+            installScreen.classList.add('hidden');
+            window.location.href = './app.html';
+        });
+        
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        if (isIOS) {
+            setTimeout(() => {
+                iosInstructions.classList.add('show');
+            }, 1000);
+        }
+        
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(reg => console.log('Service Worker registrato'))
+                    .catch(err => console.log('Errore Service Worker:', err));
+            });
+        }
+    </script>
+</body>
+</html>
