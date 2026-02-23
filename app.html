@@ -6,10 +6,12 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#0f0f0f">
-    <title>RIDER TRACKER PRO V 2.0</title>
+    <title>RIDER TRACKER PRO V 2.1</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="manifest" href="manifest.json">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@1.2.1/dist/chartjs-plugin-zoom.min.js"></script>
     <script>
 window.onerror = function(message, source, lineno, colno, error) {
     alert("JS ERROR:\n\n" + message + "\nLine: " + lineno);
@@ -44,6 +46,21 @@ window.onerror = function(message, source, lineno, colno, error) {
         }
 
         .foot-btn:active, .btn-full:active { transform: scale(0.95); transition: 0.1s; }
+#meteoBar { display:flex; align-items:center; justify-content:center; gap:10px; background:var(--card); border:1px solid #333; border-radius:10px; padding:7px 12px; margin-bottom:8px; font-size:12px; color:var(--dim); cursor:pointer; }
+#meteoBar .meteo-icon { font-size:20px; line-height:1; }
+#meteoBar .meteo-temp { font-size:15px; font-weight:900; color:var(--text); }
+#meteoBar .meteo-desc { color:var(--dim); font-size:11px; text-transform:capitalize; }
+#meteoBar .meteo-city { color:#555; font-size:10px; margin-left:auto; }
+@keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+.view-enter { animation: fadeSlideUp 0.28s cubic-bezier(0.22,1,0.36,1) both; }
+.modal-content { animation: fadeSlideUp 0.22s cubic-bezier(0.22,1,0.36,1) both; }
         .app-title { margin:10px 0 15px; font-size:30px; font-weight:800; color:var(--primary); text-transform:uppercase; user-select:none; cursor: pointer; }
         .grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-bottom:8px; }
         .card { background:var(--card); height:75px; display:flex; flex-direction:column; justify-content:center; align-items:center; border-radius:12px; border:1px solid #333; }
@@ -52,9 +69,9 @@ window.onerror = function(message, source, lineno, colno, error) {
         .card.main .val, #lordo, #mancante { color:var(--primary)!important; } 
         #netto { color:var(--accent)!important; }
         .card input { width:80%; background:transparent; border:none; border-bottom:1px solid #444; color:#fff; text-align:center; font-size:14px; outline:none; }
-        .progress-container { background:var(--card); padding:15px; border-radius:15px; margin-top: 0; margin-bottom:8px; border:1px solid #333; display: flex; flex-direction: column; gap: 8px; }
-        .progress-header { display:flex; justify-content:center; font-weight:bold; color:var(--primary); font-size:14px; text-transform: uppercase; letter-spacing: 1px; }
-        .progress-bar { background:#222; height:28px; border-radius:8px; overflow:hidden; border:1px solid #444; }
+        .progress-container { background:var(--card); padding:6px 12px; border-radius:12px; margin-top: 0; margin-bottom:8px; border:1px solid #333; display: flex; flex-direction: column; gap: 4px; }
+        .progress-header { display:flex; justify-content:center; font-weight:bold; color:var(--primary); font-size:12px; text-transform: uppercase; letter-spacing: 1px; }
+        .progress-bar { background:#222; height:14px; border-radius:6px; overflow:hidden; border:1px solid #444; }
         #bar { background:linear-gradient(90deg, var(--primary), #ccff00); height:100%; width:0%; transition:0.3s; }
         .dash-info { display: flex; justify-content: space-between; align-items: center; padding: 0 5px; margin-top: 5px; }
         #liveClock { font-weight:bold; color:var(--dim); font-size:11px; text-transform: uppercase; }
@@ -101,7 +118,7 @@ window.onerror = function(message, source, lineno, colno, error) {
     text-transform: uppercase;
         }
         .report-fixed-footer { padding: 15px; padding-bottom: 45px; border-top: 1px solid #eee; background: #fff; }
-        .backup-grid, .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px; }
+        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px; }
         .btn-rep-uniform { width: 100%; padding: 10px 5px; border-radius: 10px; font-weight: 700; text-transform: uppercase; font-size: 10px; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; border: 1.5px solid transparent; transition: 0.2s; }
         .btn-grey-light { background: #f8f8f8; color: #555; border-color: #ddd; }
         .btn-black { background: #1a1a1a; color: #fff; }
@@ -135,7 +152,7 @@ window.onerror = function(message, source, lineno, colno, error) {
         .summary-box { border:2px solid #000; padding:10px; background:#fff; }
         .summary-row { display:flex; justify-content:space-between; padding:4px 0; font-size:11px; color: #000; }
         .summary-row.total { font-weight:bold; font-size:14px; border-top:2px solid #000; margin-top:5px; padding-bottom: 10px; }
-       .storico-item { background:#0f0f0f; padding:15px 5px; border-top:1px solid #333; border-bottom:1px solid #333; border-radius:12px; display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px; position: relative; }
+       .storico-item { background:#161616; padding:10px 5px; border-top:1px solid rgba(255,255,255,0.05); border-bottom:1px solid rgba(255,255,255,0.05); border-radius:10px; display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; position:relative; border-left-width:3px; border-left-style:solid; border-right-width:3px; border-right-style:solid; }
         .storico-info { flex:1; text-align:left; padding: 0 10px; }
         .tipo-label { font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:1.5px; display: flex; align-items: center; gap: 5px; }
         .storico-date-row { display: flex; align-items: baseline; gap: 8px; font-weight: bold; font-size: 14px; margin-top: 2px; }
@@ -408,17 +425,34 @@ window.onerror = function(message, source, lineno, colno, error) {
   transform:translateY(-50%);
   font-size:20px;
   color:var(--accent);
+  z-index:1;
 }
 
 .safe-lock.unlock i{
-  animation:unlockAnim .1s ease;
+  animation:unlockAnim .4s ease;
 }
 
 @keyframes unlockAnim{
   0%{transform:rotate(0)}
-  30%{transform:rotate(-12deg)}
-  60%{transform:rotate(12deg)}
+  25%{transform:rotate(-20deg)}
+  50%{transform:rotate(20deg)}
+  75%{transform:rotate(-10deg)}
   100%{transform:rotate(0)}
+}
+@keyframes blinkPlaceholder {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.blink-placeholder::placeholder {
+  animation: blinkPlaceholder 1.2s ease-in-out infinite;
+  color: var(--dim);
+}
+@keyframes blinkPlaceholder {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.blink-placeholder::placeholder {
+  animation: blinkPlaceholder 1.2s ease-in-out infinite;
 }
 
 .safe-label{
@@ -430,6 +464,24 @@ window.onerror = function(message, source, lineno, colno, error) {
   color:#ff4d4d;
   text-shadow:0 0 6px rgba(255,77,77,.6);
 }
+    #onboardingOverlay { position:fixed; inset:0; z-index:99999; background:#0f0f0f; display:flex; flex-direction:column; align-items:center; justify-content:space-between; padding:40px 24px 36px; }
+.ob-slides { flex:1; width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.ob-slide { display:none; flex-direction:column; align-items:center; text-align:center; }
+.ob-slide.active { display:flex; }
+.ob-icon { width:90px; height:90px; margin-bottom:20px; object-fit:contain; }
+.ob-icon-emoji { font-size:56px; margin-bottom:20px; }
+.ob-title { font-size:22px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; }
+.ob-sub { font-size:13px; color:var(--dim); line-height:1.6; max-width:320px; }
+.ob-sub strong { color:var(--text); }
+.ob-dots { display:flex; gap:8px; margin-bottom:24px; }
+.ob-dot { width:8px; height:8px; border-radius:50%; background:#333; transition:background 0.3s; }
+.ob-dot.active { background:var(--primary); }
+.ob-btn-row { display:flex; gap:12px; width:100%; }
+.ob-btn-skip { flex:1; padding:14px; background:transparent; border:1px solid #444; color:var(--dim); border-radius:12px; font-size:13px; font-weight:bold; cursor:pointer; }
+.ob-btn-next { flex:2; padding:14px; background:var(--primary); border:none; color:#000; border-radius:12px; font-size:14px; font-weight:900; cursor:pointer; text-transform:uppercase; letter-spacing:0.5px; }
+.ob-lang-row { display:flex; gap:12px; margin-top:24px; }
+.ob-lang-btn { flex:1; padding:12px; border-radius:12px; border:2px solid #333; background:#1a1a1a; color:var(--dim); font-size:13px; font-weight:bold; cursor:pointer; transition:all 0.2s; }
+.ob-lang-btn.selected { border-color:var(--primary); color:var(--primary); }
     </style>
 </head>
 <body>
@@ -464,7 +516,7 @@ window.onerror = function(message, source, lineno, colno, error) {
                 text-transform: uppercase;
                 font-size: 9px;
                 letter-spacing: 1px;">
-        <span style="color: var(--dim);">VERSION 2.0</span>
+        <span style="color: var(--dim);">VERSION 2.1</span>
         <span style="color: #444;">|</span>
         <span style="color: var(--dim);">
             © 2026 by
@@ -492,6 +544,9 @@ window.onerror = function(message, source, lineno, colno, error) {
               onclick="apriLanguageEN()"
               style="font-size: 22px; cursor: pointer; transition: 0.2s; opacity: 0.4;"
               title="English">🇺🇸</span>
+        <span onclick="apriInfo()"
+              style="font-size: 20px; cursor: pointer; transition: 0.2s; opacity: 0.7; line-height:1;"
+              title="Info">ℹ️</span>
     </div>
 
   </div>
@@ -527,8 +582,8 @@ window.onerror = function(message, source, lineno, colno, error) {
     </div>
 </div>
 <div class="grid">
-    <div class="card"><div class="label" data-translate="net_target">OBIETTIVO NETTO</div><input id="targetIn" type="number" inputmode="decimal" oninput="aggiornaTarget()"></div>
-    <div class="card"><div class="label" data-translate="taxation">TASSAZIONE %</div><input id="taxIn" type="number" inputmode="decimal" oninput="aggiornaTax()"></div>
+    <div class="card"><div class="label" data-translate="net_target">OBIETTIVO NETTO</div><input id="targetIn" type="number" inputmode="decimal" oninput="aggiornaTarget()" data-translate-placeholder="ph_inserisci" placeholder="INSERISCI" class="blink-placeholder"></div>
+    <div class="card"><div class="label" data-translate="taxation">TASSAZIONE %</div><input id="taxIn" type="number" inputmode="decimal" oninput="aggiornaTax()" data-translate-placeholder="ph_inserisci" placeholder="INSERISCI" class="blink-placeholder"></div>
     <div class="card main"><div class="label" data-translate="gross_missing">LORDO MANCANTE</div><div class="val" id="mancante">0.00</div></div>    
 </div>
 <div class="progress-container">
@@ -539,6 +594,12 @@ window.onerror = function(message, source, lineno, colno, error) {
         <div id="liveClock">00/00/00 00:00:00</div>
         <div id="mediaOraria">0.00</div>
     </div>
+</div>
+<div id="meteoBar" onclick="aggiornaMeteo(true)">
+    <span class="meteo-icon" id="meteoIcon">🌡️</span>
+    <span class="meteo-temp" id="meteoTemp">--°C</span>
+    <span class="meteo-desc" id="meteoDesc">Caricamento...</span>
+    <span class="meteo-city" id="meteoCity"></span>
 </div>
 <div id="modalTurno" class="modal no-print">
     <div class="modal-content" style="border-color: var(--primary);">
@@ -773,8 +834,8 @@ window.onerror = function(message, source, lineno, colno, error) {
 </div>
 
 <div id="histView" class="no-print">
-    <div style="background: var(--card); border-radius: 15px; padding: 15px; border: 1px solid #444; box-shadow: 0 5px 15px rgba(0,0,0,0.3); margin-bottom: 15px;">
-        <h2 style="margin: 0 0 10px; font-size: 18px; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; text-align: center;" data-translate="history">STORICO</h2>
+    <div style="display:flex; align-items:center; justify-content:center; padding:6px 0; border-bottom:1px solid #333; margin-bottom:10px;">
+        <span style="color:var(--primary); font-size:15px; font-weight:900; letter-spacing:2px; text-transform:uppercase;" data-translate="history">STORICO</span>
     </div>
     <div id="listaStorico"></div>
     <button class="btn-full" onclick="document.getElementById('histView').style.display='none'" style="margin-bottom: 25px; padding: 15px;"><i class="fas fa-times"></i> <span data-translate="close">CHIUDI</span></button>
@@ -919,42 +980,37 @@ window.onerror = function(message, source, lineno, colno, error) {
 </div>
 
 <div class="report-fixed-footer no-print">
-<div class="backup-grid">
-<button class="btn-rep-uniform" style="background: var(--primary); color: #000; border-color: var(--primary);" onclick="salvaBackup()" data-translate="export_backup">ESPORTA BACKUP</button>
-<button class="btn-rep-uniform" style="background: var(--primary); color: #000; border-color: var(--primary);" onclick="document.getElementById('fileBackup').click()" data-translate="import_backup">IMPORTA BACKUP</button>
 <input type="file" id="fileBackup" accept=".json" hidden>
-</div>
 
 <div class="action-grid">
 <button class="btn-rep-uniform btn-black" onclick="stampaPagina()">
 <i class="fas fa-print"></i> <span data-translate="print">STAMPA</span>
 </button>
-<button class="btn-rep-uniform" style="background: var(--accent); color:white;" onclick="apriResaView()">
-<i class="fas fa-chart-line"></i> <span data-translate="yield_analysis">GRAFICO RESA</span>
-</button>
-<button class="btn-rep-uniform btn-grey-dark" style="grid-column: span 2;" onclick="document.getElementById('reportView').style.display='none'">
+<button class="btn-rep-uniform btn-grey-dark" onclick="document.getElementById('reportView').style.display='none'">
 <i class="fas fa-times"></i> <span data-translate="close">CHIUDI</span>
 </button>
 </div>
 </div>
 </div>
-
-<div id="resaView" style="display:none; position:fixed; inset:0; z-index:9500; background:#fff; color:#000;">
-    <div style="padding:15px; height:100%; display:flex; flex-direction:column; gap:10px;">
-        <h2 style="text-align:center; margin:5px 0 5px; font-size:16px; letter-spacing:1px;" data-translate="yield_analysis">ANALISI RESA</h2>
-        <div style="flex:1; min-height:0; border:1px solid #eee; border-radius:10px; padding:5px;">
-            <canvas id="chartOra"></canvas>
+<div id="resaView" style="display:none; position:fixed; inset:0; z-index:9500; background:#111; color:#fff;">
+    <div style="padding:15px; height:100%; display:flex; flex-direction:column; gap:10px; box-sizing:border-box;">
+        <h2 style="text-align:center; margin:0; font-size:16px; letter-spacing:1px; color:#fff;" data-translate="yield_analysis">ANALISI RESA</h2>
+        <div style="flex:1; min-height:0; border:1px solid #333; border-radius:10px; overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch;">
+            <div id="wrapOra" style="height:100%; min-width:100%;">
+                <canvas id="chartOra"></canvas>
+            </div>
         </div>
-        <div style="flex:1; min-height:0; border:1px solid #eee; border-radius:10px; padding:5px;">
-            <canvas id="chartKm"></canvas>
+        <div style="flex:1; min-height:0; border:1px solid #333; border-radius:10px; overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch;">
+            <div id="wrapKm" style="height:100%; min-width:100%;">
+                <canvas id="chartKm"></canvas>
+            </div>
         </div>
-        <button class="btn-rep-uniform btn-grey-dark" style="margin-top:5px; margin-bottom: 40px;" onclick="chiudiResaView()">
+        <button class="btn-rep-uniform btn-grey-dark" style="margin-top:5px; margin-bottom:40px; flex-shrink:0;" onclick="chiudiResaView()">
             <i class="fas fa-times"></i> <span data-translate="close">Chiudi</span>
         </button>
     </div>
 </div>
-
-<div class="sticky-footer no-print">
+<div id="stickyFooterGrid" class="sticky-footer no-print">
     <div class="foot-btn" style="color:var(--primary)" onclick="apriM('modalTurno')">
         <i class="fas fa-plus-circle" style="color:var(--primary)"></i><span data-translate="btn_shift">TURNO</span>
     </div>
@@ -964,22 +1020,26 @@ window.onerror = function(message, source, lineno, colno, error) {
     <div class="foot-btn" style="color:var(--accent)" onclick="apriM('modalExtra')">
         <i class="fas fa-road" style="color:var(--accent)"></i><span data-translate="btn_extra">EXTRA</span>
     </div>
+    <div id="btnFisco" class="foot-btn" style="color:#00CCBC; display:none;" onclick="apriFisco()">
+        <i class="fas fa-piggy-bank" style="color:#00CCBC"></i><span>FISCO</span>
+    </div>
     <div class="foot-btn" style="color:#ffffff" onclick="apriStorico()">
         <i class="fas fa-history" style="color:#ffffff"></i><span data-translate="btn_history">STORICO</span>
     </div>
-    <button class="btn-full" onclick="apriReport()" style="display: flex; justify-content: space-around; align-items: center; height: 50px; padding: 0 5px;">
-        <span style="flex: 1;" data-translate="btn_summary">RIEPILOGO</span>
-        <span style="border-left: 1px solid rgba(0,0,0,0.2); height: 100%;"></span>
-        <span style="flex: 1;" data-translate="chart">GRAFICO</span>
-        <span style="border-left: 1px solid rgba(0,0,0,0.2); height: 100%;"></span>
-        <span style="flex: 1;" data-translate="print">STAMPA</span>
-    </button>
+   <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; grid-column:1 / -1; margin-top:2px;">
+        <button style="height:44px; font-size:11px; font-weight:900; padding:0; background:var(--primary); color:#000; border:none; border-radius:15px; cursor:pointer;" onclick="apriReport()"><i class="fas fa-file-alt" style="margin-right:5px;"></i><span data-translate="btn_monthly_summary">RIEPILOGO MESE</span></button>
+        <button style="height:44px; font-size:11px; font-weight:900; padding:0; background:var(--accent); color:#fff; border:none; border-radius:15px; cursor:pointer;" onclick="apriResaView()"><i class="fas fa-chart-line" style="margin-right:5px;"></i><span data-translate="btn_yield_chart">RESA €/ORA</span></button>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; grid-column:1 / -1; margin-top:2px;">
+        <button style="height:36px; font-size:10px; font-weight:700; padding:0; background:#222; border:1px solid #444; color:var(--primary); border-radius:15px; cursor:pointer;" onclick="salvaBackup()"><i class="fas fa-download" style="margin-right:4px;"></i><span data-translate="export_backup">ESPORTA</span></button>
+        <button style="height:36px; font-size:10px; font-weight:700; padding:0; background:#222; border:1px solid #444; color:var(--primary); border-radius:15px; cursor:pointer;" onclick="document.getElementById('fileBackup').click()"><i class="fas fa-upload" style="margin-right:4px;"></i><span data-translate="import_backup">IMPORTA</span></button>
+    </div>
     <div id="resetSafe" class="safe-box" onclick="safeClick()">
       <div class="safe-door">
         <div class="safe-glass"></div>
-      </div>
-      <div class="safe-lock">
-        <i class="fas fa-lock" id="safeLockIcon"></i>
+        <div class="safe-lock">
+          <i class="fas fa-lock" id="safeLockIcon"></i>
+        </div>
       </div>
       <div class="safe-label">RESET DB</div>
     </div>
@@ -1008,6 +1068,7 @@ ph_description_optional: "Descrizione (opzionale)",
         avg_consumption: 'MEDIA CONSUMI',
         fuel_cost: 'SPESA CARBURANTE',
         net_target: 'OBIETTIVO NETTO',
+        ph_inserisci: 'INSERISCI',
         taxation: 'TASSAZIONE %',
         gross_missing: 'LORDO MANCANTE',
         objective: 'OBIETTIVO',
@@ -1053,6 +1114,8 @@ vehicle_scooter: 'Monopattino',
         btn_fuel: 'FUEL',
         btn_history: 'STORICO',
         btn_summary: 'RIEPILOGO',
+        btn_monthly_summary: 'RIEPILOGO MESE',
+        btn_yield_chart: 'RESA €/ORA',
         chart: 'GRAFICO',
         print: 'STAMPA',
         history: 'STORICO',
@@ -1079,6 +1142,7 @@ vehicle_scooter: 'Monopattino',
         taxation_applied: 'Tassazione applicata:',
         net_total: 'NETTO TOTALE:',
         yield_analysis: 'ANALISI RESA',
+        reset_zoom: 'RESET ZOOM',
         detail: 'CLICCA',
         multi: 'MULTI',
         oil_label: 'olio',
@@ -1134,6 +1198,7 @@ ph_description_optional: "Description (optional)",
         avg_consumption: 'AVG CONSUMPTION',
         fuel_cost: 'FUEL COST',
         net_target: 'NET TARGET',
+        ph_inserisci: 'ENTER',
         taxation: 'TAXATION %',
         gross_missing: 'GROSS SHORTFALL',
         objective: 'TARGET',
@@ -1179,6 +1244,8 @@ vehicle_scooter: 'E-Scooter',
         btn_fuel: 'FUEL',
         btn_history: 'HISTORY',
         btn_summary: 'SUMMARY',
+        btn_monthly_summary: 'MONTHLY SUMMARY',
+        btn_yield_chart: 'YIELD €/H',
         chart: 'CHART',
         print: 'PRINT',
         history: 'HISTORY',
@@ -1205,6 +1272,7 @@ vehicle_scooter: 'E-Scooter',
         taxation_applied: 'Taxation applied:',
         net_total: 'NET TOTAL:',
         yield_analysis: 'ANALYTICS',
+        reset_zoom: 'RESET ZOOM',
         detail: 'CLICK',
         multi: 'MULTI',
         oil_label: 'oil',
@@ -1457,6 +1525,22 @@ if (bPInput) {
     const lblCarbExtra = document.getElementById('labelCarburanteExtra');
     if (carbExtraVal && lblCarbExtra) {
         lblCarbExtra.innerText = getIconaCarburante(carbExtraVal.value) + ' ' + getNomeCarburante(carbExtraVal.value);
+    }
+
+    // FISCO button: visibile solo in italiano
+    const btnFisco = document.getElementById('btnFisco');
+    const sfGrid = document.getElementById('stickyFooterGrid');
+    const resetSafeEl = document.getElementById('resetSafe');
+    if (btnFisco && sfGrid) {
+        if (currentLang === 'it') {
+            btnFisco.style.display = '';
+            sfGrid.style.gridTemplateColumns = 'repeat(5, 1fr)';
+            if (resetSafeEl) resetSafeEl.style.gridColumn = 'span 5';
+        } else {
+            btnFisco.style.display = 'none';
+            sfGrid.style.gridTemplateColumns = 'repeat(4, 1fr)';
+            if (resetSafeEl) resetSafeEl.style.gridColumn = 'span 4';
+        }
     }
 }
     function toggleCurrency(){
@@ -1769,6 +1853,17 @@ function confermaReset() {
     function aggiornaTax() {
         db.tax = parseFloat(document.getElementById('taxIn').value) || null;
         salvaDB();
+        if (currentLang !== 'it') return;
+        var s = loadFiscoSettings();
+        var fiscoAccant = (s.accantonamentoCustom !== null && s.accantonamentoCustom !== undefined && !isNaN(s.accantonamentoCustom))
+            ? parseFloat(s.accantonamentoCustom)
+            : (s.primoAnno ? 33 : 30);
+        var taxVal = db.tax;
+        var taxRaw = document.getElementById('taxIn').value;
+        if (taxVal !== null && !isNaN(taxVal) && taxRaw.length >= 2 && parseFloat(taxVal) !== fiscoAccant) {
+            document.getElementById('taxMismatchMsg').innerText = 'La tassazione inserita (' + taxVal + '%) non coincide con l\'accantonamento impostato nel modulo FISCO (' + fiscoAccant + '%). I calcoli potrebbero risultare errati.';
+            document.getElementById('modalTaxMismatch').style.display = 'flex';
+        }
     }
 
     function salvaDB() {
@@ -2045,7 +2140,7 @@ function apriStorico() {
 
     let anniSorted = Object.keys(storicoPerAnni).sort((a, b) => b - a);
 
-    htmlFinale += `<div style="font-size:11px; color:var(--dim); font-weight:bold; padding:5px; border-bottom:1px solid #333; margin-bottom:10px; letter-spacing:1px; margin-top:15px;">${t('archive_root')}</div>`;
+    htmlFinale += `<div style="display:flex; align-items:center; gap:8px; padding:7px 10px; border:1px solid var(--primary); border-radius:10px; margin-top:12px; margin-bottom:10px; background:linear-gradient(135deg,#0d2e2b,#111);"><i class="fas fa-archive" style="color:var(--primary); font-size:12px;"></i><span style="font-size:11px; color:var(--primary); font-weight:900; letter-spacing:1px; text-transform:uppercase;">${t('archive_root')}</span></div>`;
 
     anniSorted.forEach(anno => {
         let mesi = storicoPerAnni[anno].sort((a, b) => {
@@ -2126,7 +2221,11 @@ function apriStorico() {
     });
 
     document.getElementById('listaStorico').innerHTML = htmlFinale;
-    document.getElementById('histView').style.display = 'flex';
+    var hv = document.getElementById('histView');
+    hv.style.display = 'flex';
+    hv.classList.remove('view-enter');
+    void hv.offsetWidth;
+    hv.classList.add('view-enter');
 }
 
 function toggleAnno(id) {
@@ -2143,7 +2242,8 @@ function toggleAnno(id) {
 }
 
 function generaHtmlItem(i, mediaOraMese) {
-    let html = `<div class="storico-item"><div class="storico-info">`;
+    let itemColor = i.tipo === 'T' ? 'var(--primary)' : (i.tipo === 'B' ? 'var(--orange)' : 'var(--accent)');
+    let html = `<div class="storico-item" style="border-left-color:${itemColor}; border-right-color:${itemColor};"><div class="storico-info">`;
 
     if (i.tipo === 'T') {
         let quantita = i.km * (i.cons / 100);
@@ -2156,10 +2256,19 @@ function generaHtmlItem(i, mediaOraMese) {
         let euroOra = i.ore > 0 ? (netto / i.ore).toFixed(2) : '0.00';
 
         let colore = '#bbb';
+        let badge = '';
         if (mediaOraMese > 0 && i.ore > 0) {
             const rapporto = (netto / i.ore) / mediaOraMese;
-            if (rapporto >= 1.15) colore = '#4ade80';
-            else if (rapporto <= 0.85) colore = '#ff6b6b';
+            if (rapporto >= 1.10) {
+                colore = '#4ade80';
+                badge = `<div style="font-size:9px; font-weight:900; color:#4ade80; letter-spacing:0.5px; margin-top:3px;">▲ ${currentLang === 'en' ? 'ABOVE AVERAGE' : 'SOPRA MEDIA'}</div>`;
+            } else if (rapporto >= 0.90) {
+                colore = '#facc15';
+                badge = `<div style="font-size:9px; font-weight:900; color:#facc15; letter-spacing:0.5px; margin-top:3px;">◆ ${currentLang === 'en' ? 'AVERAGE' : 'NELLA MEDIA'}</div>`;
+            } else {
+                colore = '#ff6b6b';
+                badge = `<div style="font-size:9px; font-weight:900; color:#ff6b6b; letter-spacing:0.5px; margin-top:3px;">▼ ${currentLang === 'en' ? 'BELOW AVERAGE' : 'SOTTO MEDIA'}</div>`;
+            }
         }
 
         const unitaC = getUnitaCarburante(i.tipoCarburante);
@@ -2178,7 +2287,7 @@ function generaHtmlItem(i, mediaOraMese) {
         <div class="storico-main" style="color:${colore};">${currencySymbol()}${fromEuro(netto).toFixed(2)} • ${currencySymbol()}${fromEuro(parseFloat(euroOra)).toFixed(2)}/h</div>
         <div class="storico-sub">
             ${currencySymbol()}${fromEuro(i.lordo).toFixed(2)} / ${i.ore.toFixed(1)}h / ${kmDisplay.toFixed(1)}${distUnit} / ${formatConsumption(i.km, i.km * (i.cons / 100))} ${iconaC}
-        </div>`;
+        </div>${badge}`;
 } else if (i.tipo === 'B') {
         const unitaC = getUnitaCarburante(i.tipo_fuel);
         const iconaC = getIconaCarburante(i.tipo_fuel);
@@ -2222,8 +2331,8 @@ function generaHtmlItem(i, mediaOraMese) {
     }
 
     html += `</div>
-        <div onclick="elimina('${i.tipo === 'T' ? 'turni' : (i.tipo === 'B' ? 'rifornimenti' : 'extraKm')}', ${i.id})" style="padding:10px; cursor:pointer;">
-            <i class="fas fa-trash" style="color:var(--accent); font-size:18px;"></i>
+        <div onclick="elimina('${i.tipo === 'T' ? 'turni' : (i.tipo === 'B' ? 'rifornimenti' : 'extraKm')}', ${i.id})" style="padding:8px 10px; cursor:pointer; border:1px solid #444; border-radius:7px; margin-right:8px; display:flex; align-items:center;">
+            <i class="fas fa-trash" style="color:#888; font-size:14px;"></i>
         </div>
     </div>`;
 
@@ -2479,7 +2588,11 @@ if (thConsumoTurni) {
         thConsumoTurni.innerText = 'C/100KM';
     }
 }
-    document.getElementById('reportView').style.display = 'flex';
+    var rv = document.getElementById('reportView');
+    rv.style.display = 'flex';
+    rv.classList.remove('view-enter');
+    void rv.offsetWidth;
+    rv.classList.add('view-enter');
 }
 
 function calcolaPeriodiConsumo(turni, tax) {
@@ -2536,15 +2649,23 @@ function apriResaView(){
 
 function chiudiResaView(){ 
     document.getElementById('resaView').style.display = 'none'; 
-    document.getElementById('reportView').style.display = 'flex'; 
+    if (window._resaProvenienza === 'report') {
+        document.getElementById('reportView').style.display = 'flex';
+    }
 }
 
 function disegnaGraficoResa(){
     const tag = reportMeseKey || `${(new Date().getMonth()+1).toString().padStart(2,'0')}/${new Date().getFullYear()}`;
-    const dati = db.turni.filter(t => t.data.endsWith(tag)).sort((a,b) => a.id - b.id);
+    const dati = db.turni.filter(t => t.data.endsWith(tag)).sort((a,b) => {
+        const [da,ma,ya] = a.data.split('/'); const [db2,mb,yb] = b.data.split('/');
+        return new Date(ya,ma-1,da) - new Date(yb,mb-1,db2);
+    });
 
     if(!dati.length){
-        alert(t('no_data'));
+        document.getElementById('noDataTitle').innerText = currentLang === 'en' ? 'No data' : 'Nessun dato';
+        document.getElementById('noDataMsg').innerText = t('no_data');
+        document.getElementById('noDataClose').innerText = currentLang === 'en' ? 'CLOSE' : 'CHIUDI';
+        document.getElementById('modalNoData').style.display = 'flex';
         chiudiResaView();
         return;
     }
@@ -2574,49 +2695,70 @@ function disegnaGraficoResa(){
         return distanza > 0 ? fromEuro(netto / distanza) : 0;
     });
 
-    const ctxO = document.getElementById('chartOra').getContext('2d');
-    const ctxK = document.getElementById('chartKm').getContext('2d');
+    const minPxPerPoint = 60;
+    const nPunti = dati.length;
+    const wrapO = document.getElementById('wrapOra');
+    const wrapK = document.getElementById('wrapKm');
+    const canvasW = Math.max(wrapO.parentElement.clientWidth - 10, nPunti * minPxPerPoint);
+    const canvasH = wrapO.parentElement.clientHeight - 10;
+    const cO = document.getElementById('chartOra');
+    const cK = document.getElementById('chartKm');
+    cO.width = canvasW; cO.height = canvasH;
+    cK.width = canvasW; cK.height = canvasH;
+    wrapO.style.width = canvasW + 'px';
+    wrapK.style.width = canvasW + 'px';
+    const ctxO = cO.getContext('2d');
+    const ctxK = cK.getContext('2d');
 
     if(window.myChartOra) window.myChartOra.destroy();
     if(window.myChartKm) window.myChartKm.destroy();
-
+const gridColor = 'rgba(255,255,255,0.08)';
+    const tickColor = '#aaa';
+    const zoomOpts = {
+        pan: { enabled: true, mode: 'x', threshold: 5 },
+        zoom: { pinch: { enabled: true }, wheel: { enabled: false }, mode: 'x', speed: 0.05 }
+    };
+    const commonOpts = {
+        responsive: false,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { labels: { color: tickColor, boxWidth: 20 } },
+            zoom: zoomOpts
+        },
+        scales: {
+            x: { ticks: { color: tickColor, font: { size: 11 } }, grid: { color: gridColor } },
+            y: { ticks: { color: tickColor, font: { size: 11 } }, grid: { color: gridColor }, beginAtZero: false }
+        }
+    };
     window.myChartOra = new Chart(ctxO, {
-        type: 'line',
+        type: 'bar',
         data: {
             labels: labels,
             datasets: [{
-    label: currencySymbol() + '/' + t('hour_short'),
+                label: currencySymbol() + '/' + t('hour_short'),
                 data: valsOra,
+                backgroundColor: 'rgba(0,204,188,0.75)',
                 borderColor: '#00CCBC',
-                backgroundColor: 'rgba(0,204,188,0.1)',
-                tension: 0.3,
-                fill: true
+                borderWidth: 1,
+                borderRadius: 4
             }]
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: true } }
-        }
+        options: JSON.parse(JSON.stringify(commonOpts))
     });
     window.myChartKm = new Chart(ctxK, {
-        type: 'line',
+        type: 'bar',
         data: {
             labels: labels,
             datasets: [{
                 label: currencySymbol() + '/' + (userSettings.distance === 'miles' ? 'MI' : 'KM'),
                 data: valsKm,
+                backgroundColor: 'rgba(255,77,77,0.75)',
                 borderColor: '#ff4d4d',
-                backgroundColor: 'rgba(255,77,77,0.1)',
-                tension: 0.3,
-                fill: true
+                borderWidth: 1,
+                borderRadius: 4
             }]
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: true } }
-        }
+        options: JSON.parse(JSON.stringify(commonOpts))
     });
 }
 function selezionaCarburante(tipo, testo) {
@@ -2872,6 +3014,7 @@ function effettuaSalvataggioTurno(prezzo, rif) {
 
     db.turni.push(obj);
     salvaDB();
+    controllaRating();
 
     document.getElementById('tL').value = '';
     document.getElementById('tO').value = '';
@@ -3043,16 +3186,28 @@ function mostraModalBackup() {
 }
 
 function salvaBackup() {
-    const dataObj = {
+    var lang = localStorage.getItem('app_language') || 'it';
+    var dataObj = {
         timestamp: Date.now(),
-        db: db
+        version: '2.1',
+        db: db,
+        fiscoFatture: JSON.parse(localStorage.getItem('fisco_invoices_v1_it') || '[]'),
+        fiscoSettings: JSON.parse(localStorage.getItem('fisco_settings_v1_it') || 'null'),
+        userSettings_it: JSON.parse(localStorage.getItem('user_settings_it') || 'null'),
+        userSettings_en: JSON.parse(localStorage.getItem('user_settings_en') || 'null'),
+        app_language: lang,
+        ultimo_mezzo: localStorage.getItem('ultimo_mezzo_' + lang) || '',
+        ultimo_carburante_turno: localStorage.getItem('ultimo_carburante_turno_' + lang) || '',
+        ultimo_carburante_benza: localStorage.getItem('ultimo_carburante_benza_' + lang) || '',
+        ultimo_carburante_extra: localStorage.getItem('ultimo_carburante_extra_' + lang) || ''
     };
-    const blob = new Blob([JSON.stringify(dataObj)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(dataObj, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `backup_${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `ridertracker_backup_${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
+    URL.revokeObjectURL(url);
 }
 
 function accettaBackup() {
@@ -3068,8 +3223,20 @@ document.getElementById("fileBackup").addEventListener("change", function (e) {
     const reader = new FileReader();
     reader.onload = function (ev) {
         try {
-            db = JSON.parse(ev.target.result).db;
+            var dataObj = JSON.parse(ev.target.result);
+            if (!dataObj.db) throw new Error('invalid');
+            db = dataObj.db;
             salvaDB();
+            if (dataObj.fiscoFatture) localStorage.setItem('fisco_invoices_v1_it', JSON.stringify(dataObj.fiscoFatture));
+            if (dataObj.fiscoSettings) localStorage.setItem('fisco_settings_v1_it', JSON.stringify(dataObj.fiscoSettings));
+            if (dataObj.userSettings_it) localStorage.setItem('user_settings_it', JSON.stringify(dataObj.userSettings_it));
+            if (dataObj.userSettings_en) localStorage.setItem('user_settings_en', JSON.stringify(dataObj.userSettings_en));
+            if (dataObj.app_language) localStorage.setItem('app_language', dataObj.app_language);
+            var lang = dataObj.app_language || 'it';
+            if (dataObj.ultimo_mezzo) localStorage.setItem('ultimo_mezzo_' + lang, dataObj.ultimo_mezzo);
+            if (dataObj.ultimo_carburante_turno) localStorage.setItem('ultimo_carburante_turno_' + lang, dataObj.ultimo_carburante_turno);
+            if (dataObj.ultimo_carburante_benza) localStorage.setItem('ultimo_carburante_benza_' + lang, dataObj.ultimo_carburante_benza);
+            if (dataObj.ultimo_carburante_extra) localStorage.setItem('ultimo_carburante_extra_' + lang, dataObj.ultimo_carburante_extra);
             location.reload();
         } catch (err) {
             alert(t('backup_error'));
@@ -3078,7 +3245,219 @@ document.getElementById("fileBackup").addEventListener("change", function (e) {
     reader.readAsText(e.target.files[0]);
 });
 
+const OB_CONTENT = {
+    it: [
+        { t: 'Benvenuto', s: '' },
+        { t: 'Dashboard', s: 'La schermata principale mostra in tempo reale i tuoi <strong>guadagni, km percorsi, carburante</strong> e molto altro. Tutto aggiornato ad ogni turno.' },
+        { t: 'Turno', s: 'Registra ogni turno con durata, km, guadagno e carburante. <strong>Semplice e veloce</strong>, pochi secondi per tenere tutto sotto controllo.' },
+        { t: 'Fuel', s: 'Tieni traccia di ogni <strong>rifornimento</strong>: importo, km e tipo di carburante. L\'app calcola automaticamente il costo per km.' },
+        { t: 'Extra', s: 'Registra i <strong>km extra</strong> percorsi per raggiungere la zona di lavoro o per spostamenti non coperti dalla piattaforma.' },
+        { t: 'Fisco 🇮🇹', s: 'Modulo pensato per il <strong>regime forfettario italiano</strong>: fatture, INPS, imposta sostitutiva e scadenze.<br><br><em>Nota: essendo uno strumento sviluppato in Italia, non possiamo garantire la compatibilità con i regimi fiscali di altri paesi.</em>' },
+        { t: 'Storico', s: 'Consulta lo <strong>storico completo</strong> di tutti i tuoi turni, rifornimenti ed extra mese per mese. Elimina o correggi voci in qualsiasi momento.' },
+        { t: 'Report & Grafico', s: 'Genera <strong>report mensili dettagliati</strong> e visualizza l\'andamento dei guadagni con grafici chiari e immediati.' },
+        { t: 'Tutto pronto!', s: 'Rider Tracker Pro è <strong>100% offline</strong>. I tuoi dati restano sul dispositivo, al sicuro e sempre disponibili. Buon lavoro! 🚀' }
+    ],
+    en: [
+        { t: 'Welcome', s: '' },
+        { t: 'Dashboard', s: 'The main screen shows your <strong>earnings, km, fuel</strong> and much more in real time. Updated after every shift.' },
+        { t: 'Shift', s: 'Log every shift with duration, km, earnings and fuel. <strong>Fast and simple</strong> — just a few seconds to stay on top of everything.' },
+        { t: 'Fuel', s: 'Track every <strong>refuel</strong>: amount, km and fuel type. The app automatically calculates your cost per km.' },
+        { t: 'Extra', s: 'Log <strong>extra km</strong> travelled to reach your work zone or for trips not covered by the platform.' },
+        { t: 'Fisco 🇮🇹', s: 'This module is <strong>exclusively for Italian users</strong> operating under the flat-rate tax regime (forfettario).<br><br><em>Important: the author is Italian and cannot implement tax management for other countries. The Fisco module is therefore <strong>not available outside Italy</strong>.</em>' },
+        { t: 'History', s: 'Browse the <strong>full history</strong> of all your shifts, refuels and extras month by month. Edit or delete any entry at any time.' },
+        { t: 'Report & Chart', s: 'Generate <strong>detailed monthly reports</strong> and visualise your earnings trend with clear, easy-to-read charts.' },
+        { t: 'All set!', s: 'Rider Tracker Pro works <strong>100% offline</strong>. Your data stays on your device — private and always available. Let\'s ride! 🚀' }
+    ]
+};
+
+let obStep = 0;
+let obLang = localStorage.getItem('app_language') || 'it';
+
+function obSetLang(lang) {
+    obLang = lang;
+    document.getElementById('obLangIT').classList.toggle('selected', lang === 'it');
+    document.getElementById('obLangEN').classList.toggle('selected', lang === 'en');
+}
+
+function obBuildDots() {
+    var dots = document.getElementById('obDots');
+    dots.innerHTML = '';
+    for (var i = 1; i < 9; i++) {
+        var d = document.createElement('div');
+        d.className = 'ob-dot' + (i === obStep ? ' active' : '');
+        dots.appendChild(d);
+    }
+}
+
+function obShowSlide(n) {
+    for (var i = 0; i <= 8; i++) {
+        var s = document.getElementById('obSlide' + i);
+        if (s) s.classList.toggle('active', i === n);
+    }
+    if (n > 0) {
+        var c = OB_CONTENT[obLang][n];
+        document.getElementById('obT' + n).innerText = c.t;
+        document.getElementById('obS' + n).innerHTML = c.s;
+    }
+    var isLast = n === 8;
+    var skipBtn = document.getElementById('obBtnSkip');
+    var nextBtn = document.getElementById('obBtnNext');
+    skipBtn.style.display = isLast ? 'none' : '';
+    skipBtn.innerText = obLang === 'it' ? 'Salta' : 'Skip';
+    nextBtn.style.flex = isLast ? '1' : '2';
+    nextBtn.innerText = isLast ? (obLang === 'it' ? 'Inizia' : 'Start') : (obLang === 'it' ? 'Avanti' : 'Next');
+    obBuildDots();
+}
+
+function obNext() {
+    if (obStep === 0) cambiaLingua(obLang);
+    if (obStep >= 8) { obFinish(); return; }
+    obStep++;
+    obShowSlide(obStep);
+}
+
+function obSkip() {
+    cambiaLingua(obLang);
+    obFinish();
+}
+
+function obFinish() {
+    localStorage.setItem('onboarding_done', '1');
+    document.getElementById('onboardingOverlay').style.display = 'none';
+}
+
+function controllaScadenzeNotifiche() {
+    var settings = loadFiscoSettings();
+    if (!settings.notificheScadenze) return;
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    var anno = settings.annoFiscaleAttivo;
+    var fatture = loadFiscoFatture().filter(function(f) { return f.annoFiscale === anno; });
+    var calc = calcolaFiscale(fatture, settings);
+    if (calc.lordo === 0) return;
+    var bolloQ = roundFiscal(calc.totaleBolli / 4);
+    var scadenze = [
+        { data: new Date(anno + 1, 5, 30), desc: 'Saldo IRPEF + 1° Acconto', imp: roundFiscal(calc.saldo + calc.acconto1) },
+        { data: new Date(anno + 1, 10, 30), desc: '2° Acconto IRPEF', imp: calc.acconto2 },
+        { data: new Date(anno, 3, 16), desc: 'Bollo Trimestrale Q1', imp: bolloQ },
+        { data: new Date(anno, 6, 16), desc: 'Bollo Trimestrale Q2', imp: bolloQ },
+        { data: new Date(anno, 9, 16), desc: 'Bollo Trimestrale Q3', imp: bolloQ },
+        { data: new Date(anno + 1, 0, 16), desc: 'Bollo Trimestrale Q4', imp: bolloQ }
+    ];
+    var oggi = new Date(); oggi.setHours(0,0,0,0);
+    var oggiStr = oggi.toISOString().split('T')[0];
+    var ultimaNotifica = localStorage.getItem('ultima_notifica_scadenze') || '';
+    if (ultimaNotifica === oggiStr) return;
+    var notificate = false;
+    scadenze.forEach(function(s) {
+        var scad = new Date(s.data); scad.setHours(0,0,0,0);
+        var diffGiorni = Math.round((scad - oggi) / (1000 * 60 * 60 * 24));
+        if (diffGiorni >= 0 && diffGiorni <= 7) {
+            var msg = diffGiorni === 0 ? 'OGGI scade: ' + s.desc + ' — ' + fmtEuro(s.imp) : 'Tra ' + diffGiorni + ' giorni: ' + s.desc + ' — ' + fmtEuro(s.imp);
+            setTimeout(function() {
+                new Notification('📅 Rider Tracker Pro — Scadenza Fiscale', { body: msg, icon: 'icon-192.png' });
+            }, 3000);
+            notificate = true;
+        }
+    });
+    if (notificate) localStorage.setItem('ultima_notifica_scadenze', oggiStr);
+}
+
+function apriServizioEsterno(uri, url) {
+    try { window.location.href = uri; } catch(e) { window.location.href = url; }
+    setTimeout(function() { window.location.href = url; }, 2000);
+}
+
+var METEO_CODICI = {
+    0:'☀️',1:'🌤️',2:'⛅',3:'☁️',
+    45:'🌫️',48:'🌫️',
+    51:'🌦️',53:'🌦️',55:'🌧️',
+    61:'🌧️',63:'🌧️',65:'🌧️',
+    71:'❄️',73:'❄️',75:'❄️',77:'🌨️',
+    80:'🌦️',81:'🌧️',82:'⛈️',
+    85:'🌨️',86:'🌨️',
+    95:'⛈️',96:'⛈️',99:'⛈️'
+};
+var METEO_DESC = {
+    0:'Sereno',1:'Poco nuvoloso',2:'Parzialmente nuvoloso',3:'Nuvoloso',
+    45:'Nebbia',48:'Nebbia',
+    51:'Pioggerella',53:'Pioggerella',55:'Pioggerella',
+    61:'Pioggia',63:'Pioggia',65:'Pioggia forte',
+    71:'Neve',73:'Neve',75:'Neve forte',77:'Neve granulare',
+    80:'Rovesci',81:'Rovesci',82:'Rovesci forti',
+    85:'Nevicate',86:'Nevicate',
+    95:'Temporale',96:'Temporale',99:'Temporale forte'
+};
+
+function aggiornaMeteo(forzato) {
+    var ultimoMeteo = localStorage.getItem('meteo_ts');
+    var ora = Date.now();
+    if (!forzato && ultimoMeteo && (ora - parseInt(ultimoMeteo)) < 30 * 60 * 1000) {
+        var cached = localStorage.getItem('meteo_cache');
+        if (cached) { mostraMeteo(JSON.parse(cached)); return; }
+    }
+    if (!navigator.geolocation) {
+        document.getElementById('meteoDesc').innerText = 'GPS non disponibile';
+        return;
+    }
+    document.getElementById('meteoDesc').innerText = 'Rilevamento...';
+    navigator.geolocation.getCurrentPosition(function(pos) {
+        var lat = pos.coords.latitude.toFixed(4);
+        var lon = pos.coords.longitude.toFixed(4);
+        var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '&current_weather=true&timezone=auto';
+        fetch(url).then(function(r) { return r.json(); }).then(function(data) {
+            var cw = data.current_weather;
+            var obj = { temp: Math.round(cw.temperature), code: cw.weathercode, city: '' };
+            fetch('https://nominatim.openstreetmap.org/reverse?lat=' + lat + '&lon=' + lon + '&format=json').then(function(r) { return r.json(); }).then(function(geo) {
+                obj.city = geo.address.city || geo.address.town || geo.address.village || geo.address.county || '';
+                localStorage.setItem('meteo_cache', JSON.stringify(obj));
+                localStorage.setItem('meteo_ts', Date.now().toString());
+                mostraMeteo(obj);
+            }).catch(function() {
+                localStorage.setItem('meteo_cache', JSON.stringify(obj));
+                localStorage.setItem('meteo_ts', Date.now().toString());
+                mostraMeteo(obj);
+            });
+        }).catch(function() {
+            document.getElementById('meteoDesc').innerText = 'Non disponibile';
+        });
+    }, function() {
+        document.getElementById('meteoDesc').innerText = 'Posizione negata';
+    }, { timeout: 8000 });
+}
+
+function mostraMeteo(obj) {
+    document.getElementById('meteoIcon').innerText = METEO_CODICI[obj.code] || '🌡️';
+    document.getElementById('meteoTemp').innerText = obj.temp + '°C';
+    document.getElementById('meteoDesc').innerText = METEO_DESC[obj.code] || '';
+    document.getElementById('meteoCity').innerText = obj.city || '';
+}
+
 window.onload = function() {
+
+    (function() {
+        var fields = ['targetIn', 'taxIn'];
+        fields.forEach(function(id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            var visible = true;
+            setInterval(function() {
+                if (document.activeElement === el) return;
+                if (el.value !== '') return;
+                visible = !visible;
+                el.style.setProperty('--ph-opacity', visible ? '1' : '0');
+                el.placeholder = visible ? (el.getAttribute('data-translate-placeholder') === 'ph_inserisci' ? (typeof currentLang !== 'undefined' && currentLang === 'en' ? 'ENTER' : 'INSERISCI') : 'INSERISCI') : ' ';
+            }, 600);
+        });
+    })();
+
+    if (!localStorage.getItem('onboarding_done')) {
+        obStep = 0;
+        obShowSlide(0);
+        document.getElementById('onboardingOverlay').style.display = 'flex';
+    }
+
+    setTimeout(function() { controllaScadenzeNotifiche(); }, 4000);
+    setTimeout(function() { aggiornaMeteo(false); }, 1000);
 
     aggiornaDBConTipoCarburante();
 
@@ -3119,14 +3498,22 @@ if (_lblMezzo) _lblMezzo.innerText = _getMezzoLabel(ultimoMezzo);
 
     const inputs = document.querySelectorAll('.modal input');
     inputs.forEach(input => {
-        input.addEventListener('focus', () => {
-            const content = input.closest('.modal-content');
-            if (content) content.style.transform = 'translateY(-170px)';
-        });
-        input.addEventListener('blur', () => {
-            const content = input.closest('.modal-content');
-            if (content) content.style.transform = 'translateY(0)';
-        });
+        if (input.type === 'checkbox' || input.type === 'radio' || input.type === 'hidden') return;
+        const parentFiscoSettings = input.closest('#modalFiscoSettings');
+        if (parentFiscoSettings) {
+            input.addEventListener('focus', () => {
+                setTimeout(() => { input.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 120);
+            });
+        } else {
+            input.addEventListener('focus', () => {
+                const content = input.closest('.modal-content');
+                if (content) content.style.transform = 'translateY(-170px)';
+            });
+            input.addEventListener('blur', () => {
+                const content = input.closest('.modal-content');
+                if (content) content.style.transform = 'translateY(0)';
+            });
+        }
     });
 
 };
@@ -3145,6 +3532,45 @@ function stampaPagina() {
     window.print();
 }
 </script>
+<div id="modalRating" class="modal no-print">
+    <div class="modal-content" style="border-color:var(--primary); text-align:center;">
+        <div style="font-size:36px; margin-bottom:8px;">⭐</div>
+        <div style="font-size:17px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Ti piace Rider Tracker Pro?</div>
+        <div style="font-size:12px; color:var(--dim); margin-bottom:20px; line-height:1.6;">Il tuo feedback è prezioso per migliorare l'app. Lascia una valutazione sulla nostra pagina!</div>
+        <div id="ratingStars" style="display:flex; justify-content:center; gap:8px; margin-bottom:20px;">
+            <span class="rating-star" data-val="1" onclick="setRating(1)" style="font-size:36px; cursor:pointer; opacity:0.3; transition:opacity 0.2s;">★</span>
+            <span class="rating-star" data-val="2" onclick="setRating(2)" style="font-size:36px; cursor:pointer; opacity:0.3; transition:opacity 0.2s;">★</span>
+            <span class="rating-star" data-val="3" onclick="setRating(3)" style="font-size:36px; cursor:pointer; opacity:0.3; transition:opacity 0.2s;">★</span>
+            <span class="rating-star" data-val="4" onclick="setRating(4)" style="font-size:36px; cursor:pointer; opacity:0.3; transition:opacity 0.2s;">★</span>
+            <span class="rating-star" data-val="5" onclick="setRating(5)" style="font-size:36px; cursor:pointer; opacity:0.3; transition:opacity 0.2s;">★</span>
+        </div>
+        <button id="btnInviaRating" class="btn-modal btn-save" style="margin-bottom:8px; opacity:0.4; pointer-events:none;" onclick="inviaRating()">INVIA VALUTAZIONE</button>
+        <button class="btn-modal btn-close" onclick="chiudiRating(false)">FORSE PIÙ TARDI</button>
+    </div>
+</div>
+<div id="modalInfo" class="modal no-print">
+    <div class="modal-content" style="border-color:var(--primary); text-align:center;">
+        <img src="icon-192.png" style="width:72px; height:72px; border-radius:16px; margin-bottom:12px; display:block; margin-left:auto; margin-right:auto;">
+        <div style="font-size:22px; font-weight:900; color:var(--primary); letter-spacing:1px; text-transform:uppercase;">Rider Tracker Pro</div>
+        <div style="font-size:11px; color:var(--dim); margin-top:4px; margin-bottom:16px; letter-spacing:1px;">VERSIONE 2.1</div>
+        <hr style="border-color:#333; margin:0 0 16px;">
+        <div style="font-size:12px; color:var(--dim); line-height:1.8; margin-bottom:16px;">
+            App dedicata ai rider professionisti per il controllo reale dei guadagni, dei costi e della gestione fiscale in regime forfettario.
+        </div>
+        <hr style="border-color:#333; margin:0 0 16px;">
+        <div style="font-size:11px; color:var(--dim); margin-bottom:6px; text-transform:uppercase; letter-spacing:1px;">Sviluppata da</div>
+        <a href="https://facebook.com/madmaddj" target="_blank" style="font-size:15px; font-weight:900; color:var(--primary); text-decoration:none;">Marco Carbone</a>
+        <div style="margin-top:14px;">
+            <a href="https://www.facebook.com/share/1BmShW49wz/" target="_blank"
+               style="display:inline-flex; align-items:center; gap:8px; background:#1877f2; color:#fff; font-weight:900; font-size:13px; text-transform:uppercase; letter-spacing:0.5px; padding:11px 20px; border-radius:12px; text-decoration:none;">
+                <i class="fab fa-facebook" style="font-size:18px;"></i> Pagina Supporto
+            </a>
+        </div>
+        <hr style="border-color:#333; margin:16px 0 12px;">
+        <div style="font-size:9px; color:#444; font-style:italic;">© 2026 Marco Carbone — Tutti i diritti riservati</div>
+        <button class="btn-modal btn-close" style="margin-top:14px;" onclick="document.getElementById('modalInfo').style.display='none'">CHIUDI</button>
+    </div>
+</div>
 <div id="modalSettings" class="modal no-print">
     <div class="modal-content" style="border-color: var(--primary); max-height: 90vh; overflow-y: auto;">
 
@@ -3203,6 +3629,51 @@ function stampaPagina() {
     </div>
 </div>
 <script>
+function apriInfo() {
+    document.getElementById('modalInfo').style.display = 'flex';
+}    
+var ratingSelezionato = 0;
+
+function setRating(val) {
+    ratingSelezionato = val;
+    document.querySelectorAll('.rating-star').forEach(function(s) {
+        s.style.opacity = parseInt(s.getAttribute('data-val')) <= val ? '1' : '0.3';
+        s.style.color = parseInt(s.getAttribute('data-val')) <= val ? '#ffa500' : '';
+    });
+    var btn = document.getElementById('btnInviaRating');
+    btn.style.opacity = '1';
+    btn.style.pointerEvents = 'auto';
+}
+
+function inviaRating() {
+    localStorage.setItem('app_rated', '1');
+    document.getElementById('modalRating').style.display = 'none';
+    window.open('https://www.facebook.com/share/1BmShW49wz/', '_blank');
+}
+
+function chiudiRating(definitivo) {
+    document.getElementById('modalRating').style.display = 'none';
+    if (definitivo) localStorage.setItem('app_rated', '1');
+}
+
+function controllaRating() {
+    if (localStorage.getItem('app_rated')) return;
+    var count = parseInt(localStorage.getItem('app_uses_count') || '0') + 1;
+    localStorage.setItem('app_uses_count', count);
+    if (count === 5 || count === 15 || count === 30) {
+        setTimeout(function() {
+            ratingSelezionato = 0;
+            document.querySelectorAll('.rating-star').forEach(function(s) {
+                s.style.opacity = '0.3';
+                s.style.color = '';
+            });
+            var btn = document.getElementById('btnInviaRating');
+            btn.style.opacity = '0.4';
+            btn.style.pointerEvents = 'none';
+            document.getElementById('modalRating').style.display = 'flex';
+        }, 1500);
+    }
+}
 function chiudiModalSettings() {
     document.getElementById('modalSettings').style.display = 'none';
 }
@@ -3247,5 +3718,895 @@ if (flagIT && flagEN) {
 updateInterface();
 calcola();
 </script>
+<!-- ===== FISCO MODULE v3.2 ===== -->
+<style>
+#fiscoView {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9100;
+    background: var(--bg);
+    flex-direction: column;
+    padding: 15px;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 30px);
+    overflow: hidden;
+}
+.fisco-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.fisco-title { font-size: 20px; font-weight: 900; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; }
+.fisco-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.fisco-card { background: var(--card); border: 1px solid #333; border-radius: 12px; padding: 12px; margin-bottom: 8px; }
+.fisco-card-title { font-size: 10px; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; font-weight: bold; }
+.fisco-grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
+.fisco-mini-card { background: var(--card); border: 1px solid #333; border-radius: 10px; padding: 10px; text-align: center; }
+.fisco-mini-label { font-size: 8px; color: var(--dim); text-transform: uppercase; font-weight: bold; margin-bottom: 4px; }
+.fisco-mini-val { font-size: 14px; font-weight: 900; color: var(--text); }
+.fisco-warning { background: #2a1a00; border: 1px solid var(--orange); border-radius: 10px; padding: 10px; margin-bottom: 8px; font-size: 12px; color: var(--orange); text-align: center; }
+.fisco-warning.critical { background: #2a0000; border-color: var(--accent); color: var(--accent); }
+.fattura-item { background: #0f0f0f; border: 1px solid #333; border-radius: 10px; padding: 10px 12px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+.fattura-num { font-size: 11px; color: var(--dim); }
+.fattura-importo { font-size: 16px; font-weight: 900; color: var(--primary); }
+.fattura-stato { font-size: 9px; font-weight: bold; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; }
+.fattura-stato.verificata { background: #004d40; color: #00CCBC; }
+.fattura-stato.da_verificare { background: #333; color: #aaa; }
+.scad-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #222; font-size: 12px; }
+.scad-data { color: var(--primary); font-weight: bold; min-width: 80px; }
+.scad-desc { color: var(--text); flex: 1; padding: 0 8px; }
+.scad-imp { color: var(--accent); font-weight: bold; }
+.btn-fisco-action { background: var(--primary); color: #000; border: none; border-radius: 10px; padding: 10px 15px; font-weight: 900; font-size: 12px; text-transform: uppercase; cursor: pointer; }
+.btn-fisco-secondary { background: #252525; color: var(--text); border: 1px solid #444; border-radius: 10px; padding: 10px 12px; font-weight: bold; font-size: 12px; text-transform: uppercase; cursor: pointer; }
+.fisco-actions-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.fisco-anno-sel { background: #252525; color: #fff; padding: 8px 12px; border-radius: 10px; border: 1px solid #444; font-size: 14px; flex: 1; }
+.disclaimer-fisco { font-size: 10px; color: var(--dim); text-align: center; padding: 10px; font-style: italic; }
+.fisco-soglia-bar-wrap { background: #222; border-radius: 8px; overflow: hidden; height: 10px; margin: 6px 0 4px; border: 1px solid #333; }
+.fisco-soglia-bar { height: 100%; border-radius: 8px; transition: width 0.4s; }
+.fisco-piatt-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #222; font-size: 12px; }
+.fisco-piatt-nome { color: var(--text); font-weight: bold; }
+.fisco-piatt-imp { color: var(--primary); font-weight: 900; }
+.fisco-search { width: 100%; padding: 9px 12px; background: #252525; border: 1px solid #444; color: #fff; border-radius: 10px; font-size: 13px; outline: none; margin-bottom: 8px; box-sizing: border-box; }
+.fisco-tab-bar { display: flex; background: var(--card); border-top: 1px solid #333; padding: 0; flex-shrink: 0; }
+.fisco-tab-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 4px 6px; font-size: 9px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; color: var(--dim); background: none; border: none; cursor: pointer; gap: 3px; transition: color 0.2s; }
+.fisco-tab-btn i { font-size: 16px; }
+.fisco-tab-btn.active { color: var(--primary); }
+.fisco-tab-btn.active i { color: var(--primary); }
+.fisco-tab-panel { display: none; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 8px; }
+.fisco-tab-panel.active { display: block; }
+</style>
+<div id="fiscoView" class="no-print">
+    <div class="fisco-header">
+        <div class="fisco-title"><i class="fas fa-piggy-bank" style="margin-right:8px;"></i>FISCO</div>
+        <div style="display:flex; gap:8px;">
+            <button class="btn-fisco-secondary" onclick="apriFiscoSettings()" style="font-size:11px; padding:8px 10px;">⚙️ PROFILO</button>
+            <button class="btn-fisco-secondary" onclick="chiudiFisco()" style="font-size:11px; padding:8px 10px;">✕</button>
+        </div>
+    </div>
+    <div class="fisco-actions-row">
+        <select id="fiscoAnnoSel" class="fisco-anno-sel" onchange="renderFisco()"></select>
+        <button class="btn-fisco-action" onclick="apriNuovaFattura()">+ FATTURA</button>
+    </div>
+    <div id="fiscoWarning" style="display:none;" class="fisco-warning"></div>
+    <div class="fisco-grid3">
+        <div class="fisco-mini-card">
+            <div class="fisco-mini-label">LORDO</div>
+            <div class="fisco-mini-val" id="fLordo">€ 0,00</div>
+        </div>
+        <div class="fisco-mini-card">
+            <div class="fisco-mini-label">INPS</div>
+            <div class="fisco-mini-val" id="fINPS" style="color:var(--orange);">€ 0,00</div>
+        </div>
+        <div class="fisco-mini-card">
+            <div class="fisco-mini-label">IMPOSTA</div>
+            <div class="fisco-mini-val" id="fImposta" style="color:var(--accent);">€ 0,00</div>
+        </div>
+    </div>
+    <div class="fisco-grid3">
+        <div class="fisco-mini-card">
+            <div class="fisco-mini-label">NETTO REALE</div>
+            <div class="fisco-mini-val" id="fNetto" style="color:var(--primary);">€ 0,00</div>
+        </div>
+        <div class="fisco-mini-card">
+            <div class="fisco-mini-label">ACCANTONAMENTO</div>
+            <div class="fisco-mini-val" id="fAccant" style="color:#aaa;">€ 0,00</div>
+        </div>
+        <div class="fisco-mini-card">
+            <div class="fisco-mini-label">BOLLI TOT.</div>
+            <div class="fisco-mini-val" id="fBolli">€ 0,00</div>
+        </div>
+    </div>
+    <div id="fiscoTabAnalisi" class="fisco-tab-panel active">
+        <div id="fiscoServizioBtn" style="display:none; margin-bottom:8px;"></div>
+        <div class="fisco-card">
+            <div class="fisco-card-title">📋 DETTAGLIO CALCOLO FISCALE</div>
+            <div id="fiscoDettaglio"></div>
+        </div>
+    </div>
+    <div id="fiscoTabStatistiche" class="fisco-tab-panel">
+        <div class="fisco-card" style="margin-top:0;">
+            <div class="fisco-card-title">📊 STATISTICHE ANNO</div>
+            <div id="fiscoStatsAnno"></div>
+        </div>
+        <div class="fisco-card">
+            <div class="fisco-card-title">🎯 SOGLIE DI RIFERIMENTO</div>
+            <div id="fiscoSogliaBar"></div>
+        </div>
+        <div class="fisco-card">
+            <div class="fisco-card-title">🏢 PER PIATTAFORMA</div>
+            <div id="fiscoPiattaforme"></div>
+        </div>
+    </div>
+    <div id="fiscoTabScadenzario" class="fisco-tab-panel">
+        <div class="fisco-card" style="margin-top:0;">
+            <div class="fisco-card-title">📅 SCADENZARIO PAGAMENTI</div>
+            <div id="fiscoScadenzario"></div>
+        </div>
+    </div>
+    <div id="fiscoTabFatture" class="fisco-tab-panel">
+        <div class="fisco-card" style="margin-top:0;">
+            <div class="fisco-card-title">🧾 FATTURE ANNO SELEZIONATO</div>
+            <input type="text" class="fisco-search" id="fiscoSearch" placeholder="🔍 Cerca per piattaforma o numero..." oninput="filtraFatture()">
+            <div id="fiscoListaFatture"></div>
+        </div>
+        <div style="display:flex; gap:8px; margin-bottom:8px;">
+            <button class="btn-fisco-secondary" style="flex:1; font-size:11px;" onclick="stampaArchivioFiscale(parseInt(document.getElementById('fiscoAnnoSel').value))"><i class="fas fa-print" style="margin-right:6px;"></i>STAMPA ARCHIVIO</button>
+        </div>
+    </div>
+    <div class="fisco-tab-bar">
+        <button class="fisco-tab-btn active" id="ftbAnalisi" onclick="switchFiscoTab('Analisi')">
+            <i class="fas fa-calculator"></i>CALCOLO
+        </button>
+        <button class="fisco-tab-btn" id="ftbStatistiche" onclick="switchFiscoTab('Statistiche')">
+            <i class="fas fa-chart-bar"></i>STATS
+        </button>
+        <button class="fisco-tab-btn" id="ftbScadenzario" onclick="switchFiscoTab('Scadenzario')">
+            <i class="fas fa-calendar-alt"></i>SCADENZE
+        </button>
+        <button class="fisco-tab-btn" id="ftbFatture" onclick="switchFiscoTab('Fatture')">
+            <i class="fas fa-file-invoice"></i>FATTURE
+        </button>
+    </div>
+</div>
+
+<div id="modalFattura" class="modal no-print">
+    <div class="modal-content" style="border-color:var(--primary); max-height:90vh; overflow-y:auto;">
+        <h3 style="font-size:16px; color:var(--primary); text-align:center; margin-top:0;" id="titleModalFattura">NUOVA FATTURA</h3>
+        <input type="hidden" id="fatturaEditId" value="">
+        <label style="color:var(--dim); font-size:10px; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:4px;">N° Fattura</label>
+        <input type="text" id="fNumero" placeholder="Es. 2025/001" autocomplete="off">
+        <label style="color:var(--dim); font-size:10px; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:4px;">Data fattura</label>
+        <input type="date" id="fData" style="width:100%; padding:12px; background:var(--input-bg); border:1px solid #444; color:#fff; border-radius:12px; margin-bottom:10px; outline:none; font-size:16px;">
+        <label style="color:var(--dim); font-size:10px; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:4px;">Importo lordo (€)</label>
+        <input type="number" id="fImporto" placeholder="0.00" step="0.01" inputmode="decimal">
+        <label style="color:var(--dim); font-size:10px; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:4px;">Piattaforma</label>
+        <select id="fPiattaformaSel" style="width:100%; padding:12px; background:var(--input-bg); border:1px solid #444; color:#fff; border-radius:12px; margin-bottom:10px; font-size:14px;" onchange="toggleAltroInput(this.value)">
+            <option value="">— Seleziona —</option>
+            <option value="Deliveroo">Deliveroo</option>
+            <option value="Glovo">Glovo</option>
+            <option value="Just Eat">Just Eat</option>
+            <option value="Foodracers">Foodracers</option>
+            <option value="altro">Altro...</option>
+        </select>
+        <input type="text" id="fPiattaforma" placeholder="Inserisci nome piattaforma..." autocomplete="off" style="display:none;">
+        <label style="color:var(--dim); font-size:10px; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:4px;">Marca da bollo</label>
+        <select id="fBollo" style="width:100%; padding:12px; background:var(--input-bg); border:1px solid #444; color:#fff; border-radius:12px; margin-bottom:10px; font-size:14px;">
+            <option value="auto">Auto (2€ se importo &gt; 77,47€)</option>
+            <option value="0">0€ (nessuna)</option>
+            <option value="2">2€</option>
+        </select>
+        <label style="color:var(--dim); font-size:10px; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:4px;">Stato</label>
+        <select id="fStato" style="width:100%; padding:12px; background:var(--input-bg); border:1px solid #444; color:#fff; border-radius:12px; margin-bottom:10px; font-size:14px;">
+            <option value="da_verificare">Da verificare</option>
+            <option value="verificata">Verificata</option>
+        </select>
+        <button class="btn-modal btn-save" onclick="salvaFattura()">SALVA</button>
+        <button class="btn-modal btn-close" onclick="document.getElementById('modalFattura').style.display='none'">ANNULLA</button>
+    </div>
+</div>
+
+<div id="modalFiscoSettings" class="modal no-print">
+    <div class="modal-content" style="border-color:var(--primary); max-height:90vh; overflow-y:auto;">
+        <h3 style="font-size:16px; color:var(--primary); text-align:center; margin-top:0;">⚙️ PROFILO FISCALE</h3>
+        <label style="color:var(--dim); font-size:10px; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:4px;">Anno fiscale attivo</label>
+        <input type="number" id="fsAnno" placeholder="Es. 2025" inputmode="numeric">
+        <label style="color:var(--dim); font-size:10px; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:4px;">Coefficiente redditività (%)</label>
+        <input type="number" id="fsCoeff" placeholder="40–86" step="0.01" inputmode="decimal">
+        <label style="color:var(--dim); font-size:10px; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:4px;">Aliquota imposta sostitutiva (%)</label>
+        <input type="number" id="fsImposta" placeholder="5–15" step="0.01" inputmode="decimal">
+        <label style="color:var(--dim); font-size:10px; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:4px;">Aliquota INPS (%)</label>
+        <input type="number" id="fsINPS" placeholder="20–30" step="0.01" inputmode="decimal">
+        <label style="color:var(--dim); font-size:10px; text-transform:uppercase; letter-spacing:1px; display:block; margin:8px 0 6px;">
+            <input type="checkbox" id="fsRidINPS" style="margin-right:6px; width:auto;">
+            Riduzione INPS 35%
+        </label>
+        <label style="color:var(--dim); font-size:10px; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:4px;">INPS già versato (€)</label>
+        <input type="number" id="fsInpsVers" placeholder="0.00" step="0.01" inputmode="decimal">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; margin-top:4px;">
+            <span style="color:var(--dim); font-size:10px; text-transform:uppercase; letter-spacing:1px;">Anno fiscale</span>
+            <select id="fsChiuso" style="padding:8px; background:var(--input-bg); border:1px solid #444; color:#fff; border-radius:8px; font-size:13px;">
+                <option value="false">Aperto</option>
+                <option value="true">Chiuso</option>
+            </select>
+        </div>
+        <hr style="border-color:#333; margin:12px 0;">
+        <label style="color:var(--dim); font-size:10px; text-transform:uppercase; letter-spacing:1px; display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+            <span>Usa servizio esterno</span>
+            <input type="checkbox" id="fsUsaServizio" style="width:auto; margin:0; transform:scale(1.4);" onchange="toggleFsServizio(this.checked)">
+        </label>
+        <label id="lblFsNome" style="color:var(--dim); font-size:10px; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:4px; opacity:0.4;">Nome servizio</label>
+        <input type="text" id="fsNomeServizio" placeholder="Es. Taxman, Fiscozen..." autocomplete="off" disabled style="opacity:0.4;">
+        <label id="lblFsUrl" style="color:var(--dim); font-size:10px; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:4px; opacity:0.4;">URL servizio (web)</label>
+        <input type="url" id="fsUrlServizio" placeholder="https://..." autocomplete="off" inputmode="url" disabled style="opacity:0.4;">
+        <label id="lblFsUri" style="color:var(--dim); font-size:10px; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:4px; opacity:0.4;">URI schema app (opzionale)</label>
+        <input type="text" id="fsUriServizio" placeholder="Es. agenziaentrate://" autocomplete="off" disabled style="opacity:0.4;">
+        <div id="lblFsUriNote" style="font-size:9px; color:var(--dim); margin-bottom:10px; font-style:italic; opacity:0.4;">Se inserito, il tasto aprirà l'app direttamente. Lascia vuoto per usare solo il link web.</div>
+        <hr style="border-color:#333; margin:12px 0;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+            <span style="color:var(--dim); font-size:10px; text-transform:uppercase; letter-spacing:1px;">È il tuo primo anno in partita IVA forfettaria?</span>
+            <input type="checkbox" id="fsPrimoAnno" style="width:auto; margin:0; transform:scale(1.4);">
+        </div>
+        <div style="font-size:9px; color:var(--dim); margin-bottom:8px; font-style:italic;">Riferimento: 33% primo anno, 30% anni successivi. Puoi personalizzare sotto.</div>
+        <input type="number" id="fsAccant" placeholder="Es. 33 (primo anno) o 30 (altri anni)" step="0.1" inputmode="decimal" style="margin-bottom:12px;">
+        <div style="font-size:9px; color:var(--dim); margin-bottom:12px; font-style:italic;">Lascia vuoto per usare il valore automatico basato sul flag primo anno.</div>
+        <hr style="border-color:#333; margin:12px 0;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+            <span style="color:var(--dim); font-size:10px; text-transform:uppercase; letter-spacing:1px;">Notifiche scadenze fiscali</span>
+            <input type="checkbox" id="fsNotifiche" style="width:auto; margin:0; transform:scale(1.4);">
+        </div>
+        <div style="font-size:9px; color:var(--dim); margin-bottom:12px; font-style:italic;">Ricevi un avviso 7 giorni prima di ogni scadenza fiscale.</div>
+        <hr style="border-color:#333; margin:12px 0;">
+        <label style="color:var(--dim); font-size:10px; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:4px;">Data inizio attività</label>
+        <input type="date" id="fsDataInizio" style="width:100%; padding:12px; background:var(--input-bg); border:1px solid #444; color:#fff; border-radius:12px; margin-bottom:10px; outline:none; font-size:16px; box-sizing:border-box;">
+        <div style="font-size:9px; color:var(--dim); margin-bottom:12px; font-style:italic;">Usata per calcolare automaticamente se sei nel periodo agevolato (primi 5 anni, aliquota 5%).</div>
+        <hr style="border-color:#333; margin:12px 0;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+            <div>
+                <div style="color:var(--dim); font-size:10px; text-transform:uppercase; letter-spacing:1px;">Dipendente full time</div>
+                <div style="font-size:9px; color:var(--dim); font-style:italic; margin-top:2px;">INPS Gestione Separata al 24%</div>
+            </div>
+            <input type="checkbox" id="fsDipendente" style="width:auto; margin:0; transform:scale(1.4);" onchange="aggiornaMacroINPS()">
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+            <div>
+                <div style="color:var(--dim); font-size:10px; text-transform:uppercase; letter-spacing:1px;">Under 21</div>
+                <div style="font-size:9px; color:var(--dim); font-style:italic; margin-top:2px;">Aliquota INPS ridotta al 24%</div>
+            </div>
+            <input type="checkbox" id="fsUnder21" style="width:auto; margin:0; transform:scale(1.4);" onchange="aggiornaMacroINPS()">
+        </div>
+        <button class="btn-modal btn-save" onclick="salvaFiscoSettings()">SALVA</button>
+        <button class="btn-modal btn-close" onclick="document.getElementById('modalFiscoSettings').style.display='none'">ANNULLA</button>
+    </div>
+</div>
+<div id="modalNoData" class="modal no-print">
+    <div class="modal-content" style="border-color:#555; text-align:center;">
+        <div style="font-size:36px; margin-bottom:8px;">📭</div>
+        <div id="noDataTitle" style="font-size:16px; font-weight:900; color:var(--text); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">Nessun dato</div>
+        <p id="noDataMsg" style="font-size:13px; color:var(--dim); margin:0 0 20px; line-height:1.6;"></p>
+        <button id="noDataClose" class="btn-modal btn-close" onclick="document.getElementById('modalNoData').style.display='none'">CHIUDI</button>
+    </div>
+</div>
+<div id="modalTaxMismatch" class="modal no-print">
+    <div class="modal-content" style="border-color:var(--orange); text-align:center;">
+        <div style="font-size:32px; margin-bottom:8px;">⚠️</div>
+        <div style="font-size:16px; font-weight:900; color:var(--orange); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">Attenzione</div>
+        <p id="taxMismatchMsg" style="font-size:13px; color:var(--text); margin:0 0 20px; line-height:1.6;"></p>
+        <button class="btn-modal btn-save" onclick="document.getElementById('modalTaxMismatch').style.display='none'">HO CAPITO</button>
+    </div>
+</div>
+<div id="modalFiscoUnlock" class="modal no-print">
+    <div class="modal-content" style="border-color:var(--accent);">
+        <h3 style="color:var(--accent); font-size:16px; margin-top:0;">⚠️ FATTURA VERIFICATA</h3>
+        <p style="font-size:13px; color:var(--text); margin:15px 0;">Questa fattura è verificata. Sei sicuro di voler apportare modifiche?</p>
+        <input type="hidden" id="unlockFatturaId" value="">
+        <div class="confirm-buttons">
+            <button class="btn-confirm-cancel" onclick="document.getElementById('modalFiscoUnlock').style.display='none'">ANNULLA</button>
+            <button class="btn-confirm-ok" style="background:var(--accent); color:white;" onclick="confermaSbloccoFattura()">MODIFICA</button>
+        </div>
+    </div>
+</div>
+
+<div id="modalFiscoElimina" class="modal no-print">
+    <div class="modal-content" style="border-color:var(--accent);">
+        <h3 style="color:var(--accent); font-size:16px; margin-top:0;">🗑️ ELIMINA FATTURA</h3>
+        <p style="font-size:13px; color:var(--text); margin:15px 0;">Sei sicuro di voler eliminare questa fattura?</p>
+        <input type="hidden" id="eliminaFatturaId" value="">
+        <div class="confirm-buttons">
+            <button class="btn-confirm-cancel" onclick="document.getElementById('modalFiscoElimina').style.display='none'">ANNULLA</button>
+            <button class="btn-confirm-ok" style="background:var(--accent); color:white;" onclick="confermaEliminaFattura()">ELIMINA</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const FISCO_KEY = 'fisco_invoices_v1_it';
+const FISCO_SETTINGS_KEY = 'fisco_settings_v1_it';
+const FISCO_SETTINGS_LOG_KEY = 'fisco_settings_log_v1_it';
+const FISCO_BACKUP_KEY = 'fisco_backup_v1_it';
+
+function roundFiscal(value) { return Math.round((value + Number.EPSILON) * 100) / 100; }
+
+function loadFiscoFatture() {
+    try { return JSON.parse(localStorage.getItem(FISCO_KEY)) || []; } catch(e) { return []; }
+}
+
+function saveFiscoFatture(arr) {
+    localStorage.setItem(FISCO_KEY, JSON.stringify(arr));
+}
+
+function loadFiscoSettings() {
+    var defaults = { coefficiente: 78, aliquotaImposta: 15, aliquotaINPS: 26.23, riduzioneINPS: false, inpsVersato: 0, annoFiscaleAttivo: new Date().getFullYear(), annoFiscaleChiuso: false, usaServizioEsterno: false, nomeServizio: '', urlServizio: '', uriServizio: '', primoAnno: false, notificheScadenze: false, accantonamentoCustom: null, dipendente: false, under21: false, dataInizioAttivita: '' };
+    try {
+        var s = JSON.parse(localStorage.getItem(FISCO_SETTINGS_KEY));
+        return s ? Object.assign({}, defaults, s) : defaults;
+    } catch(e) { return defaults; }
+}
+
+function saveFiscoSettings(newSettings, oldSettings) {
+    var log = JSON.parse(localStorage.getItem(FISCO_SETTINGS_LOG_KEY)) || [];
+    Object.keys(newSettings).forEach(function(k) {
+        if (oldSettings && oldSettings[k] !== newSettings[k]) {
+            log.push({ campoModificato: k, valorePrecedente: oldSettings[k], nuovoValore: newSettings[k], timestamp: new Date().toISOString() });
+        }
+    });
+    localStorage.setItem(FISCO_SETTINGS_LOG_KEY, JSON.stringify(log));
+    localStorage.setItem(FISCO_SETTINGS_KEY, JSON.stringify(newSettings));
+}
+
+function calcolaFiscale(fatture, settings) {
+    var lordo = 0;
+    fatture.forEach(function(f) { lordo += f.importoLordo; });
+    lordo = roundFiscal(lordo);
+    var redditoImponibile = roundFiscal(lordo * settings.coefficiente / 100);
+    var aliquotaBaseINPS = (settings.dipendente || settings.under21) ? 24 : settings.aliquotaINPS;
+    var aliquotaINPSeff = settings.riduzioneINPS ? aliquotaBaseINPS * 0.65 : aliquotaBaseINPS;
+    var inps = roundFiscal(redditoImponibile * aliquotaINPSeff / 100);
+    var inpsDaPagare = roundFiscal(Math.max(0, inps - (settings.inpsVersato || 0)));
+    var nettoDopoPrevidenza = roundFiscal(lordo - inps);
+    var imponibileFisco = roundFiscal(redditoImponibile - inps);
+    var imposta = roundFiscal(imponibileFisco * settings.aliquotaImposta / 100);
+    var nettoDopoFisco = roundFiscal(lordo - inps - imposta);
+    var totaleBolli = 0;
+    fatture.forEach(function(f) {
+        if (f.marcaDaBollo === 'auto' || f.marcaDaBollo === undefined) { totaleBolli += (f.importoLordo > 77.47 ? 2 : 0); }
+        else { totaleBolli += parseFloat(f.marcaDaBollo) || 0; }
+    });
+    totaleBolli = roundFiscal(totaleBolli);
+    var nettoReale = roundFiscal(lordo - inps - imposta - totaleBolli);
+    var percAccant;
+    if (settings.accantonamentoCustom !== null && settings.accantonamentoCustom !== undefined && !isNaN(settings.accantonamentoCustom)) {
+        percAccant = settings.accantonamentoCustom / 100;
+    } else {
+        percAccant = settings.primoAnno ? 0.33 : 0.30;
+    }
+    var accantonamento = roundFiscal(lordo * percAccant);
+    var saldo = roundFiscal(inps + imposta - (settings.inpsVersato || 0));
+    var acconto1 = roundFiscal(saldo * 0.40);
+    var acconto2 = roundFiscal(saldo * 0.60);
+    return { lordo: lordo, redditoImponibile: redditoImponibile, inps: inps, inpsDaPagare: inpsDaPagare, nettoDopoPrevidenza: nettoDopoPrevidenza, imponibileFisco: imponibileFisco, imposta: imposta, nettoDopoFisco: nettoDopoFisco, totaleBolli: totaleBolli, nettoReale: nettoReale, accantonamento: accantonamento, saldo: saldo, acconto1: acconto1, acconto2: acconto2 };
+}
+
+function fmtEuro(v) { return '€ ' + v.toFixed(2).replace('.', ','); }
+
+function formatDataFattura(d) {
+    if (!d) return '';
+    var p = d.split('-');
+    return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : d;
+}
+
+function getAnniDisponibili() {
+    var fatture = loadFiscoFatture();
+    var settings = loadFiscoSettings();
+    var anni = {};
+    anni[settings.annoFiscaleAttivo] = true;
+    anni[new Date().getFullYear()] = true;
+    fatture.forEach(function(f) { anni[f.annoFiscale] = true; });
+    return Object.keys(anni).map(Number).sort(function(a, b) { return b - a; });
+}
+
+function apriFisco() {
+    if (currentLang !== 'it') return;
+    var sel = document.getElementById('fiscoAnnoSel');
+    var settings = loadFiscoSettings();
+    var anni = getAnniDisponibili();
+    sel.innerHTML = anni.map(function(a) {
+        return '<option value="' + a + '"' + (a === settings.annoFiscaleAttivo ? ' selected' : '') + '>' + a + '</option>';
+    }).join('');
+    var fv = document.getElementById('fiscoView');
+    fv.style.display = 'flex';
+    fv.classList.remove('view-enter');
+    void fv.offsetWidth;
+    fv.classList.add('view-enter');
+    renderFisco();
+}
+
+function chiudiFisco() {
+    document.getElementById('fiscoView').style.display = 'none';
+}
+function renderFisco() {
+    var sel = document.getElementById('fiscoAnnoSel');
+    var anno = parseInt(sel.value);
+    var settings = loadFiscoSettings();
+    var tutteFatture = loadFiscoFatture();
+    var fatture = tutteFatture.filter(function(f) { return f.annoFiscale === anno; });
+    var calc = calcolaFiscale(fatture, settings);
+    document.getElementById('fLordo').innerText = fmtEuro(calc.lordo);
+    document.getElementById('fINPS').innerText = fmtEuro(calc.inps);
+    document.getElementById('fImposta').innerText = fmtEuro(calc.imposta);
+    document.getElementById('fNetto').innerText = fmtEuro(calc.nettoReale);
+    document.getElementById('fAccant').innerText = fmtEuro(calc.accantonamento);
+    document.getElementById('fBolli').innerText = fmtEuro(calc.totaleBolli);
+    var elDett = document.getElementById('fiscoDettaglio');
+    if (elDett) {
+        function rigaDett(label, valore, colore, bold, indent) {
+            return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #1e1e1e;font-size:12px;">' +
+                '<span style="color:var(--dim);' + (indent ? 'padding-left:12px;' : '') + '">' + label + '</span>' +
+                '<span style="font-weight:' + (bold ? '900' : 'normal') + ';color:' + (colore || 'var(--text)') + ';">' + valore + '</span></div>';
+        }
+        function sezione(titolo) {
+            return '<div style="font-size:10px;font-weight:900;color:var(--primary);text-transform:uppercase;letter-spacing:1px;padding:8px 0 4px;">' + titolo + '</div>';
+        }
+        var aliquotaINPSusata = (settings.dipendente || settings.under21) ? 24 : settings.aliquotaINPS;
+        var html = '';
+        html += sezione('Previdenza');
+        html += rigaDett('Lordo fatturato', fmtEuro(calc.lordo), 'var(--text)', true);
+        html += rigaDett('Reddito imponibile (' + settings.coefficiente + '%)', fmtEuro(calc.redditoImponibile), 'var(--dim)');
+        html += rigaDett('INPS Gestione Separata (' + aliquotaINPSusata.toFixed(2) + '%)', fmtEuro(calc.inps), 'var(--orange)', true);
+        html += rigaDett('— Già versato', fmtEuro(settings.inpsVersato || 0), '#888', false, true);
+        html += rigaDett('— Da pagare', fmtEuro(calc.inpsDaPagare), 'var(--accent)', false, true);
+        html += rigaDett('Netto dopo previdenza', fmtEuro(calc.nettoDopoPrevidenza), 'var(--primary)', true);
+        html += sezione('Fisco');
+        html += rigaDett('Imponibile fisco', fmtEuro(calc.imponibileFisco), 'var(--dim)');
+        html += rigaDett('Imposta sostitutiva (' + settings.aliquotaImposta + '%)', fmtEuro(calc.imposta), 'var(--accent)', true);
+        html += rigaDett('Bolli totali', fmtEuro(calc.totaleBolli), '#888');
+        html += rigaDett('Netto dopo fisco', fmtEuro(calc.nettoDopoFisco), 'var(--primary)', true);
+        html += sezione('Riepilogo');
+        html += rigaDett('Netto reale (- INPS - imposta - bolli)', fmtEuro(calc.nettoReale), 'var(--primary)', true);
+        html += rigaDett('Accantonamento consigliato', fmtEuro(calc.accantonamento), '#aaa');
+        elDett.innerHTML = html;
+    }
+    var w = document.getElementById('fiscoWarning');
+    if (calc.lordo >= 85000) {
+        w.style.display = ''; w.className = 'fisco-warning critical';
+        w.innerHTML = '🚨 SOGLIA 85.000€ SUPERATA. Regime forfettario non applicabile!';
+    } else if (calc.lordo >= 80000) {
+        w.style.display = ''; w.className = 'fisco-warning critical';
+        w.innerHTML = '⚠️ ATTENZIONE: Superati 80.000€. Avvicinamento alla soglia limite.';
+    } else if (calc.lordo >= 65000) {
+        w.style.display = ''; w.className = 'fisco-warning';
+        w.innerHTML = '⚠️ AVVISO: Superati 65.000€. Monitorare il fatturato.';
+    } else { w.style.display = 'none'; }
+
+    var elStats = document.getElementById('fiscoStatsAnno');
+    if (elStats) {
+        if (fatture.length === 0) {
+            elStats.innerHTML = '<div style="color:var(--dim);font-size:12px;padding:4px 0;">Nessuna fattura per questo anno.</div>';
+        } else {
+            var mediaImp = roundFiscal(calc.lordo / fatture.length);
+            var oggi = new Date();
+            var meseCorrente = oggi.getMonth() + 1;
+            var annoCorrente = oggi.getFullYear();
+            var proiezione = '';
+            if (anno === annoCorrente && meseCorrente > 0) {
+                var proiez = roundFiscal(calc.lordo / meseCorrente * 12);
+                proiezione = '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #222;font-size:12px;"><span style="color:var(--dim);">📈 Proiezione annuale</span><span style="color:var(--orange);font-weight:900;">' + fmtEuro(proiez) + '</span></div>';
+            }
+            elStats.innerHTML =
+                '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #222;font-size:12px;"><span style="color:var(--dim);">📄 Fatture emesse</span><span style="color:#fff;font-weight:900;">' + fatture.length + '</span></div>' +
+                '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #222;font-size:12px;"><span style="color:var(--dim);">⌀ Media per fattura</span><span style="color:#fff;font-weight:900;">' + fmtEuro(mediaImp) + '</span></div>' +
+                proiezione;
+        }
+    }
+
+    var elSoglia = document.getElementById('fiscoSogliaBar');
+    if (elSoglia) {
+        function buildBar(lordo, soglia, etichetta, nota) {
+            var pct = Math.min(100, roundFiscal(lordo / soglia * 100));
+            var barColor = pct >= 100 ? '#ff4d4d' : pct >= 90 ? '#ffa500' : '#00CCBC';
+            var mancanti = Math.max(0, roundFiscal(soglia - lordo));
+            return '<div style="margin-bottom:12px;">' +
+                '<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;">' +
+                '<span style="color:var(--dim);font-weight:bold;">' + etichetta + '</span>' +
+                '<span style="color:' + barColor + ';font-weight:900;">' + pct.toFixed(1) + '%</span>' +
+                '</div>' +
+                '<div class="fisco-soglia-bar-wrap"><div class="fisco-soglia-bar" style="width:' + pct + '%;background:' + barColor + ';"></div></div>' +
+                '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--dim);margin-top:3px;">' +
+                '<span>' + nota + '</span>' +
+                '<span>Mancanti: <strong style="color:' + barColor + ';">' + fmtEuro(mancanti) + '</strong></span>' +
+                '</div>' +
+                '</div>';
+        }
+        elSoglia.innerHTML =
+            buildBar(calc.lordo, 30000, '📊 Soglia scaglione IRPEF — 30.000€', 'Cambio scaglione imposta') +
+            buildBar(calc.lordo, 85000, '🏦 Soglia regime forfettario — 85.000€', 'Limite per restare nel forfettario');
+    }
+
+    var elPiatt = document.getElementById('fiscoPiattaforme');
+    if (elPiatt) {
+        if (fatture.length === 0) {
+            elPiatt.innerHTML = '<div style="color:var(--dim);font-size:12px;padding:4px 0;">Nessun dato.</div>';
+        } else {
+            var piattMap = {};
+            fatture.forEach(function(f) {
+                var k = f.piattaforma || 'N/D';
+                if (!piattMap[k]) piattMap[k] = { tot: 0, n: 0 };
+                piattMap[k].tot += f.importoLordo;
+                piattMap[k].n++;
+            });
+            var piattArr = Object.keys(piattMap).sort(function(a, b) { return piattMap[b].tot - piattMap[a].tot; });
+            elPiatt.innerHTML = piattArr.map(function(p) {
+                return '<div class="fisco-piatt-row"><span class="fisco-piatt-nome">' + p + ' <span style="color:var(--dim);font-weight:normal;font-size:10px;">(' + piattMap[p].n + ' fatt.)</span></span><span class="fisco-piatt-imp">' + fmtEuro(roundFiscal(piattMap[p].tot)) + '</span></div>';
+            }).join('');
+        }
+    }
+
+    renderScadenzario(anno, calc);
+    renderListaFatture(fatture, anno, settings);
+
+    var searchEl = document.getElementById('fiscoSearch');
+    if (searchEl) searchEl.value = '';
+
+    var sbtn = document.getElementById('fiscoServizioBtn');
+    if (sbtn) {
+        if (settings.usaServizioEsterno && settings.nomeServizio && settings.urlServizio) {
+            var urlServ = settings.urlServizio;
+            if (urlServ.indexOf('http') !== 0) urlServ = 'https://' + urlServ;
+            var uriServ = settings.uriServizio || '';
+            var onclickStr = uriServ
+                ? 'apriServizioEsterno(\'' + uriServ.replace(/'/g, "\\'") + '\',\'' + urlServ.replace(/'/g, "\\'") + '\')'
+                : 'window.location.href=\'' + urlServ.replace(/'/g, "\\'") + '\'';
+            var iconaApp = uriServ ? 'fa-mobile-alt' : 'fa-external-link-alt';
+            sbtn.style.display = '';
+            sbtn.innerHTML = '<div onclick="' + onclickStr + '" style="display:flex; align-items:center; justify-content:center; gap:10px; background:linear-gradient(135deg,#004d40,#00695c); border:1px solid var(--primary); border-radius:12px; padding:13px 15px; cursor:pointer; color:#fff; font-weight:900; font-size:13px; text-transform:uppercase; letter-spacing:0.5px;"><i class="fas ' + iconaApp + '" style="color:var(--primary); font-size:16px;"></i>' + settings.nomeServizio + '<i class="fas fa-chevron-right" style="color:var(--primary); font-size:12px; margin-left:auto;"></i></div>';
+        } else {
+            sbtn.style.display = 'none';
+            sbtn.innerHTML = '';
+        }
+    }
+}
+function switchFiscoTab(tab) {
+    ['Analisi', 'Statistiche', 'Scadenzario', 'Fatture'].forEach(function(t) {
+        var panel = document.getElementById('fiscoTab' + t);
+        var btn = document.getElementById('ftb' + t);
+        if (panel) panel.classList.toggle('active', t === tab);
+        if (btn) btn.classList.toggle('active', t === tab);
+    });
+}
+function filtraFatture() {
+    var query = (document.getElementById('fiscoSearch').value || '').toLowerCase().trim();
+    var anno = parseInt(document.getElementById('fiscoAnnoSel').value);
+    var settings = loadFiscoSettings();
+    var tutteFatture = loadFiscoFatture();
+    var fatture = tutteFatture.filter(function(f) { return f.annoFiscale === anno; });
+    if (query) {
+        fatture = fatture.filter(function(f) {
+            return (f.piattaforma || '').toLowerCase().indexOf(query) !== -1 ||
+                   (f.numeroFattura || '').toLowerCase().indexOf(query) !== -1;
+        });
+    }
+    renderListaFatture(fatture, anno, settings);
+}
+
+function primoGiornoLavorativo(date) {
+    var d = new Date(date);
+    var dow = d.getDay();
+    if (dow === 0) d.setDate(d.getDate() + 1);
+    else if (dow === 6) d.setDate(d.getDate() + 2);
+    return d.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function renderScadenzario(anno, calc) {
+    var el = document.getElementById('fiscoScadenzario');
+    if (calc.lordo === 0) { el.innerHTML = '<div style="color:var(--dim);font-size:12px;padding:8px 0;">Nessun dato disponibile.</div>'; return; }
+    var bolloQ = roundFiscal(calc.totaleBolli / 4);
+    var items = [
+        { data: primoGiornoLavorativo(new Date(anno + 1, 5, 30)), desc: 'Saldo IRPEF + 1° Acconto (40%)', imp: roundFiscal(calc.saldo + calc.acconto1) },
+        { data: primoGiornoLavorativo(new Date(anno + 1, 10, 30)), desc: '2° Acconto IRPEF (60%)', imp: calc.acconto2 },
+        { data: primoGiornoLavorativo(new Date(anno, 3, 16)), desc: 'Bollo Trimestrale Q1', imp: bolloQ },
+        { data: primoGiornoLavorativo(new Date(anno, 6, 16)), desc: 'Bollo Trimestrale Q2', imp: bolloQ },
+        { data: primoGiornoLavorativo(new Date(anno, 9, 16)), desc: 'Bollo Trimestrale Q3', imp: bolloQ },
+        { data: primoGiornoLavorativo(new Date(anno + 1, 0, 16)), desc: 'Bollo Trimestrale Q4', imp: bolloQ }
+    ];
+    el.innerHTML = items.map(function(i) {
+        return '<div class="scad-item"><span class="scad-data">' + i.data + '</span><span class="scad-desc">' + i.desc + '</span><span class="scad-imp">' + fmtEuro(i.imp) + '</span></div>';
+    }).join('');
+}
+
+function renderListaFatture(fatture, anno, settings) {
+    var el = document.getElementById('fiscoListaFatture');
+    var chiuso = settings.annoFiscaleChiuso && settings.annoFiscaleAttivo === anno;
+    if (fatture.length === 0) { el.innerHTML = '<div style="color:var(--dim);font-size:12px;padding:8px 0;text-align:center;">Nessuna fattura per questo anno.</div>'; return; }
+    var sorted = fatture.slice().sort(function(a, b) { return b.dataFattura.localeCompare(a.dataFattura); });
+    el.innerHTML = sorted.map(function(f) {
+        var bolloCalc = (f.marcaDaBollo === 'auto' || f.marcaDaBollo === undefined) ? (f.importoLordo > 77.47 ? 2 : 0) : (parseFloat(f.marcaDaBollo) || 0);
+        var btns = chiuso ? '' : '<button style="background:none;border:1px solid #444;color:#aaa;border-radius:5px;padding:3px 8px;font-size:10px;cursor:pointer;" onclick="apriModificaFattura(\'' + f.id + '\')">✏️</button><button style="background:none;border:1px solid var(--accent);color:var(--accent);border-radius:5px;padding:3px 8px;font-size:10px;cursor:pointer;margin-top:4px;" onclick="richiestaEliminaFattura(\'' + f.id + '\')">🗑️</button>';
+        return '<div class="fattura-item"><div style="flex:1;"><div class="fattura-num">' + f.numeroFattura + ' • ' + f.piattaforma + ' • ' + formatDataFattura(f.dataFattura) + '</div><div class="fattura-importo">' + fmtEuro(f.importoLordo) + '</div><div style="font-size:10px;color:var(--dim);">Bollo: €' + bolloCalc.toFixed(2) + '</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;"><span class="fattura-stato ' + f.stato + '">' + (f.stato === 'verificata' ? '✔ Verificata' : '◎ Da verificare') + '</span>' + btns + '</div></div>';
+    }).join('');
+}
+
+function apriNuovaFattura() {
+    var settings = loadFiscoSettings();
+    if (settings.annoFiscaleChiuso) { alert('Anno fiscale chiuso. Sblocca il profilo per inserire nuove fatture.'); return; }
+    document.getElementById('titleModalFattura').innerText = 'NUOVA FATTURA';
+    document.getElementById('fatturaEditId').value = '';
+    document.getElementById('fNumero').value = '';
+    document.getElementById('fData').value = new Date().toISOString().split('T')[0];
+    document.getElementById('fImporto').value = '';
+    document.getElementById('fPiattaformaSel').value = '';
+    document.getElementById('fPiattaforma').value = '';
+    document.getElementById('fPiattaforma').style.display = 'none';
+    document.getElementById('fBollo').value = 'auto';
+    document.getElementById('fStato').value = 'da_verificare';
+    document.getElementById('modalFattura').style.display = 'flex';
+}
+
+function toggleAltroInput(val) {
+    var inp = document.getElementById('fPiattaforma');
+    if (val === 'altro') {
+        inp.style.display = '';
+        inp.focus();
+    } else {
+        inp.style.display = 'none';
+        inp.value = '';
+    }
+}
+
+function apriModificaFattura(id) {
+    var fatture = loadFiscoFatture();
+    var f = fatture.find(function(x) { return x.id === id; });
+    if (!f) return;
+    if (f.stato === 'verificata') {
+        document.getElementById('unlockFatturaId').value = id;
+        document.getElementById('modalFiscoUnlock').style.display = 'flex';
+        return;
+    }
+    _popolaModalFattura(f);
+}
+
+function confermaSbloccoFattura() {
+    document.getElementById('modalFiscoUnlock').style.display = 'none';
+    var id = document.getElementById('unlockFatturaId').value;
+    var f = loadFiscoFatture().find(function(x) { return x.id === id; });
+    if (f) _popolaModalFattura(f);
+}
+
+function _popolaModalFattura(f) {
+    document.getElementById('titleModalFattura').innerText = 'MODIFICA FATTURA';
+    document.getElementById('fatturaEditId').value = f.id;
+    document.getElementById('fNumero').value = f.numeroFattura;
+    document.getElementById('fData').value = f.dataFattura;
+    document.getElementById('fImporto').value = f.importoLordo;
+    var piattKnown = ['Deliveroo', 'Glovo', 'Just Eat', 'Foodracers'];
+    if (piattKnown.indexOf(f.piattaforma) !== -1) {
+        document.getElementById('fPiattaformaSel').value = f.piattaforma;
+        document.getElementById('fPiattaforma').style.display = 'none';
+        document.getElementById('fPiattaforma').value = '';
+    } else {
+        document.getElementById('fPiattaformaSel').value = 'altro';
+        document.getElementById('fPiattaforma').style.display = '';
+        document.getElementById('fPiattaforma').value = f.piattaforma;
+    }
+    document.getElementById('fBollo').value = (f.marcaDaBollo !== undefined) ? String(f.marcaDaBollo) : 'auto';
+    document.getElementById('fStato').value = f.stato;
+    document.getElementById('modalFattura').style.display = 'flex';
+}
+function salvaFattura() {
+    var numero = document.getElementById('fNumero').value.trim();
+    var data = document.getElementById('fData').value;
+    var importo = parseFloat(document.getElementById('fImporto').value);
+    var selVal = document.getElementById('fPiattaformaSel').value;
+    var piattaforma = (selVal === 'altro') ? document.getElementById('fPiattaforma').value.trim() : selVal;
+    var bolloVal = document.getElementById('fBollo').value;
+    var stato = document.getElementById('fStato').value;
+    var editId = document.getElementById('fatturaEditId').value;
+    if (!numero || !data || isNaN(importo) || importo <= 0 || !piattaforma) { alert('Compila tutti i campi obbligatori. Importo deve essere > 0.'); return; }
+    if (data > new Date().toISOString().split('T')[0]) { alert('Non puoi inserire una data futura.'); return; }
+    var annoFattura = parseInt(data.split('-')[0]);
+    var fatture = loadFiscoFatture();
+    var now = new Date().toISOString();
+    if (editId) {
+        var idx = fatture.findIndex(function(x) { return x.id === editId; });
+        if (idx === -1) return;
+        fatture[idx].numeroFattura = numero; fatture[idx].dataFattura = data;
+        fatture[idx].importoLordo = roundFiscal(importo);
+        fatture[idx].marcaDaBollo = (bolloVal === 'auto') ? 'auto' : parseFloat(bolloVal);
+        fatture[idx].annoFiscale = annoFattura; fatture[idx].piattaforma = piattaforma;
+        fatture[idx].stato = stato; fatture[idx].timestampUltimaModifica = now;
+    } else {
+        if (fatture.some(function(x) { return x.numeroFattura === numero && x.annoFiscale === annoFattura; })) { alert('Numero fattura già esistente per questo anno fiscale.'); return; }
+        fatture.push({ id: 'f_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5), numeroFattura: numero, dataFattura: data, importoLordo: roundFiscal(importo), marcaDaBollo: (bolloVal === 'auto') ? 'auto' : parseFloat(bolloVal), annoFiscale: annoFattura, piattaforma: piattaforma, stato: stato, timestampCreazione: now, timestampUltimaModifica: now });
+    }
+    saveFiscoFatture(fatture);
+    document.getElementById('modalFattura').style.display = 'none';
+    var sel = document.getElementById('fiscoAnnoSel');
+    var anni = getAnniDisponibili();
+    sel.innerHTML = anni.map(function(a) { return '<option value="' + a + '"' + (a === annoFattura ? ' selected' : '') + '>' + a + '</option>'; }).join('');
+    renderFisco();
+}
+
+function richiestaEliminaFattura(id) {
+    document.getElementById('eliminaFatturaId').value = id;
+    document.getElementById('modalFiscoElimina').style.display = 'flex';
+}
+
+function confermaEliminaFattura() {
+    var id = document.getElementById('eliminaFatturaId').value;
+    saveFiscoFatture(loadFiscoFatture().filter(function(x) { return x.id !== id; }));
+    document.getElementById('modalFiscoElimina').style.display = 'none';
+    renderFisco();
+}
+
+function toggleFsServizio(on) {
+    var nome = document.getElementById('fsNomeServizio');
+    var url = document.getElementById('fsUrlServizio');
+    var uri = document.getElementById('fsUriServizio');
+    var lblNome = document.getElementById('lblFsNome');
+    var lblUrl = document.getElementById('lblFsUrl');
+    var lblUri = document.getElementById('lblFsUri');
+    var lblNote = document.getElementById('lblFsUriNote');
+    nome.disabled = !on; nome.style.opacity = on ? '1' : '0.4';
+    url.disabled = !on; url.style.opacity = on ? '1' : '0.4';
+    uri.disabled = !on; uri.style.opacity = on ? '1' : '0.4';
+    lblNome.style.opacity = on ? '1' : '0.4';
+    lblUrl.style.opacity = on ? '1' : '0.4';
+    lblUri.style.opacity = on ? '1' : '0.4';
+    lblNote.style.opacity = on ? '1' : '0.4';
+}
+function aggiornaMacroINPS() {
+    var dip = document.getElementById('fsDipendente').checked;
+    var u21 = document.getElementById('fsUnder21').checked;
+    var campo = document.getElementById('fsINPS');
+    if (dip || u21) {
+        campo.value = 24;
+        campo.style.borderColor = 'var(--primary)';
+    } else {
+        campo.value = 26.23;
+        campo.style.borderColor = '#444';
+    }
+}
+function apriFiscoSettings() {
+    var s = loadFiscoSettings();
+    document.getElementById('fsAnno').value = s.annoFiscaleAttivo;
+    document.getElementById('fsCoeff').value = s.coefficiente;
+    document.getElementById('fsImposta').value = s.aliquotaImposta;
+    document.getElementById('fsINPS').value = s.aliquotaINPS;
+    document.getElementById('fsRidINPS').checked = s.riduzioneINPS;
+    document.getElementById('fsInpsVers').value = s.inpsVersato || 0;
+    document.getElementById('fsChiuso').value = s.annoFiscaleChiuso ? 'true' : 'false';
+    document.getElementById('fsUsaServizio').checked = s.usaServizioEsterno || false;
+    document.getElementById('fsNomeServizio').value = s.nomeServizio || '';
+    document.getElementById('fsUrlServizio').value = s.urlServizio || '';
+    document.getElementById('fsUriServizio').value = s.uriServizio || '';
+    toggleFsServizio(s.usaServizioEsterno || false);
+    document.getElementById('fsPrimoAnno').checked = s.primoAnno || false;
+    document.getElementById('fsAccant').value = (s.accantonamentoCustom !== null && s.accantonamentoCustom !== undefined) ? s.accantonamentoCustom : '';
+    document.getElementById('fsNotifiche').checked = s.notificheScadenze || false;
+    document.getElementById('fsDataInizio').value = s.dataInizioAttivita || '';
+    document.getElementById('fsDipendente').checked = s.dipendente || false;
+    document.getElementById('fsUnder21').checked = s.under21 || false;
+    document.getElementById('modalFiscoSettings').style.display = 'flex';
+}
+
+function salvaFiscoSettings() {
+    var anno = parseInt(document.getElementById('fsAnno').value);
+    var coeff = parseFloat(document.getElementById('fsCoeff').value);
+    var imp = parseFloat(document.getElementById('fsImposta').value);
+    var inps = parseFloat(document.getElementById('fsINPS').value);
+    var ridINPS = document.getElementById('fsRidINPS').checked;
+    var inpsVers = parseFloat(document.getElementById('fsInpsVers').value) || 0;
+    var chiuso = document.getElementById('fsChiuso').value === 'true';
+    var usaServ = document.getElementById('fsUsaServizio').checked;
+    var nomeServ = document.getElementById('fsNomeServizio').value.trim();
+    var urlServ = document.getElementById('fsUrlServizio').value.trim();
+    var uriServ = document.getElementById('fsUriServizio').value.trim();
+    if (isNaN(coeff) || coeff < 40 || coeff > 86) { alert('Coefficiente deve essere tra 40 e 86.'); return; }
+    if (isNaN(imp) || imp < 5 || imp > 15) { alert('Imposta sostitutiva deve essere tra 5 e 15.'); return; }
+    if (isNaN(inps) || inps < 20 || inps > 30) { alert('INPS deve essere tra 20 e 30.'); return; }
+    if (inpsVers < 0) { alert('INPS versato non può essere negativo.'); return; }
+    if (usaServ && (!nomeServ || !urlServ)) { alert('Inserisci nome e URL del servizio esterno.'); return; }
+    var old = loadFiscoSettings();
+    var primoAnno = document.getElementById('fsPrimoAnno').checked;
+    var accantCustomRaw = document.getElementById('fsAccant').value.trim();
+    var accantonamentoCustom = accantCustomRaw !== '' ? parseFloat(accantCustomRaw) : null;
+    var notifiche = document.getElementById('fsNotifiche').checked;
+    var dataInizio = document.getElementById('fsDataInizio').value || '';
+    var dipendente = document.getElementById('fsDipendente').checked;
+    var under21 = document.getElementById('fsUnder21').checked;
+    if (notifiche && 'Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+    saveFiscoSettings({ coefficiente: coeff, aliquotaImposta: imp, aliquotaINPS: inps, riduzioneINPS: ridINPS, inpsVersato: inpsVers, annoFiscaleAttivo: anno, annoFiscaleChiuso: chiuso, usaServizioEsterno: usaServ, nomeServizio: nomeServ, urlServizio: urlServ, uriServizio: uriServ, primoAnno: primoAnno, notificheScadenze: notifiche, accantonamentoCustom: accantonamentoCustom, dipendente: dipendente, under21: under21, dataInizioAttivita: dataInizio }, old);
+var taxMain = db.tax;
+    var accantEffettivo = (accantonamentoCustom !== null && accantonamentoCustom !== undefined && !isNaN(accantonamentoCustom))
+        ? parseFloat(accantonamentoCustom)
+        : (primoAnno ? 33 : 30);
+    if (taxMain !== null && taxMain !== undefined && !isNaN(taxMain) && String(taxMain).length >= 2 && parseFloat(taxMain) !== accantEffettivo) {
+        document.getElementById('taxMismatchMsg').innerText = 'L\'accantonamento FISCO (' + accantEffettivo + '%) non coincide con la tassazione in homepage (' + taxMain + '%). I calcoli potrebbero risultare errati.';
+        document.getElementById('modalTaxMismatch').style.display = 'flex';
+    } else if (taxMain === null || taxMain === undefined || isNaN(taxMain)) {
+        document.getElementById('taxIn').value = accantEffettivo;
+        db.tax = accantEffettivo;
+        salvaDB();
+    }    document.getElementById('modalFiscoSettings').style.display = 'none';
+    var sel = document.getElementById('fiscoAnnoSel');
+    var anni = getAnniDisponibili();
+    sel.innerHTML = anni.map(function(a) { return '<option value="' + a + '"' + (a === anno ? ' selected' : '') + '>' + a + '</option>'; }).join('');
+    renderFisco();
+}
+
+function backupFiscale() {
+    var data = { fatture: loadFiscoFatture(), settings: loadFiscoSettings(), exportedAt: new Date().toISOString() };
+    localStorage.setItem(FISCO_BACKUP_KEY, JSON.stringify(data));
+    var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'fisco_backup_' + new Date().toISOString().split('T')[0] + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function checkFiscalIntegrity() {
+    var fatture = loadFiscoFatture();
+    var issues = [];
+    fatture.forEach(function(f) {
+        if (!f.id) issues.push('Fattura senza ID');
+        if (!f.numeroFattura) issues.push('Fattura ' + f.id + ' senza numero');
+        if (!f.dataFattura) issues.push('Fattura ' + f.id + ' senza data');
+        if (f.importoLordo <= 0) issues.push('Fattura ' + f.id + ': importo <= 0');
+        if (!['da_verificare', 'verificata'].includes(f.stato)) issues.push('Fattura ' + f.id + ': stato non valido');
+    });
+    return issues;
+}
+
+function stampaArchivioFiscale(anno, mese) {
+    var fatture = loadFiscoFatture().filter(function(f) {
+        if (f.annoFiscale !== anno) return false;
+        if (mese !== undefined) return parseInt(f.dataFattura.split('-')[1]) === mese;
+        return true;
+    });
+    var settings = loadFiscoSettings();
+    var calc = calcolaFiscale(fatture, settings);
+    var w = window.open('', '_blank');
+    w.document.write('<html><head><title>Archivio Fiscale ' + anno + '</title><style>body{font-family:sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;margin-bottom:20px;}th,td{border:1px solid #000;padding:6px;font-size:12px;}th{background:#eee;font-weight:bold;}</style></head><body>');
+    w.document.write('<h2>ARCHIVIO FISCALE ' + anno + (mese ? ' - Mese ' + mese : '') + '</h2>');
+    w.document.write('<table><thead><tr><th>N°</th><th>Data</th><th>Piattaforma</th><th>Importo</th><th>Bollo</th><th>Stato</th></tr></thead><tbody>');
+    fatture.slice().sort(function(a, b) { return a.dataFattura.localeCompare(b.dataFattura); }).forEach(function(f) {
+        var b = (f.marcaDaBollo === 'auto' || f.marcaDaBollo === undefined) ? (f.importoLordo > 77.47 ? 2 : 0) : (parseFloat(f.marcaDaBollo) || 0);
+        w.document.write('<tr><td>' + f.numeroFattura + '</td><td>' + formatDataFattura(f.dataFattura) + '</td><td>' + f.piattaforma + '</td><td>€ ' + f.importoLordo.toFixed(2) + '</td><td>€ ' + b.toFixed(2) + '</td><td>' + f.stato + '</td></tr>');
+    });
+    w.document.write('</tbody></table><table><tr><th>Lordo Totale</th><td>€ ' + calc.lordo.toFixed(2) + '</td></tr><tr><th>Reddito Imponibile</th><td>€ ' + calc.redditoImponibile.toFixed(2) + '</td></tr><tr><th>INPS</th><td>€ ' + calc.inps.toFixed(2) + '</td></tr><tr><th>Imposta Sostitutiva</th><td>€ ' + calc.imposta.toFixed(2) + '</td></tr><tr><th>Bolli Totali</th><td>€ ' + calc.totaleBolli.toFixed(2) + '</td></tr><tr><th>Netto Reale</th><td>€ ' + calc.nettoReale.toFixed(2) + '</td></tr><tr><th>Accantonamento (30%)</th><td>€ ' + calc.accantonamento.toFixed(2) + '</td></tr></table>');
+    w.document.write('<p style="font-size:10px;color:#666;">Questo strumento è un simulatore fiscale basato sui dati inseriti manualmente. Non sostituisce il commercialista.</p></body></html>');
+    w.document.close();
+    w.print();
+}
+</script>
+<div id="onboardingOverlay" style="display:none;">
+    <div style="width:100%; display:flex; justify-content:flex-end; margin-bottom:8px;">
+        <span style="font-size:11px; color:#444; font-weight:bold; letter-spacing:1px;">RIDER TRACKER PRO</span>
+    </div>
+    <div class="ob-slides">
+        <div class="ob-slide active" id="obSlide0">
+            <img class="ob-icon" src="icon-192.png" alt="">
+            <div class="ob-title" id="obT0">Benvenuto</div>
+            <div class="ob-sub">Scegli la lingua / Choose your language</div>
+            <div class="ob-lang-row">
+                <button class="ob-lang-btn selected" id="obLangIT" onclick="obSetLang('it')">🇮🇹 Italiano</button>
+                <button class="ob-lang-btn" id="obLangEN" onclick="obSetLang('en')">🇬🇧 English</button>
+            </div>
+        </div>
+        <div class="ob-slide" id="obSlide1"><div class="ob-icon-emoji">📊</div><div class="ob-title" id="obT1"></div><div class="ob-sub" id="obS1"></div></div>
+        <div class="ob-slide" id="obSlide2"><div class="ob-icon-emoji">🕒</div><div class="ob-title" id="obT2"></div><div class="ob-sub" id="obS2"></div></div>
+        <div class="ob-slide" id="obSlide3"><div class="ob-icon-emoji">⛽</div><div class="ob-title" id="obT3"></div><div class="ob-sub" id="obS3"></div></div>
+        <div class="ob-slide" id="obSlide4"><div class="ob-icon-emoji">🛣️</div><div class="ob-title" id="obT4"></div><div class="ob-sub" id="obS4"></div></div>
+        <div class="ob-slide" id="obSlide5"><div class="ob-icon-emoji">🐷</div><div class="ob-title" id="obT5"></div><div class="ob-sub" id="obS5"></div></div>
+        <div class="ob-slide" id="obSlide6"><div class="ob-icon-emoji">📋</div><div class="ob-title" id="obT6"></div><div class="ob-sub" id="obS6"></div></div>
+        <div class="ob-slide" id="obSlide7"><div class="ob-icon-emoji">📈</div><div class="ob-title" id="obT7"></div><div class="ob-sub" id="obS7"></div></div>
+        <div class="ob-slide" id="obSlide8"><div class="ob-icon-emoji">✅</div><div class="ob-title" id="obT8"></div><div class="ob-sub" id="obS8"></div></div>
+    </div>
+    <div style="width:100%; display:flex; flex-direction:column; align-items:center;">
+        <div class="ob-dots" id="obDots"></div>
+        <div class="ob-btn-row">
+            <button class="ob-btn-skip" id="obBtnSkip" onclick="obSkip()">Salta</button>
+            <button class="ob-btn-next" id="obBtnNext" onclick="obNext()">Avanti</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>
