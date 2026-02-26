@@ -3118,8 +3118,8 @@ function aggiornaSuggerimentoConsumo(tipoCarburante) {
     const result = calcolaMediaConsumoDaStorico(tipoCarburante);
     if (!result) {
         hint.innerText = currentLang === 'it'
-            ? '(dati insufficienti — inserisci valore o attendi il calcolo automatico dopo alcuni turni inseriti)'
-            : '(insufficient data — enter value or wait automatic calculation after a few work shifts)';
+            ? '(dati insufficienti per calcolare la media — inserisci valore o attendi il calcolo automatico dopo alcuni turni inseriti)'
+            : '(insufficient data to calculste the average — enter value or wait automatic calculation after a few work shifts)';
         hint.style.color = 'var(--dim)';
         return;
     }
