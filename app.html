@@ -5301,5 +5301,32 @@ function stampaArchivioFiscale(anno, mese) {
         </div>
     </div>
 </div>
+    <script>
+    if ('serviceWorker' in navigator) {
+        // Registra il worker per monitorare i cambiamenti
+        navigator.serviceWorker.register('./service-worker.js').then(reg => {
+            reg.onupdatefound = () => {
+                const newWorker = reg.installing;
+                newWorker.onstatechange = () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        // Nuovo contenuto disponibile
+                        console.log("Nuova versione pronta.");
+                    }
+                };
+            };
+        });
+
+        // Forza il refresh quando il nuovo Service Worker prende il controllo
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (!refreshing) {
+                window.location.reload();
+                refreshing = true;
+            }
+        });
+    }
+    </script>
+</body>
+</html>
 </body>
 </html>
