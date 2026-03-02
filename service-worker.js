@@ -1,4 +1,4 @@
-const CACHE = "ridertrackerpro-v3.0.10";
+const CACHE = "ridertrackerpro-v3.0.11";
 
 const FILES = [
   "./",
@@ -11,7 +11,6 @@ const FILES = [
 ];
 
 self.addEventListener("install", e => {
-  self.skipWaiting();
   e.waitUntil(
     caches.open(CACHE).then(c => c.addAll(FILES))
   );
