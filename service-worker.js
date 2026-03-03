@@ -1,0 +1,50 @@
+const CACHE = "ridertrackerpro-v3.0.12";
+
+const FILES = [
+  "./",
+  "./index.html",
+  "./app.html",
+  "./fisco.html",
+  "./manifest.json",
+  "./icon-192.png",
+  "./icon-512.png"
+];
+
+self.addEventListener("install", e => {
+  e.waitUntil(
+    caches.open(CACHE).then(c => c.addAll(FILES))
+  );
+  self.skipWaiting();
+});
+
+self.addEventListener("message", event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
+self.addEventListener("activate", e => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(
+        keys.filter(k => k !== CACHE).map(k => caches.delete(k))
+      )
+    )
+  );
+  self.clients.claim();
+});
+
+self.addEventListener("fetch", e => {
+  const req = e.request;
+
+  if (req.destination === "image") {
+    e.respondWith(
+      fetch(req).catch(() => caches.match(req))
+    );
+    return;
+  }
+
+  e.respondWith(
+    caches.match(req).then(r => r || fetch(req))
+  );
+});
