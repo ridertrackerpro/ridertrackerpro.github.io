@@ -161,6 +161,9 @@ body{display:flex;flex-direction:column;height:100vh;width:100vw;position:fixed;
 .tasse-header{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--primary);border-radius:14px;padding:14px 16px;margin-bottom:10px;text-align:center;}
 .tasse-total{font-size:26px;font-weight:900;color:var(--primary);}
 .tasse-sub{font-size:12px;color:var(--dim);margin-top:3px;}
+.acca-fase-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-top:4px;}
+.acca-fase-desc{font-size:10px;color:var(--dim);margin-top:1px;}
+.acca-warn{display:none;background:#2a1a00;border:1px solid var(--orange);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--orange);margin-bottom:10px;line-height:1.5;}
 
 /* TOTAL STRIP */
 .total-strip{padding:8px 16px;text-align:right;font-size:14px;color:var(--dim);background:var(--card);border-bottom:1px solid var(--border);flex-shrink:0;}
@@ -248,8 +251,11 @@ body{display:flex;flex-direction:column;height:100vh;width:100vw;position:fixed;
         <div class="home-acca-right">
           <div class="home-acca-anno" id="homeAnnoLabel">Anno 2026</div>
           <div class="home-acca-badge">Regime forfettario</div>
+          <div class="acca-fase-label" id="homeAccantFase"></div>
+          <div class="acca-fase-desc" id="homeAccantFaseDesc"></div>
         </div>
       </div>
+      <div class="acca-warn" id="homeAccantWarn"></div>
       <div class="card">
         <div class="card-title">Riepilogo fiscale</div>
         <div class="stat-row"><span class="stat-label">Lordo incassato</span><span class="stat-value primary" id="homeLordo">0,00 €</span></div>
@@ -336,7 +342,12 @@ body{display:flex;flex-direction:column;height:100vh;width:100vw;position:fixed;
         <div class="stat-row"><span class="stat-label">Imposta sostitutiva</span><span class="stat-value negative" id="tImposta">0,00 €</span></div>
         <div class="stat-row"><span class="stat-label">Netto</span><span class="stat-value positive" id="tNetto">0,00 €</span></div>
         <div class="stat-row"><span class="stat-label">Accantonamento consigliato</span><span class="stat-value" id="tAccant">—</span></div>
+        <div style="padding:8px 0 4px;">
+          <div class="acca-fase-label" id="tAccantFase"></div>
+          <div class="acca-fase-desc" id="tAccantFaseDesc"></div>
+        </div>
       </div>
+      <div class="acca-warn" id="tAccantWarn"></div>
       <button class="btn-primary" onclick="apriImpostazioni()">⚙️ Impostazioni fiscali</button>
       </div>
     </div>
@@ -618,6 +629,10 @@ body{display:flex;flex-direction:column;height:100vh;width:100vw;position:fixed;
     <div class="toggle-row"><span class="toggle-label">Under 21</span><div class="toggle" id="toggleUnder21" onclick="toggleField('toggleUnder21','fsUnder21')"></div></div>
     <input type="hidden" id="fsUnder21" value="0">
     <div class="field-group"><div class="field-label">Data inizio attività</div><input class="field-input" id="fsDataInizio" type="date"></div>
+    <div class="field-group"><div class="field-label">Reddito lordo forfettario anno precedente (€)</div><input class="field-input" id="fsReddPrec" type="number" inputmode="decimal" step="1" placeholder="0 se primo anno"></div>
+    <div class="toggle-row"><span class="toggle-label">Ho altri redditi con sostituto d'imposta (dipendente/pensione)</span><div class="toggle" id="toggleAltriRedditi" onclick="toggleField('toggleAltriRedditi','fsAltriRedditi')"></div></div>
+    <input type="hidden" id="fsAltriRedditi" value="0">
+    <div class="field-group"><div class="field-label">Costo commercialista annuo (€)</div><input class="field-input" id="fsCostComm" type="number" inputmode="decimal" step="1" placeholder="450"></div>
     <div class="field-group"><div class="field-label">Accantonamento personalizzato (%)</div><input class="field-input" id="fsAccant" type="number" inputmode="decimal" step="0.1" placeholder="Lascia vuoto per calcolo automatico"></div>
     <button class="btn-primary" onclick="salvaImpostazioni()">SALVA IMPOSTAZIONI</button>
   </div>
@@ -859,7 +874,8 @@ function save(key,val) { localStorage.setItem(key,JSON.stringify(val)); }
 function loadSettings() {
   var d={coefficiente:78,aliquotaImposta:15,aliquotaINPS:26.23,riduzioneINPS:false,
          inpsVersato:0,annoFiscaleAttivo:new Date().getFullYear(),primoAnno:false,
-         dipendente:false,under21:false,dataInizioAttivita:'',accantonamentoCustom:null};
+         dipendente:false,under21:false,dataInizioAttivita:'',accantonamentoCustom:null,
+         costoCommercialista:450,redditoAnnoPrecedente:0,altriRedditiSostituto:false};
   try{var s=JSON.parse(localStorage.getItem(KEY_SETTINGS));return s?Object.assign({},d,s):d;}catch(e){return d;}
 }
 function saveSettings(s){localStorage.setItem(KEY_SETTINGS,JSON.stringify(s));}
@@ -1086,8 +1102,16 @@ function renderHome() {
   document.getElementById('homeFatture').textContent = fatture.length;
   document.getElementById('homeNonPagate').textContent = fatture.filter(f=>f.stato!=='pagata').length;
   document.getElementById('homeSpese').textContent = load(KEY_SPESE,[]).filter(sp=>new Date(sp.data).getFullYear()===currentAnno).length;
-  var accant = s.accantonamentoCustom!=null ? s.accantonamentoCustom : calc.percAccant;
-  document.getElementById('homeAccant').textContent = fmt(lordo*accant/100);
+  var percDin = calcolaPercAccantonamentoDinamico(lordo, s);
+  var accant = s.accantonamentoCustom != null ? s.accantonamentoCustom : percDin;
+  document.getElementById('homeAccant').textContent = fmt(lordo * accant / 100);
+  var fase = getFaseFiscale(s.primoAnno);
+  var faseEl = document.getElementById('homeAccantFase');
+  var faseDescEl = document.getElementById('homeAccantFaseDesc');
+  if (faseEl) { faseEl.textContent = fase.label; faseEl.style.color = fase.color; }
+  if (faseDescEl) { faseDescEl.textContent = fase.desc; }
+  var warnEl = document.getElementById('homeAccantWarn');
+  if (warnEl) { var wt = getWarnText(s, lordo, percDin); warnEl.style.display = wt ? 'block' : 'none'; warnEl.textContent = wt; }
   // prossima scadenza
   var scad = getScadenze(currentAnno);
   var done = load(KEY_SCADENZE,[]);
@@ -1107,6 +1131,43 @@ function calcolaFiscale(lordo,s) {
   var netto = lordo-inps-imposta;
   var percAccant = lordo>0?Math.round((inps+imposta)/lordo*100):0;
   return {imponibile,inps,inpsDaPagare,imposta,netto,percAccant};
+}
+
+function calcolaPercAccantonamentoDinamico(lordo, s) {
+  var calc = calcolaFiscale(lordo, s);
+  var percTasse = lordo > 0 ? (calc.inps + calc.imposta) / lordo * 100 : 0;
+  var costoComm = (s.costoCommercialista != null ? s.costoCommercialista : 450);
+  var percComm = lordo > 0 ? costoComm / lordo * 100 : 0;
+  var percCalcolata = percTasse + percComm;
+  return Math.round(percCalcolata * 10) / 10 + 3;
+}
+
+function getFaseFiscale(primoAnno) {
+  var m = new Date().getMonth() + 1;
+  if (primoAnno) return {label:'🌱 Primo anno', desc:'Solo saldo a giugno anno prossimo', color:'#4CAF50'};
+  if (m >= 1 && m <= 6) return {label:'📅 Saldo + 1° Acconto', desc:'Scadenza giugno — periodo critico', color:'var(--orange)'};
+  if (m >= 7 && m <= 11) return {label:'📅 2° Acconto', desc:'Scadenza novembre', color:'var(--primary)'};
+  return {label:'📅 Fine anno', desc:'Nessuna scadenza imminente', color:'#4CAF50'};
+}
+
+function getWarnText(s, lordo, percDin) {
+  if (s.accantonamentoCustom != null && s.accantonamentoCustom < percDin) {
+    return '⚠️ La % personalizzata (' + Math.round(s.accantonamentoCustom) + '%) è inferiore al consigliato (' + Math.round(percDin) + '%). Rischio scoperto fiscale.';
+  }
+  if (s.primoAnno) {
+    return '⚠️ Primo anno: dal prossimo anno l\'aliquota sale al 15%. Valuta di alzare la percentuale per i primi 12 mesi del secondo anno.';
+  }
+  var reddPrec = s.redditoAnnoPrecedente || 0;
+  if (reddPrec > 0 && lordo > reddPrec * 1.20) {
+    var calcPrec = calcolaFiscale(reddPrec, s);
+    var calcCorr = calcolaFiscale(lordo, s);
+    var differenza = (calcCorr.inps + calcCorr.imposta) - (calcPrec.inps + calcPrec.imposta);
+    return '⚠️ Il tuo reddito è cresciuto oltre il 20% rispetto all\'anno scorso. Gli acconti del prossimo anno saranno circa ' + fmt(differenza) + ' € più alti. Stai accantonando abbastanza.';
+  }
+  if (s.altriRedditiSostituto) {
+    return 'ℹ️ Hai altri redditi con sostituto d\'imposta. Consulta il tuo commercialista per il modello Unico.';
+  }
+  return '';
 }
 
 // ================================================================
@@ -1987,8 +2048,16 @@ function renderTasse() {
   document.getElementById('tINPSPag').textContent=fmt(calc.inpsDaPagare)+' €';
   document.getElementById('tImposta').textContent=fmt(calc.imposta)+' €';
   document.getElementById('tNetto').textContent=fmt(calc.netto)+' €';
-  var accPerc=s.accantonamentoCustom!=null?s.accantonamentoCustom:calc.percAccant;
-  document.getElementById('tAccant').textContent=fmt(lordo*accPerc/100)+' € ('+Math.round(accPerc)+'%)';
+  var percDin = calcolaPercAccantonamentoDinamico(lordo, s);
+  var accPerc = s.accantonamentoCustom != null ? s.accantonamentoCustom : percDin;
+  document.getElementById('tAccant').textContent = fmt(lordo * accPerc / 100) + ' € (' + Math.round(accPerc) + '%)';
+  var fase = getFaseFiscale(s.primoAnno);
+  var tFaseEl = document.getElementById('tAccantFase');
+  var tFaseDescEl = document.getElementById('tAccantFaseDesc');
+  if (tFaseEl) { tFaseEl.textContent = fase.label; tFaseEl.style.color = fase.color; }
+  if (tFaseDescEl) { tFaseDescEl.textContent = fase.desc; }
+  var tWarnEl = document.getElementById('tAccantWarn');
+  if (tWarnEl) { var wt = getWarnText(s, lordo, percDin); tWarnEl.style.display = wt ? 'block' : 'none'; tWarnEl.textContent = wt; }
 }
 
 // ================================================================
@@ -2038,6 +2107,9 @@ function apriImpostazioni() {
   setToggle('toggleDipendente','fsDipendente',s.dipendente);
   setToggle('toggleUnder21','fsUnder21',s.under21);
   document.getElementById('fsDataInizio').value=s.dataInizioAttivita||'';
+  document.getElementById('fsReddPrec').value=s.redditoAnnoPrecedente||0;
+  setToggle('toggleAltriRedditi','fsAltriRedditi',s.altriRedditiSostituto);
+  document.getElementById('fsCostComm').value=s.costoCommercialista!=null?s.costoCommercialista:450;
   document.getElementById('fsAccant').value=s.accantonamentoCustom!=null?s.accantonamentoCustom:'';
   apriDettaglio('viewImpostazioni');
 }
@@ -2055,7 +2127,10 @@ function salvaImpostazioni() {
     dipendente:document.getElementById('fsDipendente').value==='1',
     under21:document.getElementById('fsUnder21').value==='1',
     dataInizioAttivita:document.getElementById('fsDataInizio').value||'',
-    accantonamentoCustom:document.getElementById('fsAccant').value!==''?parseFloat(document.getElementById('fsAccant').value):null
+    accantonamentoCustom:document.getElementById('fsAccant').value!==''?parseFloat(document.getElementById('fsAccant').value):null,
+    costoCommercialista:document.getElementById('fsCostComm').value!==''?parseFloat(document.getElementById('fsCostComm').value):450,
+    redditoAnnoPrecedente:parseFloat(document.getElementById('fsReddPrec').value)||0,
+    altriRedditiSostituto:document.getElementById('fsAltriRedditi').value==='1'
   };
   saveSettings(s);
   currentAnno=anno;
