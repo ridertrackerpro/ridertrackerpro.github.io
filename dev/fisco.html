@@ -1,0 +1,2942 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Fisco 🇮🇹</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root {
+  --bg:#0f0f0f; --card:#1a1a1a; --primary:#00CCBC; --accent:#ff4d4d;
+  --text:#e0e0e0; --dim:#888; --input-bg:#252525; --orange:#ffa500;
+  --card2:#222; --border:#333;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;height:100%;overflow:hidden;}
+body{display:flex;flex-direction:column;height:100vh;width:100vw;position:fixed;inset:0;}
+
+/* TOP BAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--card);border-bottom:1px solid var(--border);flex-shrink:0;z-index:10;}
+.topbar-title{font-size:18px;font-weight:700;color:var(--primary);}
+.topbar-year{font-size:14px;color:var(--dim);cursor:pointer;}
+.topbar-actions{display:flex;gap:8px;align-items:center;}
+.icon-btn{background:none;border:none;color:var(--dim);font-size:18px;cursor:pointer;padding:4px 8px;}
+.icon-btn:hover{color:var(--primary);}
+
+/* MAIN CONTENT */
+.main{flex:1;overflow:hidden;position:relative;}
+.page{display:none;height:100%;flex-direction:column;overflow:hidden;}
+.page.active{display:flex;}
+
+/* SCROLL AREA */
+.scroll-area{flex:1;overflow-y:auto;padding:16px;padding-bottom:80px;}
+.scroll-area::-webkit-scrollbar{width:0;}
+
+/* BOTTOM NAV */
+.bottom-nav{display:flex;background:var(--card);border-top:1px solid var(--border);flex-shrink:0;z-index:10;padding-bottom:env(safe-area-inset-bottom, 12px);}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 4px;background:none;border:none;color:var(--dim);font-size:10px;cursor:pointer;gap:4px;position:relative;}
+.nav-btn i{font-size:20px;}
+.nav-btn.active{color:var(--primary);}
+.nav-btn.active i{background:var(--primary);color:#000;padding:8px 18px;border-radius:20px;}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:10px;}
+.card-title{font-size:12px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px;}
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);}
+.stat-row:last-child{border-bottom:none;}
+.stat-label{font-size:15px;color:var(--dim);}
+.stat-value{font-size:15px;font-weight:700;}
+.stat-value.positive{color:#4CAF50;}
+.stat-value.negative{color:var(--accent);}
+.stat-value.primary{color:var(--primary);}
+
+/* HOME SUMMARY CARD */
+.home-acca{background:linear-gradient(135deg,#001a18 0%,#002d28 100%);border:1px solid rgba(0,255,200,.18);border-radius:18px;padding:16px;margin-bottom:8px;position:relative;overflow:hidden;}
+.home-acca::before{content:'';position:absolute;top:-30px;right:-30px;width:120px;height:120px;background:radial-gradient(circle,rgba(0,230,180,.12) 0%,transparent 70%);pointer-events:none;}
+.home-acca-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.home-acca-label{font-size:10px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:1.2px;opacity:.8;}
+.home-acca-anno{font-size:10px;color:var(--dim);}
+.home-acca-main{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:12px;}
+.home-acca-val{font-size:36px;font-weight:900;color:var(--primary);line-height:1;letter-spacing:-1px;}
+.home-acca-perc{font-size:14px;font-weight:700;color:var(--primary);opacity:.7;margin-left:6px;margin-bottom:4px;}
+.home-acca-badge{display:inline-block;background:rgba(0,230,180,.1);border:1px solid rgba(0,230,180,.3);border-radius:20px;padding:3px 10px;font-size:10px;color:var(--primary);font-weight:700;letter-spacing:.5px;}
+.home-acca-fase{margin-bottom:10px;}
+.home-acca-fase-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:1px;}
+.home-acca-fase-desc{font-size:10px;color:var(--dim);}
+.home-acca-divider{height:1px;background:rgba(255,255,255,.07);margin:10px 0;}
+.home-acca-bottom{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.home-acca-stat{background:rgba(255,255,255,.04);border-radius:10px;padding:8px 10px;}
+.home-acca-stat-label{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px;}
+.home-acca-stat-val{font-size:16px;font-weight:800;color:var(--text);}
+.home-acca-stat-val.positive{color:#4CAF50;}
+.home-acca-stat-val.accent{color:var(--primary);}
+.home-acca-warn{display:none;margin-top:10px;padding:8px 10px;background:rgba(255,160,0,.1);border:1px solid rgba(255,160,0,.3);border-radius:10px;font-size:11px;color:var(--orange);line-height:1.4;}
+.acca-fase-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;}
+.acca-fase-desc{font-size:10px;color:var(--dim);margin-top:1px;}
+.acca-warn{display:none;}
+.field-input.field-error{border-color:var(--accent);}
+.campi-mancanti{display:none;background:#1a1a1a;border:1px solid #333;border-left:3px solid var(--orange);border-right:3px solid var(--orange);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--dim);margin-bottom:10px;line-height:1.6;}
+.campi-mancanti strong{color:var(--orange);}
+.campi-mancanti small{color:#555;font-size:11px;}
+
+/* TABS */
+.tabs{display:flex;background:var(--card);border-bottom:1px solid var(--border);overflow-x:auto;flex-shrink:0;}
+.tabs::-webkit-scrollbar{height:0;}
+.tab-btn{flex:1;padding:12px 8px;background:none;border:none;color:var(--dim);font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;}
+.tab-btn.active{color:var(--primary);border-bottom-color:var(--primary);}
+
+/* LIST ITEMS */
+.list-item{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer;}
+.list-item:last-child{border-bottom:none;}
+.list-icon{width:44px;height:44px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.list-icon i{color:#000;font-size:16px;}
+.list-icon.paid{position:relative;}
+.list-icon.paid::after{content:'✓';position:absolute;bottom:-2px;right:-2px;background:#4CAF50;color:#fff;border-radius:50%;width:16px;height:16px;font-size:10px;display:flex;align-items:center;justify-content:center;font-weight:bold;}
+.list-info{flex:1;min-width:0;}
+.list-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.list-sub{font-size:12px;color:var(--dim);margin-top:2px;}
+.list-amount{font-size:14px;font-weight:600;text-align:right;flex-shrink:0;}
+.badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:600;}
+.badge-warn{background:#554400;color:#ffa500;}
+.badge-ok{background:#1a3a1a;color:#4CAF50;}
+.badge-gray{background:#333;color:var(--dim);}
+
+/* INPUTS */
+.field-group{margin-bottom:12px;}
+.field-label{font-size:12px;color:var(--primary);margin-bottom:4px;font-weight:600;}
+.field-input{width:100%;padding:12px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);border-radius:12px;font-size:15px;outline:none;}
+.field-input:focus{border-color:var(--primary);}
+.field-select{width:100%;padding:12px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);border-radius:12px;font-size:15px;outline:none;appearance:none;-webkit-appearance:none;}
+.field-textarea{width:100%;padding:12px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);border-radius:12px;font-size:15px;outline:none;resize:vertical;min-height:80px;}
+.section-title{font-size:15px;font-weight:700;margin:16px 0 12px;}
+.toggle-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;}
+.toggle-label{font-size:14px;}
+.toggle{width:48px;height:28px;background:#444;border-radius:14px;position:relative;cursor:pointer;flex-shrink:0;transition:.2s;}
+.toggle.on{background:var(--primary);}
+.toggle::after{content:'';width:22px;height:22px;background:#fff;border-radius:50%;position:absolute;top:3px;left:3px;transition:.2s;}
+.toggle.on::after{left:23px;}
+
+/* BUTTONS */
+.btn-primary{width:100%;padding:14px;border-radius:12px;border:none;font-weight:700;font-size:15px;background:var(--primary);color:#000;cursor:pointer;margin-top:8px;}
+.btn-secondary{width:100%;padding:14px;border-radius:12px;border:none;font-weight:700;font-size:15px;background:#333;color:var(--text);cursor:pointer;margin-top:8px;}
+.btn-danger{width:100%;padding:14px;border-radius:12px;border:none;font-weight:700;font-size:15px;background:var(--accent);color:#fff;cursor:pointer;margin-top:8px;}
+.btn-outline{width:100%;padding:12px;border-radius:12px;border:1px solid var(--primary);font-weight:700;font-size:14px;background:transparent;color:var(--primary);cursor:pointer;margin-top:8px;}
+.btn-row{display:flex;gap:8px;margin-top:8px;}
+.btn-row .btn-primary,.btn-row .btn-secondary,.btn-row .btn-outline,.btn-row .btn-danger{margin-top:0;}
+
+/* FAB */
+.fab{position:fixed;bottom:80px;right:16px;width:54px;height:54px;background:var(--primary);border-radius:16px;border:none;color:#000;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,204,188,.3);z-index:20;}
+
+/* DETAIL VIEW */
+.detail-view{display:none;position:fixed;inset:0;background:var(--bg);z-index:100;flex-direction:column;}
+.detail-view.open{display:flex;}
+.detail-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--card);border-bottom:1px solid var(--border);}
+.detail-header-title{font-size:17px;font-weight:700;}
+.detail-actions{display:flex;gap:8px;}
+.btn-text{background:none;border:none;color:var(--primary);font-size:15px;font-weight:600;cursor:pointer;padding:4px 8px;}
+.btn-icon-del{background:none;border:none;color:var(--dim);font-size:20px;cursor:pointer;padding:4px 8px;}
+.btn-icon-del:hover{color:var(--accent);}
+
+/* MODALS */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--card);border-radius:20px;padding:24px;width:90%;max-width:360px;}
+.modal-title{font-size:18px;font-weight:700;margin-bottom:12px;}
+.modal-msg{font-size:14px;color:var(--dim);margin-bottom:20px;line-height:1.5;}
+.modal-btns{display:flex;justify-content:flex-end;gap:16px;}
+.modal-btns button{background:none;border:none;font-size:16px;font-weight:600;cursor:pointer;padding:4px 8px;}
+.modal-btn-cancel{color:var(--dim);}
+.modal-btn-confirm{color:var(--primary);}
+.modal-btn-danger{color:var(--accent);}
+
+/* SDI/XML area */
+.xml-box{background:#111;border-radius:12px;padding:12px;font-family:monospace;font-size:11px;color:#aaa;overflow:auto;max-height:200px;white-space:pre;margin-top:8px;}
+
+/* SCADENZE */
+.scad-group{margin-bottom:10px;}
+.scad-month-header{display:flex;align-items:center;gap:8px;padding:4px 0 8px;}
+.scad-month-label{font-size:14px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;}
+.scad-month-line{flex:1;height:1px;background:var(--border);}
+.scad-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:.15s;}
+.scad-card.done-card{opacity:.45;}
+.scad-card.warn-card{border-color:#664400;background:#1a1200;}
+.scad-card.past-card{border-color:#2a2a2a;}
+.scad-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+.scad-icon.tipo-inps{background:#1a2a3a;color:#4a9fd4;}
+.scad-icon.tipo-irpef{background:#2a1a3a;color:#a04af0;}
+.scad-icon.tipo-bollo{background:#2a2a1a;color:var(--orange);}
+.scad-body{flex:1;min-width:0;}
+.scad-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.scad-date-label{font-size:11px;color:var(--dim);margin-top:2px;}
+.scad-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;}
+.scad-imp{font-size:13px;font-weight:700;color:var(--text);}
+.scad-toggle{width:24px;height:24px;border:2px solid var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s;}
+.scad-toggle.done{background:var(--primary);border-color:var(--primary);}
+.scad-toggle.done::after{content:'✓';color:#000;font-size:13px;font-weight:900;}
+.badge-inps{background:#1a2a3a;color:#4a9fd4;}
+.badge-irpef{background:#2a1a3a;color:#a04af0;}
+.badge-bollo{background:#2a2200;color:var(--orange);}
+
+/* TASSE */
+.tasse-header{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--primary);border-radius:14px;padding:14px 16px;margin-bottom:10px;text-align:center;}
+.tasse-total{font-size:26px;font-weight:900;color:var(--primary);}
+.tasse-sub{font-size:12px;color:var(--dim);margin-top:3px;}
+.acca-fase-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-top:4px;}
+.acca-fase-desc{font-size:10px;color:var(--dim);margin-top:1px;}
+.acca-warn{display:none;background:#2a1a00;border:1px solid var(--orange);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--orange);margin-top:14px;margin-bottom:0;line-height:1.5;}
+.tasse-acca-box{background:linear-gradient(135deg,#001a18,#002d28);border:1px solid rgba(0,255,200,.15);border-radius:14px;padding:14px;margin-top:10px;}
+.tasse-acca-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.tasse-acca-title{font-size:10px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:1px;opacity:.8;}
+.tasse-acca-strategia{font-size:10px;color:var(--dim);}
+.tasse-acca-main{display:flex;align-items:baseline;gap:6px;margin-bottom:4px;}
+.tasse-acca-val{font-size:28px;font-weight:900;color:var(--primary);letter-spacing:-1px;}
+.tasse-acca-perc{font-size:13px;font-weight:700;color:var(--primary);opacity:.7;}
+.tasse-acca-proiezione{font-size:11px;color:var(--dim);margin-bottom:10px;}
+.tasse-acca-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+.tasse-acca-cell{background:rgba(255,255,255,.04);border-radius:10px;padding:8px 10px;}
+.tasse-acca-cell-label{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.7px;margin-bottom:3px;}
+.tasse-acca-cell-val{font-size:15px;font-weight:800;}
+.tasse-acca-cell-val.primary{color:var(--primary);}
+.tasse-acca-cell-val.positive{color:#4CAF50;}
+
+/* TOTAL STRIP */
+.total-strip{padding:8px 16px;text-align:right;font-size:14px;color:var(--dim);background:var(--card);border-bottom:1px solid var(--border);flex-shrink:0;}
+.total-strip strong{color:var(--text);}
+/* PAGE FILL */
+.scroll-area-flex{display:flex;flex-direction:column;}
+.scroll-area-flex .page-fill-wrap{flex:1;display:flex;flex-direction:column;}
+.scroll-area-flex .page-fill-wrap .fill-card{flex:1;}
+
+/* NOSCROLL PAGE - riduce padding solo su Home e Tasse */
+.noscroll-area{padding:8px 12px 8px 12px !important;overflow-y:hidden !important;}
+.noscroll-area .home-acca{padding:10px 12px;margin-bottom:6px;}
+.noscroll-area .home-acca-top{margin-bottom:6px;}
+.noscroll-area .home-acca-main{margin-bottom:6px;}
+.noscroll-area .home-acca-val{font-size:28px;}
+.noscroll-area .home-acca-fase{margin-bottom:6px;}
+.noscroll-area .home-acca-divider{margin:6px 0;}
+.noscroll-area .home-acca-stat{padding:6px 8px;}
+.noscroll-area .home-acca-stat-val{font-size:13px;}
+.noscroll-area .home-acca-warn{margin-top:6px;padding:6px 8px;}
+.noscroll-area .card{padding:8px 12px;margin-bottom:6px;}
+.noscroll-area .stat-row{padding:3px 0;}
+.noscroll-area .card-title{margin-bottom:6px;font-size:11px;}
+.noscroll-area .btn-outline{margin-top:4px;padding:8px;}
+.noscroll-area .btn-primary{margin-top:4px;padding:8px;}
+.noscroll-area .tasse-acca-box{padding:10px;margin-top:6px;}
+.noscroll-area .tasse-acca-top{margin-bottom:4px;}
+.noscroll-area .tasse-acca-main{margin-bottom:2px;}
+.noscroll-area .tasse-acca-val{font-size:22px;}
+.noscroll-area .tasse-acca-proiezione{margin-bottom:6px;font-size:10px;}
+.noscroll-area .tasse-acca-grid{gap:6px;margin-bottom:4px;}
+.noscroll-area .tasse-acca-cell{padding:6px 8px;}
+.noscroll-area .tasse-acca-cell-val{font-size:13px;}
+/* FILTER BAR */
+.filter-bar{padding:8px 16px 4px;display:flex;flex-direction:column;gap:6px;flex-shrink:0;}
+.filter-input{width:100%;padding:10px 14px;background:var(--input-bg);border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:14px;outline:none;}
+.filter-input:focus{border-color:var(--primary);}
+.filter-tag{width:100%;padding:14px 16px;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--dim);font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:space-between;white-space:nowrap;}
+.filter-tag-edit{font-size:14px;font-weight:400;color:var(--primary);}
+.filter-btn{width:100%;padding:14px 16px;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--dim);font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:space-between;white-space:nowrap;}
+
+/* SETTINGS GEAR */
+.scad-topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--card);border-bottom:1px solid var(--border);flex-shrink:0;}
+.scad-topbar-title{font-size:17px;font-weight:700;color:var(--text);}
+.scad-topbar-gear{background:none;border:none;color:var(--primary);font-size:20px;cursor:pointer;padding:4px 6px;}
+.scad-topbar-gear:hover{color:#fff;}
+
+/* PRINT STYLES */
+@media print {
+  body > *{display:none!important;}
+  #printArea{display:block!important;position:fixed;inset:0;background:#fff;color:#000;padding:20px;font-family:Arial,sans-serif;font-size:12px;}
+  #printArea *{color:#000!important;background:#fff!important;border-color:#000!important;box-shadow:none!important;text-shadow:none!important;font-variant-emoji:text!important;}
+  #printArea th{background:#f0f0f0!important;font-weight:bold;}
+  #printArea hr{border:none!important;border-top:1px solid #000!important;}
+}
+#printArea{display:none;}
+
+/* Spese entry */
+.spesa-icon{width:44px;height:44px;border-radius:50%;background:#444;display:flex;align-items:center;justify-content:flex-start;flex-shrink:0;}
+
+/* Import XML */
+.import-drop{border:2px dashed var(--border);border-radius:14px;padding:32px 16px;text-align:center;color:var(--dim);margin-bottom:12px;cursor:pointer;transition:.2s;}
+.import-drop:hover,.import-drop.drag{border-color:var(--primary);color:var(--primary);}
+.import-drop i{font-size:32px;margin-bottom:8px;display:block;}
+.import-drop-label{font-size:14px;font-weight:600;}
+.import-drop-sub{font-size:12px;margin-top:4px;opacity:.7;}
+.check-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.check-row:last-child{border-bottom:none;}
+.check-icon{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;}
+.check-ok{background:#1a3a1a;color:#4CAF50;}
+.check-warn{background:#3a2a00;color:var(--orange);}
+.check-err{background:#3a0000;color:var(--accent);}
+.check-label{flex:1;color:var(--dim);}
+.check-val{font-weight:600;text-align:right;max-width:160px;word-break:break-all;font-size:12px;}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-title">🇮🇹 Fisco</div>
+  <div class="topbar-year" onclick="cambiaAnno()" id="topbarAnno">2026</div>
+  <div class="topbar-actions">
+    <button class="icon-btn" onclick="apriProfilo()" title="Profilo"><i class="fas fa-user"></i></button>
+    <button class="icon-btn" onclick="apriImpostazioni()" title="Impostazioni"><i class="fas fa-ellipsis-vertical"></i></button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- HOME PAGE -->
+  <div class="page active" id="pageHome">
+    <div class="scroll-area scroll-area-flex noscroll-area">
+      <div class="page-fill-wrap">
+      <div style="font-size:10px;color:var(--dim);text-align:center;padding:4px 0 6px;">📋 Solo <strong style="color:var(--primary);">P.IVA forfettaria</strong> — regime occasionale non supportato</div>
+      <div class="campi-mancanti" id="homeCampiMancanti"></div>
+      <div class="home-acca" id="homeAccaBox">
+        <div class="home-acca-top">
+          <div class="home-acca-label">Accantonamento stimato</div>
+          <div class="home-acca-badge" id="homeAccantBadge">Regime forfettario</div>
+        </div>
+        <div class="home-acca-main">
+          <div style="display:flex;align-items:baseline;gap:4px;">
+            <div class="home-acca-val" id="homeAccant">—</div>
+            <div class="home-acca-perc" id="homeAccantPercLabel"></div>
+          </div>
+          <div style="text-align:right;">
+            <div class="home-acca-anno" id="homeAnnoLabel">Anno 2026</div>
+          </div>
+        </div>
+        <div class="home-acca-fase" id="homeAccantFaseBox">
+          <div class="home-acca-fase-label" id="homeAccantFase"></div>
+          <div class="home-acca-fase-desc" id="homeAccantFaseDesc"></div>
+        </div>
+        <div class="home-acca-divider"></div>
+        <div class="home-acca-bottom">
+          <div class="home-acca-stat">
+            <div class="home-acca-stat-label">Metti da parte ora</div>
+            <div class="home-acca-stat-val accent" id="homeAccantMese">—</div>
+          </div>
+          <div class="home-acca-stat">
+            <div class="home-acca-stat-label">Puoi spendere</div>
+            <div class="home-acca-stat-val positive" id="homeAccantDisp">—</div>
+          </div>
+        </div>
+        <div class="home-acca-warn" id="homeAccantWarn"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Riepilogo fiscale</div>
+        <div class="stat-row"><span class="stat-label">Lordo incassato</span><span class="stat-value primary" id="homeLordo">0,00 €</span></div>
+        <div class="stat-row"><span class="stat-label">Reddito imponibile</span><span class="stat-value" id="homeImponibile">0,00 €</span></div>
+        <div class="stat-row"><span class="stat-label">INPS stimata</span><span class="stat-value negative" id="homeINPS">0,00 €</span></div>
+        <div class="stat-row"><span class="stat-label">Imposta sostitutiva</span><span class="stat-value negative" id="homeImposta">0,00 €</span></div>
+        <div class="stat-row"><span class="stat-label">Netto stimato</span><span class="stat-value positive" id="homeNetto">0,00 €</span></div>
+      </div>
+      <div class="card fill-card">
+        <div class="card-title">Attività</div>
+        <div class="stat-row"><span class="stat-label">Fatture emesse</span><span class="stat-value" id="homeFatture">0</span></div>
+        <div class="stat-row"><span class="stat-label">Da incassare</span><span class="stat-value" id="homeNonPagate">0</span></div>
+        <div class="stat-row"><span class="stat-label">Spese registrate</span><span class="stat-value" id="homeSpese">0</span></div>
+        <div class="stat-row" style="align-items:flex-start;padding:8px 0 0;">
+          <span class="stat-label">Prossima scadenza</span>
+          <div style="text-align:right;">
+            <div id="homeScadenzaData" style="font-size:15px;font-weight:800;color:var(--orange);">—</div>
+            <div id="homeScadenzaTipo" style="font-size:11px;color:var(--primary);margin-top:2px;letter-spacing:.3px;"></div>
+          </div>
+        </div>
+      </div>
+      <div style="padding:6px 0 0;"><button class="btn-outline" onclick="tornaApp()"><i class="fas fa-arrow-left"></i> Torna all'app</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CASSA PAGE -->
+  <div class="page" id="pageCassa">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchCassaTab('entrate',this)">Entrate</button>
+      <button class="tab-btn" onclick="switchCassaTab('spese',this)">Spese</button>
+    </div>
+    <div class="total-strip" id="cassaTotalStrip">Totale: <strong>0 €</strong></div>
+    <div class="filter-bar">
+      <input class="filter-input" placeholder="🔍  Filtra per nome..." id="cassaFilter" oninput="renderCassa()">
+      <button class="filter-tag" onclick="apriModificaFiltriCassa()">
+        <span>📅 <span id="cassaFilterLabel">Tutto l'anno · Qualsiasi</span></span>
+        <span class="filter-tag-edit">Modifica filtri ›</span>
+      </button>
+    </div>
+    <div class="scroll-area" id="cassaList"></div>
+    <button class="fab" onclick="nuovaEntrataCassa()" id="fabCassa">+</button>
+  </div>
+  <!-- FATTURE PAGE -->
+  <div class="page" id="pageFatture">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchFattureTab('clienti',this)">Clienti</button>
+      <button class="tab-btn" onclick="switchFattureTab('prodotti',this)">Prodotti</button>
+      <button class="tab-btn" onclick="switchFattureTab('fatture',this)">Fatture</button>
+      <button class="tab-btn" onclick="switchFattureTab('preventivi',this)">Preventivi</button>
+      <button class="tab-btn" onclick="switchFattureTab('importa',this)">Importa XML</button>
+    </div>
+    <div class="filter-bar" id="fattureFilterBar">
+      <input class="filter-input" placeholder="🔍  Filtra per nome..." id="fattureFilter" oninput="renderFatture()">
+      <button class="filter-btn" id="fattureFilterBtn" onclick="apriModificaFiltriFatture()">
+        <span>📅 <span id="fattureFilterLabel">Tutto l'anno</span></span>
+        <span class="filter-tag-edit">Modifica filtri ›</span>
+      </button>
+    </div>
+    <div class="scroll-area" id="fattureList"></div>
+    <button class="fab" onclick="nuovaFattura()" id="fabFatture">+</button>
+  </div>
+
+  <!-- SCADENZE PAGE -->
+  <div class="page" id="pageScadenze">
+    <div class="scad-topbar">
+      <div class="scad-topbar-title">Scadenze</div>
+      <button class="scad-topbar-gear" onclick="apriImpostazioni()" title="Impostazioni"><i class="fas fa-gear"></i></button>
+    </div>
+    <div class="scroll-area" id="scadenzeList"></div>
+  </div>
+
+  <!-- TASSE PAGE -->
+  <div class="page" id="pageTasse">
+    <div class="scroll-area scroll-area-flex noscroll-area">
+      <div class="page-fill-wrap">
+      <div class="card">
+        <div class="card-title">Calcolo fiscale <span id="tasseAnnoLabel" style="color:var(--primary);"></span></div>
+        <div class="stat-row"><span class="stat-label">Coefficiente redditività</span><span class="stat-value" id="tCoeff">—</span></div>
+        <div class="stat-row"><span class="stat-label">Aliquota imposta</span><span class="stat-value" id="tAliquota">—</span></div>
+        <div class="stat-row"><span class="stat-label">Aliquota INPS</span><span class="stat-value" id="tINPSperc">—</span></div>
+      </div>
+      <div class="card fill-card">
+        <div class="card-title">Risultato</div>
+        <div class="stat-row"><span class="stat-label">Lordo</span><span class="stat-value primary" id="tLordo">0,00 €</span></div>
+        <div class="stat-row"><span class="stat-label">Imponibile</span><span class="stat-value" id="tImponibile">0,00 €</span></div>
+        <div class="stat-row"><span class="stat-label">INPS</span><span class="stat-value negative" id="tINPS">0,00 €</span></div>
+        <div class="stat-row"><span class="stat-label">INPS versato</span><span class="stat-value" id="tINPSVers">0,00 €</span></div>
+        <div class="stat-row"><span class="stat-label">INPS da pagare</span><span class="stat-value negative" id="tINPSPag">0,00 €</span></div>
+        <div class="stat-row"><span class="stat-label">Imposta sostitutiva</span><span class="stat-value negative" id="tImposta">0,00 €</span></div>
+        <div class="stat-row"><span class="stat-label">Netto</span><span class="stat-value positive" id="tNetto">0,00 €</span></div>
+        <div class="tasse-acca-box">
+          <div class="tasse-acca-top">
+            <div class="tasse-acca-title">Accantonamento consigliato</div>
+            <div class="tasse-acca-strategia" id="tAccantStrategia">—</div>
+          </div>
+          <div class="tasse-acca-main">
+            <div class="tasse-acca-val" id="tAccantVal">—</div>
+            <div class="tasse-acca-perc" id="tAccantPercLabel"></div>
+          </div>
+          <div class="tasse-acca-proiezione" id="tAccantProiezione"></div>
+          <div class="tasse-acca-grid">
+            <div class="tasse-acca-cell">
+              <div class="tasse-acca-cell-label">Metti da parte ora</div>
+              <div class="tasse-acca-cell-val primary" id="tAccantMese">—</div>
+            </div>
+            <div class="tasse-acca-cell">
+              <div class="tasse-acca-cell-label">Puoi spendere</div>
+              <div class="tasse-acca-cell-val positive" id="tAccantDisp">—</div>
+            </div>
+          </div>
+          <div style="padding:4px 0 2px;">
+            <div class="acca-fase-label" id="tAccantFase"></div>
+            <div class="acca-fase-desc" id="tAccantFaseDesc"></div>
+          </div>
+          <div class="acca-warn" id="tAccantWarn"></div>
+        </div>
+      </div>
+      </div>
+      <div style="padding:6px 0 0;">
+        <button class="btn-primary" onclick="apriImpostazioni()">⚙️ Impostazioni fiscali</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <button class="nav-btn active" id="navHome" onclick="switchPage('Home')"><i class="fas fa-house"></i>Home</button>
+  <button class="nav-btn" id="navCassa" onclick="switchPage('Cassa')"><i class="fas fa-arrow-down-up-across-line"></i>Cassa</button>
+  <button class="nav-btn" id="navFatture" onclick="switchPage('Fatture')"><i class="fas fa-file-invoice"></i>Fatture</button>
+  <button class="nav-btn" id="navScadenze" onclick="switchPage('Scadenze')"><i class="fas fa-calendar-check"></i>Scadenze</button>
+  <button class="nav-btn" id="navTasse" onclick="switchPage('Tasse')"><i class="fas fa-plus-minus"></i>Tasse</button>
+</div>
+
+<!-- ============================================================ -->
+<!-- DETAIL VIEWS                                                  -->
+<!-- ============================================================ -->
+
+<!-- CLIENTE DETAIL -->
+<div class="detail-view" id="viewCliente">
+  <div class="detail-header">
+    <button class="btn-text" onclick="chiudiDettaglio('viewCliente')">← Indietro</button>
+    <div class="detail-header-title" id="clienteDetailTitle">Cliente</div>
+    <div class="detail-actions">
+      <button class="btn-text" onclick="salvaCliente()">SALVA</button>
+      <button class="btn-icon-del" onclick="eliminaCliente()"><i class="fas fa-trash"></i></button>
+    </div>
+  </div>
+  <div class="scroll-area">
+    <input type="hidden" id="clienteId">
+    <div class="section-title">Dati Anagrafici</div>
+    <div class="field-group"><div class="field-label">Ragione sociale</div><input class="field-input" id="cRagione" placeholder="Ragione sociale"></div>
+    <div class="field-group"><div class="field-label">Nome</div><input class="field-input" id="cNome" placeholder="Nome"></div>
+    <div class="field-group"><div class="field-label">Cognome</div><input class="field-input" id="cCognome" placeholder="Cognome"></div>
+    <div class="field-group"><div class="field-label">Partita IVA</div><input class="field-input" id="cPIVA" placeholder="Partita IVA" inputmode="text"></div>
+    <div class="field-group"><div class="field-label">Codice Fiscale</div><input class="field-input" id="cCF" placeholder="Codice Fiscale"></div>
+    <div class="field-group"><div class="field-label">Codice Destinatario (SDI)</div><input class="field-input" id="cSDI" placeholder="Codice Destinatario" maxlength="7"></div>
+    <div class="section-title">Indirizzo</div>
+    <div class="field-group"><div class="field-label">Indirizzo</div><input class="field-input" id="cIndirizzo" placeholder="Indirizzo"></div>
+    <div class="field-group"><div class="field-label">Città</div><input class="field-input" id="cCitta" placeholder="Città"></div>
+    <div class="field-group"><div class="field-label">Provincia</div><input class="field-input" id="cProvincia" placeholder="Provincia" maxlength="2"></div>
+    <div class="field-group"><div class="field-label">CAP</div><input class="field-input" id="cCAP" placeholder="CAP" inputmode="numeric"></div>
+    <div class="field-group"><div class="field-label">Paese</div><input class="field-input" id="cPaese" placeholder="Paese" value="IT"></div>
+    <div class="field-group"><div class="field-label">Note indirizzo</div><input class="field-input" id="cNoteInd" placeholder="Note indirizzo"></div>
+    <div class="section-title">Informazioni di contatto</div>
+    <div class="field-group"><div class="field-label">E-mail</div><input class="field-input" id="cEmail" placeholder="E-mail" type="email"></div>
+    <div class="field-group"><div class="field-label">Telefono</div><input class="field-input" id="cTel" placeholder="Telefono" type="tel"></div>
+    <div class="field-group"><div class="field-label">Indirizzo PEC</div><input class="field-input" id="cPEC" placeholder="Indirizzo PEC" type="email"></div>
+    <div class="field-group"><div class="field-label">Fax</div><input class="field-input" id="cFax" placeholder="Fax"></div>
+    <div class="field-group"><div class="field-label">Note</div><textarea class="field-textarea" id="cNote" placeholder="Note"></textarea></div>
+    <button class="btn-primary" onclick="salvaCliente()">SALVA</button>
+    <button class="btn-danger" onclick="eliminaCliente()">ELIMINA</button>
+  </div>
+</div>
+
+<!-- PRODOTTO DETAIL -->
+<div class="detail-view" id="viewProdotto">
+  <div class="detail-header">
+    <button class="btn-text" onclick="chiudiDettaglio('viewProdotto')">← Indietro</button>
+    <div class="detail-header-title">Prodotto</div>
+    <div class="detail-actions">
+      <button class="btn-text" onclick="salvaProdotto()">SALVA</button>
+      <button class="btn-icon-del" onclick="eliminaProdotto()"><i class="fas fa-trash"></i></button>
+    </div>
+  </div>
+  <div class="scroll-area">
+    <input type="hidden" id="prodottoId">
+    <div class="section-title">Informazioni Generali</div>
+    <div class="field-group"><div class="field-label">Nome prodotto o servizio</div><input class="field-input" id="pNome" placeholder="Nome prodotto o servizio"></div>
+    <div class="field-group"><div class="field-label">Codice prodotto</div><input class="field-input" id="pCodice" placeholder="Codice prodotto"></div>
+    <div class="field-group"><div class="field-label">Note</div><textarea class="field-textarea" id="pNote" placeholder="Note"></textarea></div>
+    <div class="section-title">Dettagli</div>
+    <div class="field-group"><div class="field-label">Costo unitario (IVA esclusa)</div><input class="field-input" id="pCosto" placeholder="Costo unitario (IVA esclusa)" type="number" inputmode="decimal" step="0.01"></div>
+    <div class="field-group">
+      <div class="field-label">Percentuale IVA</div>
+      <select class="field-select" id="pIVA">
+        <option value="0">0%</option>
+        <option value="4">4%</option>
+        <option value="10">10%</option>
+        <option value="20">20%</option>
+        <option value="22">22%</option>
+      </select>
+    </div>
+    <div class="field-group">
+      <div class="field-label">Natura Esenzione IVA</div>
+      <select class="field-select" id="pNatura"><option value="N2.2">N2.2: non soggette - altri casi</option></select>
+    </div>
+    <button class="btn-primary" onclick="salvaProdotto()">SALVA MODIFICHE</button>
+    <button class="btn-danger" onclick="eliminaProdotto()">ELIMINA</button>
+  </div>
+</div>
+
+<!-- FATTURA DETAIL -->
+<div class="detail-view" id="viewFattura">
+  <div class="detail-header">
+    <button class="btn-text" onclick="chiudiDettaglio('viewFattura')">← Indietro</button>
+    <div class="detail-header-title" id="fatturaDetailTitle">Fattura</div>
+    <div class="detail-actions">
+      <button class="btn-text" onclick="salvaFattura()">SALVA</button>
+      <button class="btn-icon-del" onclick="eliminaFattura()"><i class="fas fa-trash"></i></button>
+    </div>
+  </div>
+  <div class="scroll-area">
+    <input type="hidden" id="fatturaId">
+    <div class="toggle-row">
+      <span class="toggle-label">Preventivo</span>
+      <div class="toggle" id="togglePreventivo" onclick="toggleField('togglePreventivo','fatturaIsPreventivo')"></div>
+    </div>
+    <input type="hidden" id="fatturaIsPreventivo" value="0">
+    <div id="fatturaSDIBtns" style="margin-bottom:8px;">
+      <button class="btn-outline" onclick="apriXML()" style="margin-top:8px;"><i class="fas fa-code"></i> Genera XML FatturaPA</button>
+      <button class="btn-outline" onclick="convertiInEntrata()" style="background:#3a3a6a;border-color:#6666aa;color:#aaaaff;margin-top:4px;">Converti in entrata</button>
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="visualizzaPDF()" style="flex:1;">Visualizza PDF</button>
+        <button class="btn-secondary" onclick="esportaPDF()" style="flex:1;">Esporta PDF</button>
+      </div>
+    </div>
+    <div class="section-title">Dettagli Fattura</div>
+    <div class="field-group">
+      <div class="field-label">Tipo Documento</div>
+      <select class="field-select" id="fTipo">
+        <option value="TD01">Fattura</option>
+        <option value="TD04">Nota di credito</option>
+        <option value="TD06">Parcella</option>
+        <option value="TD17">Integrazione/autofattura</option>
+      </select>
+    </div>
+    <div class="field-group"><div class="field-label">Numero Fattura</div><input class="field-input" id="fNumero" type="number" inputmode="numeric" placeholder="1"></div>
+    <div class="field-group"><div class="field-label">Data</div><input class="field-input" id="fData" type="date"></div>
+    <div class="field-group"><div class="field-label">Data di scadenza</div><input class="field-input" id="fScadenza" type="date"></div>
+    <div class="section-title">Cliente</div>
+    <button class="btn-outline" onclick="scegliCliente()">Scegli da Database</button>
+    <input type="hidden" id="fClienteId">
+    <div class="field-group" style="margin-top:8px;"><div class="field-label">Ragione sociale</div><input class="field-input" id="fCRagione" placeholder="Ragione sociale"></div>
+    <div class="field-group"><div class="field-label">Nome</div><input class="field-input" id="fCNome" placeholder="Nome"></div>
+    <div class="field-group"><div class="field-label">Cognome</div><input class="field-input" id="fCCognome" placeholder="Cognome"></div>
+    <div class="field-group"><div class="field-label">Indirizzo</div><input class="field-input" id="fCIndirizzo" placeholder="Indirizzo"></div>
+    <div class="field-group"><div class="field-label">Città</div><input class="field-input" id="fCCitta" placeholder="Città"></div>
+    <div class="field-group"><div class="field-label">Provincia</div><input class="field-input" id="fCProvincia" placeholder="Provincia" maxlength="2"></div>
+    <div class="field-group"><div class="field-label">CAP</div><input class="field-input" id="fCCAP" placeholder="CAP"></div>
+    <div class="field-group"><div class="field-label">Paese</div><input class="field-input" id="fCPaese" placeholder="IT" value="IT"></div>
+    <div class="field-group"><div class="field-label">Note indirizzo</div><input class="field-input" id="fCNoteInd" placeholder="Note indirizzo"></div>
+    <div class="field-group"><div class="field-label">Partita IVA</div><input class="field-input" id="fCPIVA" placeholder="Partita IVA"></div>
+    <div class="field-group"><div class="field-label">Codice Fiscale</div><input class="field-input" id="fCCF" placeholder="Codice Fiscale"></div>
+    <div class="field-group"><div class="field-label">Indirizzo PEC</div><input class="field-input" id="fCPEC" placeholder="Indirizzo PEC"></div>
+    <div class="field-group"><div class="field-label">Codice Destinatario</div><input class="field-input" id="fCSDI" placeholder="Codice Destinatario" maxlength="7"></div>
+    <div class="section-title">Prodotti o servizi</div>
+    <div id="fProdottiList"></div>
+    <button class="btn-outline" onclick="aggiungiFatturaProdotto()" style="margin-top:0;">+ Aggiungi prodotto</button>
+    <div class="section-title">Altre informazioni</div>
+    <div class="field-group">
+      <div class="field-label">Metodo di pagamento</div>
+      <select class="field-select" id="fMetodoPag" style="background:var(--input-bg);"></select>
+    </div>
+    <div class="field-group"><div class="field-label">Valore marca da bollo (€)</div><input class="field-input" id="fBollo" type="number" inputmode="decimal" step="0.01" placeholder="Valore marca da bollo"></div>
+    <div class="toggle-row"><span class="toggle-label">Mostra Bollo Virtuale in PDF</span><div class="toggle on" id="toggleBolloVirtuale" onclick="toggleField('toggleBolloVirtuale','fBolloVirtuale')"></div></div>
+    <input type="hidden" id="fBolloVirtuale" value="1">
+    <div class="section-title">Cassa, rivalsa e ritenute</div>
+    <div class="toggle-row"><span class="toggle-label">Applica Contributi</span><div class="toggle" id="toggleContributi" onclick="toggleField('toggleContributi','fApplicaContributi')"></div></div>
+    <input type="hidden" id="fApplicaContributi" value="0">
+    <div class="field-group"><div class="field-label">Percentuale Rivalsa INPS</div><input class="field-input" id="fRivalsaINPS" type="number" inputmode="decimal" placeholder="Percentuale Rivalsa INPS"></div>
+    <div class="field-group"><div class="field-label">Percentuale Cassa</div><input class="field-input" id="fPercCassa" type="number" inputmode="decimal" placeholder="Percentuale Cassa"></div>
+    <div class="section-title">Altri dettagli</div>
+    <div class="field-group"><div class="field-label">Spese esenti</div><input class="field-input" id="fSpeseEsenti" type="number" inputmode="decimal" placeholder="Spese esenti"></div>
+    <div class="field-group"><div class="field-label">Spese non esenti</div><input class="field-input" id="fSpeseNonEsenti" type="number" inputmode="decimal" placeholder="Spese non esenti"></div>
+    <div class="field-group"><div class="field-label">Note (da mostrare in fattura)</div><textarea class="field-textarea" id="fNote" placeholder="Note da mostrare in fattura"></textarea></div>
+    <button class="btn-primary" onclick="salvaFattura()">SALVA</button>
+    <button class="btn-danger" onclick="eliminaFattura()">ELIMINA</button>
+  </div>
+</div>
+
+<!-- ENTRATA CASSA DETAIL -->
+<div class="detail-view" id="viewEntrata">
+  <div class="detail-header">
+    <button class="btn-text" onclick="chiudiDettaglio('viewEntrata')">← Indietro</button>
+    <div class="detail-header-title">Entrata</div>
+    <div class="detail-actions">
+      <button class="btn-text" onclick="salvaEntrata()">SALVA</button>
+      <button class="btn-icon-del" onclick="eliminaEntrata()"><i class="fas fa-trash"></i></button>
+    </div>
+  </div>
+  <div class="scroll-area">
+    <input type="hidden" id="entrataId">
+    <div class="toggle-row"><span class="toggle-label">Pagata</span><div class="toggle on" id="toggleEntrataPagata" onclick="toggleField('toggleEntrataPagata','entrataPagata')"></div></div>
+    <input type="hidden" id="entrataPagata" value="1">
+    <div class="section-title">Dati generali</div>
+    <div class="field-group"><div class="field-label">Nome</div><input class="field-input" id="eNome" placeholder="Nome"></div>
+    <div class="field-group"><div class="field-label">Data</div><input class="field-input" id="eData" type="date"></div>
+    <div class="field-group" style="background:linear-gradient(135deg,rgba(0,255,200,.07),rgba(0,255,200,.03));border:1px solid rgba(0,255,200,.25);border-radius:12px;padding:12px 14px;margin-bottom:4px;">
+      <div class="field-label" style="color:var(--primary);font-weight:700;font-size:11px;letter-spacing:.5px;">💰 AMMONTARE INCASSATO (€) — esclusi IVA, Rivalsa, Bollo</div>
+      <input class="field-input" id="eAmmontare" type="number" inputmode="decimal" step="0.01" placeholder="0,00" style="font-size:22px!important;font-weight:800;color:var(--primary)!important;border:none!important;border-bottom:2px solid rgba(0,255,200,.4)!important;background:transparent!important;margin-top:4px;padding-left:0;">
+    </div>
+    <div class="section-title">Dettagli</div>
+    <div class="field-group"><div class="field-label">Rivalsa INPS</div><input class="field-input" id="eRivalsaINPS" type="number" inputmode="decimal" value="0" placeholder="0"></div>
+    <button class="btn-primary" onclick="salvaEntrata()">SALVA</button>
+    <button class="btn-danger" onclick="eliminaEntrata()">ELIMINA ENTRATA</button>
+  </div>
+</div>
+
+<!-- SPESA CASSA DETAIL -->
+<div class="detail-view" id="viewSpesa">
+  <div class="detail-header">
+    <button class="btn-text" onclick="chiudiDettaglio('viewSpesa')">← Indietro</button>
+    <div class="detail-header-title">Spesa</div>
+    <div class="detail-actions">
+      <button class="btn-text" onclick="salvaSpesa()">SALVA</button>
+      <button class="btn-icon-del" onclick="eliminaSpesa()"><i class="fas fa-trash"></i></button>
+    </div>
+  </div>
+  <div class="scroll-area">
+    <input type="hidden" id="spesaId">
+    <div class="section-title">Dati generali</div>
+    <div class="field-group"><div class="field-label">Nome</div><input class="field-input" id="spNome" placeholder="Nome spesa"></div>
+    <div class="field-group"><div class="field-label">Data</div><input class="field-input" id="spData" type="date"></div>
+    <div class="field-group"><div class="field-label">Ammontare (€)</div><input class="field-input" id="spAmmontare" type="number" inputmode="decimal" step="0.01" placeholder="0,00"></div>
+    <div class="field-group">
+      <div class="field-label">Categoria</div>
+      <select class="field-select" id="spCategoria">
+        <option value="Carburante">Carburante</option>
+        <option value="Manutenzione">Manutenzione</option>
+        <option value="Assicurazione">Assicurazione</option>
+        <option value="Attrezzatura">Attrezzatura</option>
+        <option value="Telefono">Telefono</option>
+        <option value="Formazione">Formazione</option>
+        <option value="Ufficio">Ufficio</option>
+        <option value="Altro">Altro</option>
+      </select>
+    </div>
+    <button class="btn-primary" onclick="salvaSpesa()">SALVA</button>
+    <button class="btn-danger" onclick="eliminaSpesa()">ELIMINA</button>
+  </div>
+</div>
+
+<!-- PROFILO FORNITORE -->
+<div class="detail-view" id="viewProfilo">
+  <div class="detail-header">
+    <button class="btn-text" onclick="chiudiDettaglio('viewProfilo')">← Indietro</button>
+    <div class="detail-header-title">Profilo Fornitore</div>
+    <div class="detail-actions"><button class="btn-text" onclick="salvaProfilo()">SALVA</button></div>
+  </div>
+  <div class="scroll-area">
+    <div class="section-title">Dati Anagrafici</div>
+    <div class="field-group"><div class="field-label">Nome e Cognome / Ragione sociale</div><input class="field-input" id="proNome" placeholder="Mario Rossi"></div>
+    <div class="field-group"><div class="field-label">Partita IVA</div><input class="field-input" id="proPIVA" placeholder="01234567890"></div>
+    <div class="field-group"><div class="field-label">Codice Fiscale</div><input class="field-input" id="proCF" placeholder="RSSMRA80A01H501A"></div>
+    <div class="field-group"><div class="field-label">Regime fiscale</div><input class="field-input" id="proRegime" value="RF19" placeholder="RF19"></div>
+    <div class="section-title">Indirizzo</div>
+    <div class="field-group"><div class="field-label">Indirizzo</div><input class="field-input" id="proIndirizzo" placeholder="Via Roma 1"></div>
+    <div class="field-group"><div class="field-label">Città</div><input class="field-input" id="proCitta" placeholder="Città"></div>
+    <div class="field-group"><div class="field-label">Provincia</div><input class="field-input" id="proProvincia" placeholder="RM" maxlength="2"></div>
+    <div class="field-group"><div class="field-label">CAP</div><input class="field-input" id="proCAP" placeholder="00100"></div>
+    <div class="field-group"><div class="field-label">Paese</div><input class="field-input" id="proPaese" placeholder="IT" value="IT"></div>
+    <div class="section-title">Contatti & Pagamento</div>
+    <div class="field-group"><div class="field-label">E-mail</div><input class="field-input" id="proEmail" type="email" placeholder="email@esempio.it"></div>
+    <div class="field-group"><div class="field-label">Telefono</div><input class="field-input" id="proTel" type="tel" placeholder="+39..."></div>
+    <div class="field-group"><div class="field-label">IBAN</div><input class="field-input" id="proIBAN" placeholder="IT00X0000000000000000000000"></div>
+    <button class="btn-primary" onclick="salvaProfilo()">SALVA PROFILO</button>
+  </div>
+</div>
+
+<!-- IMPOSTAZIONI FISCALI -->
+<div class="detail-view" id="viewImpostazioni">
+  <div class="detail-header">
+    <button class="btn-text" onclick="chiudiDettaglio('viewImpostazioni')">← Indietro</button>
+    <div class="detail-header-title">Impostazioni Fiscali</div>
+    <div class="detail-actions"><button class="btn-text" onclick="salvaImpostazioni()">SALVA</button></div>
+  </div>
+  <div class="scroll-area">
+    <div class="field-group"><div class="field-label">Anno fiscale</div><input class="field-input" id="fsAnno" type="number" inputmode="numeric"></div>
+    <div class="field-group"><div class="field-label">Gestione INPS</div><select class="field-select" id="fsTipoGestione" onchange="aggiornaCampiGestione()"><option value="separata">Gestione Separata (ATECO 82.99.99)</option><option value="artigiani">Artigiani/Commercianti (ATECO 53.20.00)</option></select></div>
+    <div id="campoTipoArtigiano" style="display:none;"><div class="field-group"><div class="field-label">Tipo</div><select class="field-select" id="fsTipoArtigiano" onchange="aggiornaCampiGestione()"><option value="artigiano">Artigiano (fisso 4.521€ + 24%)</option><option value="commerciante">Commerciante (fisso 4.611€ + 24,48%)</option></select></div></div>
+    <div class="field-group"><div class="field-label">Coefficiente redditività (%) <span style="color:var(--dim);font-size:10px;">— rider: 67%</span></div><input class="field-input" id="fsCoeff" type="number" inputmode="decimal" step="0.1"></div>
+    <div class="field-group"><div class="field-label">Aliquota imposta sostitutiva (%)</div><input class="field-input" id="fsImposta" type="number" inputmode="decimal" step="0.1"></div>
+    <div id="campoAliqINPS"><div class="field-group"><div class="field-label">Aliquota INPS (%)</div><input class="field-input" id="fsINPS" type="number" inputmode="decimal" step="0.01"></div></div>
+    <div class="field-group"><div class="field-label">Strategia accantonamento</div><select class="field-select" id="fsModalitaAccantonamento" onchange="aggiornaCampiAccantonamento()"><option value="tutto">Tutto entro giugno — già pronto al pagamento</option><option value="scadenza">Per scadenza — prima giugno, poi novembre</option><option value="fisso">Cifra fissa mensile — decido io quanto mettere da parte</option></select></div>
+    <div id="campoCifraFissa" style="display:none;"><div class="field-group"><div class="field-label">Cifra fissa mensile (€)</div><input class="field-input" id="fsCifraFissa" type="number" inputmode="decimal" step="1" placeholder="es. 150" oninput="sincronizzaCifraFissa()"></div></div>
+    <div class="toggle-row"><span class="toggle-label">Riduzione INPS 35%</span><div class="toggle" id="toggleRidINPS" onclick="toggleField('toggleRidINPS','fsRidINPS')"></div></div>
+    <input type="hidden" id="fsRidINPS" value="0">
+    <div class="field-group"><div class="field-label">INPS già versato (€)</div><input class="field-input" id="fsInpsVers" type="number" inputmode="decimal" step="0.01" value="0"></div>
+    <input type="hidden" id="fsPrimoAnno" value="0">
+    <div class="field-label" style="margin-bottom:6px;">Situazione lavorativa</div>
+    <div class="toggle-row"><span class="toggle-label">Pensionato <span style="color:var(--dim);font-size:11px;">(INPS 24%)</span></span><div class="toggle" id="togglePensionato" onclick="attivaToggleEsclusivo('pensionato')"></div></div>
+    <input type="hidden" id="fsPensionato" value="0">
+    <div class="toggle-row"><span class="toggle-label">Dipendente</span><div class="toggle" id="toggleDipendente" onclick="attivaToggleEsclusivo('dipendente')"></div></div>
+    <input type="hidden" id="fsDipendente" value="0">
+    <div id="campoRedditoDip" style="display:none;"><div class="field-group"><div class="field-label">Reddito da lavoro dipendente annuo (€)</div><input class="field-input" id="fsRedditoDip" type="number" inputmode="decimal" step="1" placeholder="0"></div></div>
+    <div class="toggle-row"><span class="toggle-label">Under 21 <span style="color:var(--dim);font-size:11px;">(INPS 24%)</span></span><div class="toggle" id="toggleUnder21" onclick="attivaToggleEsclusivo('under21')"></div></div>
+    <input type="hidden" id="fsUnder21" value="0">
+    <div class="field-group"><div class="field-label">Data inizio attività</div><input class="field-input" id="fsDataInizio" type="date" onchange="aggiornaAliquotaDaData()"></div>
+    <div class="field-group"><div class="field-label">Reddito lordo forfettario anno precedente (€)</div><input class="field-input" id="fsReddPrec" type="number" inputmode="decimal" step="1" placeholder="0 se primo anno"></div>
+    <div class="field-group"><div class="field-label">Costo commercialista annuo (€)</div><input class="field-input" id="fsCostComm" type="number" inputmode="decimal" step="1" placeholder="450"></div>
+    <div class="field-group"><div class="field-label">Accantonamento personalizzato (%)</div><input class="field-input" id="fsAccant" type="number" inputmode="decimal" step="0.1" placeholder="Lascia vuoto per calcolo automatico"></div>
+    <button class="btn-primary" onclick="salvaImpostazioni()">SALVA IMPOSTAZIONI</button>
+  </div>
+</div>
+
+<!-- SELEZIONA CLIENTE MODAL (dentro fattura) -->
+<div class="detail-view" id="viewSelCliente">
+  <div class="detail-header">
+    <button class="btn-text" onclick="chiudiDettaglio('viewSelCliente')">← Indietro</button>
+    <div class="detail-header-title">Seleziona Cliente</div>
+    <div class="detail-actions">
+      <button class="btn-text" onclick="nuovoClienteDaFattura()">+ Nuovo</button>
+    </div>
+  </div>
+  <div class="scroll-area" id="selClienteList"></div>
+</div>
+
+<!-- PRODOTTO IN FATTURA -->
+<div class="detail-view" id="viewFatturaProdotto">
+  <div class="detail-header">
+    <button class="btn-text" onclick="chiudiDettaglio('viewFatturaProdotto')">← Indietro</button>
+    <div class="detail-header-title">Dettagli Prodotto</div>
+    <div class="detail-actions"><button class="btn-text" onclick="salvaFatturaProdotto()">Salva modifiche</button></div>
+  </div>
+  <div class="scroll-area">
+    <input type="hidden" id="fpIndex" value="-1">
+    <button class="btn-outline" onclick="scegliProdottoDB()">Scegli da Database</button>
+    <div class="section-title">Informazioni Generali</div>
+    <div class="field-group"><div class="field-label">Nome prodotto o servizio</div><input class="field-input" id="fpNome" placeholder="Nome prodotto o servizio"></div>
+    <div class="field-group"><div class="field-label">Codice prodotto</div><input class="field-input" id="fpCodice" placeholder="Codice prodotto"></div>
+    <div class="field-group"><div class="field-label">Note</div><textarea class="field-textarea" id="fpNote" placeholder="Note"></textarea></div>
+    <div class="section-title">Dettagli</div>
+    <div class="field-group"><div class="field-label">Costo unitario (IVA esclusa)</div><input class="field-input" id="fpCosto" type="number" inputmode="decimal" step="0.01" placeholder="Costo unitario (IVA esclusa)"></div>
+    <div class="field-group">
+      <div class="field-label">Percentuale IVA</div>
+      <select class="field-select" id="fpIVA">
+        <option value="0">0%</option><option value="4">4%</option><option value="10">10%</option><option value="20">20%</option><option value="22">22%</option>
+      </select>
+    </div>
+    <div class="field-group"><div class="field-label">Natura Esenzione IVA</div><select class="field-select" id="fpNatura"></select></div>
+    <div class="field-group"><div class="field-label">Quantità</div><input class="field-input" id="fpQty" type="number" inputmode="decimal" step="0.01" value="1"></div>
+    <div class="field-group"><div class="field-label">Percentuale Sconto (%)</div><input class="field-input" id="fpSconto" type="number" inputmode="decimal" step="0.01" placeholder="Percentuale Sconto"></div>
+    <div class="toggle-row"><span class="toggle-label">Non imponibile</span><div class="toggle" id="toggleNonImp" onclick="toggleField('toggleNonImp','fpNonImp')"></div></div>
+    <input type="hidden" id="fpNonImp" value="0">
+    <button class="btn-primary" onclick="salvaFatturaProdotto()">SALVA MODIFICHE</button>
+  </div>
+</div>
+
+<!-- SELEZIONA PRODOTTO DB MODAL -->
+<div class="detail-view" id="viewSelProdotto">
+  <div class="detail-header">
+    <button class="btn-text" onclick="chiudiDettaglio('viewSelProdotto')">← Indietro</button>
+    <div class="detail-header-title">Scegli Prodotto</div>
+    <div class="detail-actions">
+      <button class="btn-text" onclick="nuovoProdottoDaFattura()">+ Nuovo</button>
+    </div>
+  </div>
+  <div class="scroll-area" id="selProdottoList"></div>
+</div>
+<!-- FILTER MODAL CASSA -->
+<div class="modal-overlay" id="filterModalCassa">
+  <div class="modal-box" style="width:92%;max-width:380px;">
+    <div class="modal-title">Modifica filtri</div>
+    <div class="field-label" style="margin-bottom:6px;">Periodo</div>
+    <select class="field-select" id="fcPeriodo" onchange="toggleFCDate()">
+      <option value="anno">Tutto l'anno</option>
+      <option value="mese">Questo mese</option>
+      <option value="trimestre">Ultimo trimestre</option>
+      <option value="custom">Intervallo personalizzato</option>
+    </select>
+    <div id="fcDateRange" style="display:none;margin-top:8px;">
+      <div class="field-group" style="margin-top:8px;"><div class="field-label">Da</div><input class="field-input" id="fcDateFrom" type="date"></div>
+      <div class="field-group"><div class="field-label">A</div><input class="field-input" id="fcDateTo" type="date"></div>
+    </div>
+    <div id="fcCategoriaRow" style="margin-top:12px;display:none;">
+      <div class="field-label" style="margin-bottom:6px;">Categoria</div>
+      <select class="field-select" id="fcCategoria">
+        <option value="Tutte">Tutte</option>
+        <option value="Carburante">Carburante</option>
+        <option value="Manutenzione">Manutenzione</option>
+        <option value="Assicurazione">Assicurazione</option>
+        <option value="Attrezzatura">Attrezzatura</option>
+        <option value="Telefono">Telefono</option>
+        <option value="Formazione">Formazione</option>
+        <option value="Ufficio">Ufficio</option>
+        <option value="Altro">Altro</option>
+      </select>
+    </div>
+    <div class="modal-btns" style="margin-top:20px;">
+      <button class="modal-btn-cancel" onclick="chiudiFilterCassa()">Annulla</button>
+      <button class="modal-btn-confirm" onclick="applicaFilterCassa()">Applica</button>
+    </div>
+  </div>
+</div>
+
+<!-- FILTER MODAL FATTURE -->
+<div class="modal-overlay" id="filterModalFatture">
+  <div class="modal-box" style="width:92%;max-width:380px;">
+    <div class="modal-title">Modifica filtri</div>
+    <div class="field-label" style="margin-bottom:6px;">Periodo</div>
+    <select class="field-select" id="ffPeriodo" onchange="toggleFFDate()">
+      <option value="anno">Tutto l'anno</option>
+      <option value="mese">Questo mese</option>
+      <option value="trimestre">Ultimo trimestre</option>
+      <option value="custom">Intervallo personalizzato</option>
+    </select>
+    <div id="ffDateRange" style="display:none;margin-top:8px;">
+      <div class="field-group" style="margin-top:8px;"><div class="field-label">Da</div><input class="field-input" id="ffDateFrom" type="date"></div>
+      <div class="field-group"><div class="field-label">A</div><input class="field-input" id="ffDateTo" type="date"></div>
+    </div>
+    <div style="margin-top:12px;">
+      <div class="field-label" style="margin-bottom:6px;">Stato</div>
+      <select class="field-select" id="ffStato">
+        <option value="tutti">Tutti</option>
+        <option value="pagata">Pagata</option>
+        <option value="non_pagata">Non pagata</option>
+      </select>
+    </div>
+    <div class="modal-btns" style="margin-top:20px;">
+      <button class="modal-btn-cancel" onclick="chiudiFilterFatture()">Annulla</button>
+      <button class="modal-btn-confirm" onclick="applicaFilterFatture()">Applica</button>
+    </div>
+  </div>
+</div>
+<!-- BACKUP MODAL FISCO -->
+<div class="modal-overlay" id="fiscoBackupModal">
+  <div class="modal-box">
+    <div class="modal-title">📦 Backup disponibile</div>
+    <div class="modal-msg">I tuoi dati sono stati modificati. Vuoi scaricare un backup completo?</div>
+    <div class="modal-btns">
+      <button class="modal-btn-cancel" onclick="document.getElementById('fiscoBackupModal').classList.remove('open');">Non ora</button>
+      <button class="modal-btn-confirm" onclick="eseguiFiscoBackup()">Scarica</button>
+    </div>
+  </div>
+</div>
+<!-- CONFIRM MODAL -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-box">
+    <div class="modal-title" id="confirmTitle">Conferma</div>
+    <div class="modal-msg" id="confirmMsg"></div>
+    <div class="modal-btns">
+      <button class="modal-btn-cancel" onclick="confirmCancel()">No</button>
+      <button class="modal-btn-danger" id="confirmOkBtn" onclick="confirmOk()">Sì</button>
+    </div>
+  </div>
+</div>
+<!-- INFO MODAL -->
+<div class="modal-overlay" id="infoModal">
+  <div class="modal-box">
+    <div class="modal-msg" id="infoModalMsg" style="font-size:16px;color:var(--text);text-align:center;margin-bottom:0;"></div>
+    <div class="modal-btns" style="justify-content:center;margin-top:20px;">
+      <button class="modal-btn-confirm" onclick="document.getElementById('infoModal').classList.remove('open');if(_infoCallback)_infoCallback();">OK</button>
+    </div>
+  </div>
+</div>
+<!-- XML MODAL -->
+<div class="detail-view" id="viewXML">
+  <div class="detail-header">
+    <button class="btn-text" onclick="chiudiDettaglio('viewXML')">← Chiudi</button>
+    <div class="detail-header-title">XML FatturaPA</div>
+    <div class="detail-actions"><button class="btn-text" onclick="scaricaXML()">Scarica</button></div>
+  </div>
+  <div class="scroll-area">
+    <div style="background:#1a3a1a;border:1px solid #2a5a2a;border-radius:12px;padding:12px;margin-bottom:10px;font-size:13px;color:#aaffaa;">
+      ✅ XML pronto. Scaricalo e caricalo sul portale AdE per inviarlo allo SDI.
+    </div>
+    <button class="btn-primary" onclick="scaricaXML()"><i class="fas fa-download"></i> Scarica XML</button>
+    <button class="btn-outline" onclick="window.open('https://ivaservizi.agenziaentrate.gov.it/portale/','_blank')" style="margin-top:8px;">
+      <i class="fas fa-external-link-alt"></i> Vai al portale AdE (SDI)
+    </button>
+    <div style="background:#1a1a2a;border:1px solid #333;border-radius:10px;padding:10px;margin-top:10px;font-size:11px;color:#888;line-height:1.6;">
+      <strong style="color:#aaa;">Come procedere:</strong><br>
+      1. Scarica il file XML<br>
+      2. Accedi al portale AdE con SPID o CIE<br>
+      3. Vai su <em>Fatture e Corrispettivi → Trasmissione fatture</em><br>
+      4. Carica il file XML — il portale firmerà e invierà allo SDI
+    </div>
+    <div class="xml-box" id="xmlContent"></div>
+  </div>
+</div>
+
+<!-- PRINT AREA -->
+<div id="printArea"></div>
+
+<script>
+// ================================================================
+// COSTANTI E STORAGE KEYS
+// ================================================================
+const KEY_FATTURE   = 'fisco_invoices_v1_it';
+const KEY_SETTINGS  = 'fisco_settings_v1_it';
+const KEY_CLIENTI   = 'fisco2_clienti';
+const KEY_PRODOTTI  = 'fisco2_prodotti';
+const KEY_ENTRATE   = 'fisco2_entrate';
+const KEY_SPESE     = 'fisco2_spese';
+const KEY_PROFILO   = 'fisco2_profilo';
+const KEY_SCADENZE  = 'fisco2_scadenze_done';
+
+// ================================================================
+// NATURA ESENZIONE IVA
+// ================================================================
+const NATURA_IVA = [
+  {v:'N1',  l:'N1: escluse ex art.15 del DPR 633/72'},
+  {v:'N2.1',l:'N2.1: non soggette ad IVA ai sensi degli artt. da 7 a 7-septies DPR 633/72'},
+  {v:'N2.2',l:'N2.2: non soggette - altri casi'},
+  {v:'N3.1',l:'N3.1: non imponibili - esportazioni'},
+  {v:'N3.2',l:'N3.2: non imponibili - cessioni intracomunitarie'},
+  {v:'N3.3',l:'N3.3: non imponibili - cessioni verso San Marino'},
+  {v:'N3.4',l:'N3.4: non imponibili - operazioni assimilate alle cessioni all\'esportazione'},
+  {v:'N3.5',l:'N3.5: non imponibili - a seguito di dichiarazioni d\'intento'},
+  {v:'N3.6',l:'N3.6: non imponibili - altre operazioni che non concorrono alla formazione del plafond'},
+  {v:'N4',  l:'N4: esenti'},
+  {v:'N5',  l:'N5: regime del margine / IVA non esposta in fattura'},
+  {v:'N6.1',l:'N6.1: inversione contabile - cessione di rottami e altri materiali di recupero'},
+  {v:'N6.2',l:'N6.2: inversione contabile - cessione di oro e argento puro'},
+  {v:'N6.3',l:'N6.3: inversione contabile - subappalto nel settore edile'},
+  {v:'N6.4',l:'N6.4: inversione contabile - cessione di fabbricati'},
+  {v:'N6.5',l:'N6.5: inversione contabile - cessione di telefoni cellulari'},
+  {v:'N6.6',l:'N6.6: inversione contabile - cessione di prodotti elettronici'},
+  {v:'N6.7',l:'N6.7: inversione contabile - prestazioni comparto edile e settori connessi'},
+  {v:'N6.8',l:'N6.8: inversione contabile - operazioni settore energetico'},
+  {v:'N6.9',l:'N6.9: inversione contabile - altri casi'},
+  {v:'N7',  l:'N7: IVA assolta in altro stato UE (prestazione di servizi di telecomunicazioni, tele-radiodiffusione ed elettronici)'}
+];
+
+const METODI_PAGAMENTO = [
+  'Contanti','Assegno','Assegno circolare','Contanti presso Tesoreria','Bonifico',
+  'Vaglia cambiario','Bollettino bancario','Carta di pagamento','RID','RID utenze',
+  'RID veloce','Riba','MAV','Quietanza erario stato',
+  'Giroconto su conti di contabilità speciale','Domiciliazione bancaria',
+  'Domiciliazione postale','Bollettino di C/C postale','SEPA Direct Debit',
+  'SEPA Direct Debit CORE','SEPA Direct Debit B2B','Trattenuta su somme già riscosse'
+];
+
+// ================================================================
+// LOAD/SAVE
+// ================================================================
+function load(key,def=[]) { try{return JSON.parse(localStorage.getItem(key))||def;}catch(e){return def;} }
+function save(key,val) { localStorage.setItem(key,JSON.stringify(val)); }
+function loadSettings() {
+  var d={coefficiente:67,aliquotaImposta:15,aliquotaINPS:26.07,riduzioneINPS:false,
+         tipoGestione:'separata',tipoArtigiano:'artigiano',modalitaAccantonamento:'tutto',
+         inpsVersato:0,annoFiscaleAttivo:new Date().getFullYear(),primoAnno:false,
+         dipendente:false,under21:false,pensionato:false,redditoDipendente:0,dataInizioAttivita:'',accantonamentoCustom:null,
+         costoCommercialista:0,redditoAnnoPrecedente:0,altriRedditiSostituto:false};
+  try{var s=JSON.parse(localStorage.getItem(KEY_SETTINGS));return s?Object.assign({},d,s):d;}catch(e){return d;}
+}
+function saveSettings(s){localStorage.setItem(KEY_SETTINGS,JSON.stringify(s));}
+function loadProfilo(){return load(KEY_PROFILO,{});}
+
+var currentAnno = loadSettings().annoFiscaleAttivo;
+var currentCassaTab = 'entrate';
+var currentFattureTab = 'clienti';
+var _confirmCallback = null;
+var _currentXML = '';
+var _currentXMLFilename = '';
+var _editingFatturaProdotti = [];
+var cassaFiltro = { periodo: 'anno', dataFrom: '', dataTo: '', categoria: 'Tutte' };
+var fattureFiltro = { periodo: 'anno', dataFrom: '', dataTo: '', stato: 'tutti' };
+
+// ================================================================
+// INIT
+// ================================================================
+function init() {
+  buildNaturaSelects();
+  buildMetodiPagamento();
+  updateAnnoDisplay();
+  renderHome();
+  renderScadenze();
+  checkNuovoAnnoFiscale();
+  inserisciClientiDefault();
+  inserisciProdottiDefault();
+}
+
+function inserisciClientiDefault() {
+  var clientiDefault = [
+    {
+      id: 'default_deliveroo',
+      ragione: 'DELIVEROO ITALY S.R.L.',
+      nome: '', cognome: '',
+      piva: '09214970965', cf: '09214970965',
+      sdi: 'M5UXCR1',
+      indirizzo: 'Via Carlo Bo, 11',
+      citta: 'Milano', provincia: 'MI', cap: '20143', paese: 'IT',
+      noteInd: '', email: '', tel: '', pec: '', fax: '', note: ''
+    },
+    {
+      id: 'default_foodracers',
+      ragione: 'FOOD RACERS S.R.L.',
+      nome: '', cognome: '',
+      piva: '04743500268', cf: '04743500268',
+      sdi: '',
+      indirizzo: 'Via G. Bortolan, 44',
+      citta: 'Carbonera', provincia: 'TV', cap: '31030', paese: 'IT',
+      noteInd: '', email: '', tel: '', pec: '', fax: '', note: ''
+    },
+    {
+      id: 'default_glovo',
+      ragione: 'GLOVO INFRASTRUCTURE SERVICES ITALY S.R.L.',
+      nome: '', cognome: '',
+      piva: '10940380966', cf: '10940380966',
+      sdi: 'A4707H7',
+      indirizzo: 'Via Giovanni Battista Pirelli, 31',
+      citta: 'Milano', provincia: 'MI', cap: '20124', paese: 'IT',
+      noteInd: '', email: '', tel: '', pec: '', fax: '', note: ''
+    }
+  ];
+  var esistenti = load(KEY_CLIENTI, []);
+  var modificato = false;
+  clientiDefault.forEach(function(cd) {
+    if (!esistenti.find(function(c) { return c.id === cd.id; })) {
+      esistenti.push(cd);
+      modificato = true;
+    }
+  });
+  if (modificato) save(KEY_CLIENTI, esistenti);
+}
+
+function inserisciProdottiDefault() {
+  var prodottiDefault = [
+    {
+      id: 'default_consegna',
+      nome: 'Servizio di consegna',
+      codice: 'SRV001',
+      note: 'Prestazione di servizi di consegna a domicilio',
+      costo: 0,
+      iva: '0',
+      natura: 'N2.2'
+    },
+    {
+      id: 'default_trasporto',
+      nome: 'Servizio di trasporto merci',
+      codice: 'SRV002',
+      note: 'Attività di trasporto e recapito merci',
+      costo: 0,
+      iva: '0',
+      natura: 'N2.2'
+    },
+    {
+      id: 'default_ciclologistica',
+      nome: 'Servizio di ciclo-logistica urbana',
+      codice: 'SRV003',
+      note: 'Servizio di logistica urbana in bicicletta o veicolo leggero',
+      costo: 0,
+      iva: '0',
+      natura: 'N2.2'
+    }
+  ];
+  var esistenti = load(KEY_PRODOTTI, []);
+  var modificato = false;
+  prodottiDefault.forEach(function(pd) {
+    if (!esistenti.find(function(p) { return p.id === pd.id; })) {
+      esistenti.push(pd);
+      modificato = true;
+    }
+  });
+  if (modificato) save(KEY_PRODOTTI, esistenti);
+}
+
+function checkNuovoAnnoFiscale() {
+  var annoReale = new Date().getFullYear();
+  var s = loadSettings();
+  if (s.annoFiscaleAttivo < annoReale) {
+    setTimeout(function() {
+      showConfirm(
+        '⚠️ Nuovo Anno Fiscale',
+        'Le impostazioni sono ancora impostate sull\'anno ' + s.annoFiscaleAttivo + ' ma siamo nel ' + annoReale + '.\n\nVuoi aggiornare all\'anno corrente? L\'INPS versato verrà azzerato.',
+        function() {
+          var sNew = loadSettings();
+          sNew.annoFiscaleAttivo = annoReale;
+          sNew.inpsVersato = 0;
+          saveSettings(sNew);
+          currentAnno = annoReale;
+          updateAnnoDisplay();
+          renderHome();
+          renderTasse();
+          renderScadenze();
+          showInfo('✅ Anno aggiornato a ' + annoReale + '. Verifica le impostazioni fiscali.', mostraModalBackupFisco);
+        }
+      );
+    }, 800);
+  }
+}
+
+function buildNaturaSelects() {
+  var html = NATURA_IVA.map(n=>`<option value="${n.v}">${n.l}</option>`).join('');
+  document.getElementById('pNatura').innerHTML = html;
+  document.getElementById('fpNatura').innerHTML = html;
+}
+
+function buildMetodiPagamento() {
+  var html = METODI_PAGAMENTO.map(m=>`<option value="${m}">${m}</option>`).join('');
+  document.getElementById('fMetodoPag').innerHTML = html;
+}
+
+function updateAnnoDisplay() {
+  document.getElementById('topbarAnno').textContent = currentAnno;
+  document.getElementById('homeAnnoLabel').textContent = 'Anno ' + currentAnno;
+  document.getElementById('tasseAnnoLabel').textContent = currentAnno;
+}
+
+// ================================================================
+// NAVIGATION
+// ================================================================
+function switchPage(name) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page'+name).classList.add('active');
+  document.getElementById('nav'+name).classList.add('active');
+  if(name==='Home') renderHome();
+  if(name==='Cassa') renderCassa();
+  if(name==='Fatture') renderFatture();
+  if(name==='Scadenze') renderScadenze();
+  if(name==='Tasse') renderTasse();
+}
+
+function switchCassaTab(tab, btn) {
+  currentCassaTab = tab;
+  document.querySelectorAll('#pageCassa .tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('fabCassa').onclick = tab==='entrate' ? nuovaEntrataCassa : nuovaSpesaCassa;
+  renderCassa();
+}
+
+function switchFattureTab(tab, btn) {
+  currentFattureTab = tab;
+  document.querySelectorAll('#pageFatture .tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  var fabF = document.getElementById('fabFatture');
+  var filterBar = document.getElementById('fattureFilterBar');
+  if(tab==='clienti') { fabF.onclick=nuovoCliente; fabF.style.display='flex'; filterBar.style.display='flex'; }
+  else if(tab==='prodotti') { fabF.onclick=nuovoProdotto; fabF.style.display='flex'; filterBar.style.display='flex'; }
+  else if(tab==='fatture') { fabF.onclick=nuovaFattura; fabF.style.display='flex'; filterBar.style.display='flex'; }
+  else if(tab==='preventivi') { fabF.onclick=nuovaFattura; fabF.style.display='flex'; filterBar.style.display='flex'; }
+  else if(tab==='importa') { fabF.style.display='none'; filterBar.style.display='none'; }
+  renderFatture();
+}
+
+function apriDettaglio(id){document.getElementById(id).classList.add('open');}
+function chiudiDettaglio(id){document.getElementById(id).classList.remove('open');}
+
+function toggleField(toggleId, fieldId) {
+  var t = document.getElementById(toggleId);
+  var f = document.getElementById(fieldId);
+  t.classList.toggle('on');
+  f.value = t.classList.contains('on') ? '1' : '0';
+}
+function setToggle(toggleId, fieldId, val) {
+  var t = document.getElementById(toggleId);
+  var f = document.getElementById(fieldId);
+  if(val){t.classList.add('on');f.value='1';}else{t.classList.remove('on');f.value='0';}
+}
+
+// ================================================================
+// HOME
+// ================================================================
+function renderHome() {
+  var s = loadSettings();
+  var fatture = load(KEY_FATTURE,[]).filter(f=>f.annoFiscale===currentAnno||new Date(f.dataFattura||'').getFullYear()===currentAnno);
+  var entrate = load(KEY_ENTRATE,[]).filter(e=>new Date(e.data).getFullYear()===currentAnno);
+  var lordo = entrate.reduce((a,e)=>a+(parseFloat(e.ammontare)||0),0);
+  // also count paid fatture if not already in entrate
+  var calc = calcolaFiscale(lordo,s);
+  document.getElementById('homeLordo').textContent = fmt(lordo);
+  document.getElementById('homeImponibile').textContent = fmt(calc.imponibile);
+  document.getElementById('homeINPS').textContent = fmt(calc.inps);
+  document.getElementById('homeImposta').textContent = fmt(calc.imposta);
+  document.getElementById('homeNetto').textContent = fmt(calc.netto);
+  document.getElementById('homeFatture').textContent = fatture.length;
+  document.getElementById('homeNonPagate').textContent = fatture.filter(f=>f.stato!=='pagata').length;
+  document.getElementById('homeSpese').textContent = load(KEY_SPESE,[]).filter(sp=>new Date(sp.data).getFullYear()===currentAnno).length;
+  var campiM = getCampiMancanti(s);
+  var campiEl = document.getElementById('homeCampiMancanti');
+  var accaBox = document.getElementById('homeAccaBox');
+  if (campiEl) {
+    if (campiM.length > 0) {
+      campiEl.style.display = 'block';
+      campiEl.innerHTML = '<div style="display:flex;align-items:flex-start;gap:10px;"><span style="font-size:16px;flex-shrink:0;">⚠️</span><div><div style="color:var(--orange);font-weight:700;font-size:13px;margin-bottom:2px;">Impostazioni fiscali incomplete</div><div style="color:var(--dim);font-size:12px;margin-bottom:4px;">Manca: <strong style="color:var(--text);">' + campiM.join(', ') + '</strong></div><div style="font-size:11px;color:#555;">Vai in <strong style="color:var(--orange);">Tasse → Impostazioni fiscali</strong></div></div></div>';
+      if (accaBox) accaBox.style.display = 'none';
+    } else {
+      campiEl.style.display = 'none';
+      if (accaBox) accaBox.style.display = '';
+    }
+  }
+  var percDinRaw = calcolaPercAccantonamentoDinamico(lordo, s);
+  var percDin = percDinRaw ? percDinRaw.perc : 0;
+  var accant = s.accantonamentoCustom != null ? s.accantonamentoCustom : percDin;
+  var fase = getFaseFiscale(s);
+  var faseEl = document.getElementById('homeAccantFase');
+  var faseDescEl = document.getElementById('homeAccantFaseDesc');
+  if (faseEl) { faseEl.textContent = fase.label; faseEl.style.color = fase.color; }
+  if (faseDescEl) { faseDescEl.textContent = fase.desc; }
+
+  if (campiM.length > 0) {
+    document.getElementById('homeAccant').textContent = '—';
+    document.getElementById('homeAccantPercLabel').textContent = '';
+    document.getElementById('homeAccantMese').textContent = '—';
+    document.getElementById('homeAccantDisp').textContent = '—';
+  } else if (!percDinRaw) {
+    document.getElementById('homeAccant').textContent = '—';
+    document.getElementById('homeAccantPercLabel').textContent = '';
+    document.getElementById('homeAccantMese').textContent = 'Prima fattura';
+    document.getElementById('homeAccantDisp').textContent = '—';
+  } else {
+    var totAccant = lordo * accant / 100;
+    var mediaMese = percDinRaw.media || 0;
+    var quotaMese = mediaMese * accant / 100;
+    var dispMese = mediaMese - quotaMese;
+    document.getElementById('homeAccant').textContent = fmt(totAccant) + ' €';
+    document.getElementById('homeAccantPercLabel').textContent = '(' + Math.round(accant) + '%)';
+    document.getElementById('homeAccantMese').textContent = fmt(quotaMese) + ' €';
+    document.getElementById('homeAccantDisp').textContent = fmt(dispMese) + ' €';
+  }
+
+  var warnEl = document.getElementById('homeAccantWarn');
+  if (warnEl) { var wt = campiM.length > 0 ? '' : getWarnText(s, lordo, percDin); warnEl.style.display = wt ? 'block' : 'none'; warnEl.textContent = wt; }
+  var oldWarn = document.getElementById('homeAccantWarnOld');
+  if (oldWarn) oldWarn.style.display = 'none';
+  // prossima scadenza
+  var scad = getScadenze(currentAnno);
+  var done = load(KEY_SCADENZE,[]);
+  var future = scad.filter(s=>!done.includes(s.key)&&new Date(s.data)>=new Date()).sort((a,b)=>new Date(a.data)-new Date(b.data));
+  if (future.length > 0) {
+    var primaData = future[0].data;
+    var scadGiorno = future.filter(x => x.data === primaData);
+    var tipiGiorno = [...new Set(scadGiorno.map(x => x.tipo === 'IRPEF' ? 'IRPEF' : x.tipo === 'INPS' ? 'INPS' : x.tipo))];
+    var isAcconto = scadGiorno.some(x => x.desc && x.desc.toLowerCase().includes('acconto'));
+    var isSaldo = scadGiorno.some(x => x.desc && x.desc.toLowerCase().includes('saldo'));
+    var suffisso = isAcconto ? ' · Acc.' : isSaldo ? ' · Saldo' : '';
+    document.getElementById('homeScadenzaData').textContent = formatDate(primaData);
+    document.getElementById('homeScadenzaTipo').textContent = tipiGiorno.join(' + ') + suffisso;
+  } else {
+    document.getElementById('homeScadenzaData').textContent = '—';
+    document.getElementById('homeScadenzaTipo').textContent = '';
+  }
+}
+
+function calcolaFiscale(lordo,s) {
+  var imponibile = Math.round(lordo*(s.coefficiente||67))/100;
+  var inps = 0;
+  var tipoG = s.tipoGestione || 'separata';
+  if (tipoG === 'artigiani') {
+    var minimoAnn = 18808;
+    var isComm = (s.tipoArtigiano === 'commerciante');
+    var contributoFisso = isComm ? 4611.64 : 4521.36;
+    var aliqEcc = isComm ? 24.48 : 24;
+    var ridPerc = s.riduzioneINPS ? (s.pensionato ? 0.50 : 0.65) : 1;
+    contributoFisso = Math.round(contributoFisso * ridPerc * 100) / 100;
+    aliqEcc = aliqEcc * ridPerc;
+    if (imponibile <= minimoAnn) { inps = contributoFisso; }
+    else { inps = contributoFisso + Math.round((imponibile - minimoAnn) * aliqEcc) / 100; }
+    inps = Math.round(inps * 100) / 100;
+  } else {
+    var aliqINPS = (s.pensionato||s.dipendente||s.under21) ? 24 : (s.aliquotaINPS||26.07);
+    if (s.riduzioneINPS) aliqINPS *= 0.65;
+    inps = Math.round(Math.min(imponibile, 122295) * aliqINPS) / 100;
+  }
+  var inpsDaPagare = Math.max(0, inps-(s.inpsVersato||0));
+  var imponibileFisco = imponibile - inps;
+  var infoAnno = getAnnoAttivita(s);
+  var aliqImp = infoAnno.agevolato ? 5 : (s.aliquotaImposta||15);
+  var imposta = Math.round(imponibileFisco * aliqImp) / 100;
+  var netto = lordo - inps - imposta;
+  var percAccant = lordo>0 ? Math.round((inps+imposta)/lordo*100) : 0;
+  return {imponibile,inps,inpsDaPagare,imposta,netto,percAccant};
+}
+
+function prossimeScadenzeTarget(s) {
+  var oggi = new Date(); oggi.setHours(0,0,0,0);
+  var anno = oggi.getFullYear();
+  var scad = getScadenze(anno).concat(getScadenze(anno+1));
+  var done = load(KEY_SCADENZE,[]);
+  var future = scad
+    .filter(function(x){ return !done.includes(x.key) && new Date(x.data) >= oggi && (x.tipo==='INPS'||x.tipo==='IRPEF'); })
+    .sort(function(a,b){ return new Date(a.data)-new Date(b.data); });
+  if (future.length === 0) return null;
+  var primaData = new Date(future[0].data);
+  var mesiAllaScadenza = Math.max(1,
+    (primaData.getFullYear() - oggi.getFullYear()) * 12 +
+    (primaData.getMonth() - oggi.getMonth())
+  );
+  var importoTarget = future
+    .filter(function(x){ return x.data === future[0].data; })
+    .reduce(function(a,x){ return a + (x.imp||0); }, 0);
+  return { mesi: mesiAllaScadenza, target: importoTarget, data: future[0].data };
+}
+
+function calcolaPercAccantonamentoDinamico(lordo, s) {
+  if (!lordo || lordo === 0) return null;
+  var oggi = new Date();
+  var mese = oggi.getMonth() + 1;
+  var entrateMese = load(KEY_ENTRATE,[]).filter(function(e){
+    var d = new Date(e.data);
+    return d.getFullYear() === oggi.getFullYear() && (parseFloat(e.ammontare)||0) > 0;
+  });
+  var mesiConFatture = new Set(entrateMese.map(function(e){
+    return new Date(e.data).getMonth();
+  }));
+  var mesiPassati = Math.max(1, mesiConFatture.size);
+  var mediaLordo = lordo / mesiPassati;
+  var proiezioneAnnuale = mediaLordo * 12;
+  if (proiezioneAnnuale === 0) return null;
+  var calcProiez = calcolaFiscale(proiezioneAnnuale, s);
+  var tasseTotali = calcProiez.inps + calcProiez.imposta;
+  var costoComm = s.costoCommercialista || 0;
+  var extra = s.dipendente ? 3 : 0;
+  var modalita = s.modalitaAccantonamento || 'tutto';
+  var perc = 0;
+  var scadInfo = prossimeScadenzeTarget(s);
+  if (scadInfo) {
+    var mesiAllaScad = scadInfo.mesi;
+    if (modalita === 'tutto') {
+      var target = tasseTotali + costoComm;
+      perc = (mediaLordo * mesiAllaScad) > 0 ? target / (mediaLordo * mesiAllaScad) * 100 : 0;
+    } else {
+      var dataScad = new Date(scadInfo.data);
+      var eGiugno = dataScad.getMonth() === 5; // mese 5 = giugno
+      var target = scadInfo.target + (eGiugno ? costoComm : 0);
+      perc = (mediaLordo * mesiAllaScad) > 0 ? target / (mediaLordo * mesiAllaScad) * 100 : 0;
+    }
+  } else {
+    perc = (tasseTotali + costoComm) / proiezioneAnnuale * 100;
+  }
+  return {perc: Math.round((perc + extra) * 10) / 10, proiezione: Math.round(proiezioneAnnuale), media: Math.round(mediaLordo * 100) / 100};
+}
+
+
+function getAnnoAttivita(s) {
+  if (!s.dataInizioAttivita) return {anno:0, agevolato:s.primoAnno, scadenzaVicina:false};
+  var inizio = new Date(s.dataInizioAttivita);
+  var oggi = new Date();
+  var anni = oggi.getFullYear() - inizio.getFullYear();
+  if (oggi.getMonth() < inizio.getMonth() || (oggi.getMonth() === inizio.getMonth() && oggi.getDate() < inizio.getDate())) anni--;
+  var annoAttivita = anni + 1;
+  var agevolato = annoAttivita <= 5;
+  var scadenzaVicina = annoAttivita === 5;
+  return {anno: annoAttivita, agevolato: agevolato, scadenzaVicina: scadenzaVicina};
+}
+
+function getFaseFiscale(s) {
+  var m = new Date().getMonth() + 1;
+  var info = getAnnoAttivita(s);
+  var annoLabel = info.anno > 0 ? info.anno + '° anno' : '';
+  if (info.agevolato && info.scadenzaVicina) return {label:'🌱 Regime 5% — ' + annoLabel, desc:'⚠️ Ultimo anno agevolato, dal prossimo si passa al 15%', color:'var(--orange)'};
+  if (info.agevolato) return {label:'🌱 Regime agevolato 5% — ' + annoLabel, desc:'Valido per i primi 5 anni di attività', color:'#4CAF50'};
+  if (m >= 1 && m <= 6) return {label:'📅 Saldo + 1° Acconto', desc:'Scadenza giugno — periodo critico', color:'var(--orange)'};
+  if (m >= 7 && m <= 11) return {label:'📅 2° Acconto', desc:'Scadenza novembre', color:'var(--primary)'};
+  return {label:'📅 Fine anno', desc:'Nessuna scadenza imminente', color:'#4CAF50'};
+}
+
+function getCampiMancanti(s) {
+  var mancanti = [];
+  if (!s.dataInizioAttivita) mancanti.push('Data inizio attività');
+  if (!s.coefficiente) mancanti.push('Coefficiente redditività');
+  if (!s.aliquotaImposta) mancanti.push('Aliquota imposta sostitutiva');
+  if (!s.aliquotaINPS) mancanti.push('Aliquota INPS');
+  return mancanti;
+}
+
+function getWarnText(s, lordo, percDin) {
+  if (lordo >= 100000) {
+    return '🚨 Hai superato 100.000€: uscita immediata dal regime forfettario. Contatta subito il tuo commercialista.';
+  }
+  if (lordo >= 85000) {
+    return '⚠️ Hai superato 85.000€: perderai il regime forfettario dal prossimo anno. Consulta un commercialista.';
+  }
+  if (s.accantonamentoCustom != null && s.accantonamentoCustom < percDin) {
+    return '⚠️ La % personalizzata (' + Math.round(s.accantonamentoCustom) + '%) è inferiore al consigliato (' + Math.round(percDin) + '%). Rischio scoperto fiscale.';
+  }
+  var infoAnno = getAnnoAttivita(s);
+  if (infoAnno.agevolato && infoAnno.scadenzaVicina) {
+    return '⚠️ Sei al 5° anno agevolato. Dal prossimo anno l\'aliquota passa automaticamente al 15%. L\'accantonamento salirà di conseguenza.';
+  }
+  if (infoAnno.agevolato) {
+    return 'ℹ️ Regime agevolato al 5% attivo. Al 6° anno il sistema passerà automaticamente al 15%.';
+  }
+  if (s.tipoGestione === 'artigiani' && s.riduzioneINPS && new Date().getMonth() === 0) {
+    return 'ℹ️ Ricorda di confermare la riduzione 35% INPS entro fine febbraio.';
+  }
+  var reddPrec = s.redditoAnnoPrecedente || 0;
+  if (reddPrec > 0 && lordo > reddPrec * 1.20) {
+    var calcPrec = calcolaFiscale(reddPrec, s);
+    var calcCorr = calcolaFiscale(lordo, s);
+    var differenza = (calcCorr.inps + calcCorr.imposta) - (calcPrec.inps + calcPrec.imposta);
+    return '⚠️ Il tuo reddito è cresciuto oltre il 20% rispetto all\'anno scorso. Gli acconti del prossimo anno saranno circa ' + fmt(differenza) + ' € più alti. Valuta di accantonare una quota extra.';
+  }
+  if (s.dipendente) {
+    return 'ℹ️ Hai redditi da lavoro dipendente: accantonamento aumentato del 3% per sicurezza. Per un calcolo preciso consulta il tuo commercialista.';
+  }
+  return '';
+}
+
+// ================================================================
+// CASSA
+// ================================================================
+function renderCassa() {
+  var filtro = (document.getElementById('cassaFilter').value||'').toLowerCase();
+  var list = document.getElementById('cassaList');
+  var strip = document.getElementById('cassaTotalStrip');
+  if(currentCassaTab==='entrate') {
+    var items = load(KEY_ENTRATE,[]).filter(e=>dateInRange(e.data, cassaFiltro)&&(!filtro||e.nome.toLowerCase().includes(filtro)));
+    items.sort((a,b)=>new Date(b.data)-new Date(a.data));
+    var tot = items.reduce((a,e)=>a+(parseFloat(e.ammontare)||0),0);
+    strip.innerHTML = 'Totale: <strong>'+fmt(tot)+'</strong>';
+    list.innerHTML = items.map(e=>`
+      <div class="list-item" onclick="apriEntrata('${e.id}')">
+        <div class="list-icon ${e.pagata?'paid':''}"><i class="fas fa-euro-sign"></i></div>
+        <div class="list-info">
+          <div class="list-name">${esc(e.nome)}</div>
+          <div class="list-sub">${formatDate(e.data)}</div>
+        </div>
+        <div class="list-amount">${fmt(e.ammontare)} €</div>
+      </div>`).join('')||'<div style="color:var(--dim);text-align:center;padding:40px;">Nessuna entrata</div>';
+  } else {
+    var items = load(KEY_SPESE,[]).filter(sp=>dateInRange(sp.data, cassaFiltro)&&(!filtro||sp.nome.toLowerCase().includes(filtro))&&(cassaFiltro.categoria==='Tutte'||sp.categoria===cassaFiltro.categoria));
+    items.sort((a,b)=>new Date(b.data)-new Date(a.data));
+    var tot = items.reduce((a,sp)=>a+(parseFloat(sp.ammontare)||0),0);
+    strip.innerHTML = 'Totale: <strong>'+fmt(tot)+'</strong>';
+    list.innerHTML = items.map(sp=>`
+      <div class="list-item" onclick="apriSpesa('${sp.id}')">
+        <div class="spesa-icon"><i class="fas fa-receipt"></i></div>
+        <div class="list-info">
+          <div class="list-name">${esc(sp.nome)}</div>
+          <div class="list-sub">${formatDate(sp.data)} · ${esc(sp.categoria||'')}</div>
+        </div>
+        <div class="list-amount">${fmt(sp.ammontare)} €</div>
+      </div>`).join('')||'<div style="color:var(--dim);text-align:center;padding:40px;">Nessuna spesa</div>';
+  }
+}
+
+function nuovaEntrataCassa() {
+  document.getElementById('entrataId').value='';
+  document.getElementById('eNome').value='';
+  document.getElementById('eData').value=today();
+  document.getElementById('eAmmontare').value='';
+  document.getElementById('eRivalsaINPS').value='0';
+  setToggle('toggleEntrataPagata','entrataPagata',true);
+  apriDettaglio('viewEntrata');
+}
+
+function apriEntrata(id) {
+  var items=load(KEY_ENTRATE,[]);
+  var e=items.find(x=>x.id===id);
+  if(!e) return;
+  document.getElementById('entrataId').value=e.id;
+  document.getElementById('eNome').value=e.nome||'';
+  document.getElementById('eData').value=e.data||today();
+  document.getElementById('eAmmontare').value=e.ammontare||'';
+  document.getElementById('eRivalsaINPS').value=e.rivalsaINPS||'0';
+  setToggle('toggleEntrataPagata','entrataPagata',e.pagata);
+  apriDettaglio('viewEntrata');
+}
+
+function salvaEntrata() {
+  var id=document.getElementById('entrataId').value||genId();
+  var nome=document.getElementById('eNome').value.trim();
+  if(!nome){showInfo('Inserisci il nome');return;}
+  var ammontare=parseFloat(document.getElementById('eAmmontare').value)||0;
+  var items=load(KEY_ENTRATE,[]);
+  var idx=items.findIndex(x=>x.id===id);
+  var obj={id,nome,data:document.getElementById('eData').value,ammontare,
+    rivalsaINPS:parseFloat(document.getElementById('eRivalsaINPS').value)||0,
+    pagata:document.getElementById('entrataPagata').value==='1'};
+  if(idx>=0) items[idx]=obj; else items.push(obj);
+  save(KEY_ENTRATE,items);
+  chiudiDettaglio('viewEntrata');
+  renderCassa();
+  mostraModalBackupFisco();
+}
+
+function eliminaEntrata() {
+  var id=document.getElementById('entrataId').value;
+  if(!id) return;
+  showConfirm('Elimina Entrata','Sei sicuro di voler eliminare quest\'Entrata? L\'operazione non può essere annullata',()=>{
+    var items=load(KEY_ENTRATE,[]).filter(x=>x.id!==id);
+    save(KEY_ENTRATE,items);
+    chiudiDettaglio('viewEntrata');
+    renderCassa();
+  });
+}
+
+function nuovaSpesaCassa() {
+  document.getElementById('spesaId').value='';
+  document.getElementById('spNome').value='';
+  document.getElementById('spData').value=today();
+  document.getElementById('spAmmontare').value='';
+  document.getElementById('spCategoria').value='Altro';
+  apriDettaglio('viewSpesa');
+}
+
+function apriSpesa(id) {
+  var sp=load(KEY_SPESE,[]).find(x=>x.id===id);
+  if(!sp) return;
+  document.getElementById('spesaId').value=sp.id;
+  document.getElementById('spNome').value=sp.nome||'';
+  document.getElementById('spData').value=sp.data||today();
+  document.getElementById('spAmmontare').value=sp.ammontare||'';
+  document.getElementById('spCategoria').value=sp.categoria||'Altro';
+  apriDettaglio('viewSpesa');
+}
+function salvaSpesa() {
+  var id=document.getElementById('spesaId').value||genId();
+  var nome=document.getElementById('spNome').value.trim();
+  if(!nome){showInfo('Inserisci il nome');return;}
+  var items=load(KEY_SPESE,[]);
+  var idx=items.findIndex(x=>x.id===id);
+  var obj={id,nome,data:document.getElementById('spData').value,
+    ammontare:parseFloat(document.getElementById('spAmmontare').value)||0,
+    categoria:document.getElementById('spCategoria').value};
+  if(idx>=0) items[idx]=obj; else items.push(obj);
+  save(KEY_SPESE,items);
+  chiudiDettaglio('viewSpesa');
+  renderCassa();
+  mostraModalBackupFisco();
+}
+
+function eliminaSpesa() {
+  var id=document.getElementById('spesaId').value;
+  if(!id) return;
+  showConfirm('Elimina Spesa','Sei sicuro? L\'operazione non può essere annullata',()=>{
+    save(KEY_SPESE,load(KEY_SPESE,[]).filter(x=>x.id!==id));
+    chiudiDettaglio('viewSpesa');
+    renderCassa();
+  });
+}
+
+// ================================================================
+// CLIENTI
+// ================================================================
+function renderFatture() {
+  var filtro=(document.getElementById('fattureFilter').value||'').toLowerCase();
+  var list=document.getElementById('fattureList');
+  if(currentFattureTab==='importa') {
+    renderImportaXML();
+    return;
+  }
+  if(currentFattureTab==='clienti') {
+    var items=load(KEY_CLIENTI,[]).filter(c=>!filtro||(c.ragione||c.nome||'').toLowerCase().includes(filtro));
+    list.innerHTML=items.map(c=>`
+      <div class="list-item" onclick="apriCliente('${c.id}')">
+        <div class="list-icon"><i class="fas fa-user"></i></div>
+        <div class="list-info"><div class="list-name">${esc(c.ragione||c.nome||'Cliente')}</div><div class="list-sub">${esc(c.piva||c.cf||'')}</div></div>
+        <i class="fas fa-chevron-right" style="color:var(--dim)"></i>
+      </div>`).join('')||'<div style="color:var(--dim);text-align:center;padding:40px;">Nessun cliente</div>';
+  } else if(currentFattureTab==='prodotti') {
+    var items=load(KEY_PRODOTTI,[]).filter(p=>!filtro||p.nome.toLowerCase().includes(filtro));
+    list.innerHTML=items.map(p=>`
+      <div class="list-item" onclick="apriProdotto('${p.id}')">
+        <div class="list-icon" style="background:#555;"><i class="fas fa-box"></i></div>
+        <div class="list-info"><div class="list-name">${esc(p.nome)}</div><div class="list-sub">${p.costo?fmt(p.costo)+' €':''}</div></div>
+        <i class="fas fa-chevron-right" style="color:var(--dim)"></i>
+      </div>`).join('')||'<div style="color:var(--dim);text-align:center;padding:40px;">Nessun prodotto</div>';
+  } else {
+    var isPreventivo=(currentFattureTab==='preventivi');
+    var items=load(KEY_FATTURE,[]).filter(f=>{
+      var dataCheck=f.dataFattura||(String(f.annoFiscale||currentAnno)+'-01-01');
+      var matchData=dateInRange(dataCheck, fattureFiltro);
+      var matchTipo=isPreventivo?(f.isPreventivo===true):(f.isPreventivo!==true);
+      var matchStato=fattureFiltro.stato==='tutti'||(fattureFiltro.stato==='pagata'&&f.stato==='pagata')||(fattureFiltro.stato==='non_pagata'&&f.stato!=='pagata');
+      return matchData&&matchTipo&&matchStato&&(!filtro||(f.numeroFattura||'').toString().includes(filtro)||(f.piattaforma||'').toLowerCase().includes(filtro));
+    }).sort((a,b)=>b.numeroFattura-a.numeroFattura);
+    list.innerHTML=items.map(f=>{
+      var nome=f.piattaforma||('Fattura nr. '+f.numeroFattura+'/'+currentAnno);
+      var stato=f.stato==='pagata'?'<span class="badge badge-ok">Pagata</span>':'<span class="badge badge-gray">Non inviata</span>';
+      return `<div class="list-item" onclick="apriExistingFattura('${f.id}')">
+        <div class="list-icon" style="background:var(--card2);"><i class="fas fa-file-invoice" style="color:var(--primary);"></i></div>
+        <div class="list-info"><div class="list-name">${esc(nome)}</div><div class="list-sub">#${f.numeroFattura} – ${f.isPreventivo?'Preventivo':'Fattura'}</div></div>
+        <div style="text-align:right">${stato}<div style="font-size:14px;font-weight:600;margin-top:4px;">${fmt(f.importoLordo)} €</div></div>
+      </div>`;
+    }).join('')||'<div style="color:var(--dim);text-align:center;padding:40px;">Nessun elemento</div>';
+  }
+}
+
+function nuovoCliente() {
+  document.getElementById('clienteId').value='';
+  ['cRagione','cNome','cCognome','cPIVA','cCF','cSDI','cIndirizzo','cCitta','cProvincia','cCAP','cNoteInd','cEmail','cTel','cPEC','cFax','cNote'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('cPaese').value='IT';
+  apriDettaglio('viewCliente');
+}
+
+function apriCliente(id) {
+  var c=load(KEY_CLIENTI,[]).find(x=>x.id===id);
+  if(!c) return;
+  document.getElementById('clienteId').value=c.id;
+  document.getElementById('cRagione').value=c.ragione||'';
+  document.getElementById('cNome').value=c.nome||'';
+  document.getElementById('cCognome').value=c.cognome||'';
+  document.getElementById('cPIVA').value=c.piva||'';
+  document.getElementById('cCF').value=c.cf||'';
+  document.getElementById('cSDI').value=c.sdi||'';
+  document.getElementById('cIndirizzo').value=c.indirizzo||'';
+  document.getElementById('cCitta').value=c.citta||'';
+  document.getElementById('cProvincia').value=c.provincia||'';
+  document.getElementById('cCAP').value=c.cap||'';
+  document.getElementById('cPaese').value=c.paese||'IT';
+  document.getElementById('cNoteInd').value=c.noteInd||'';
+  document.getElementById('cEmail').value=c.email||'';
+  document.getElementById('cTel').value=c.tel||'';
+  document.getElementById('cPEC').value=c.pec||'';
+  document.getElementById('cFax').value=c.fax||'';
+  document.getElementById('cNote').value=c.note||'';
+  apriDettaglio('viewCliente');
+}
+function salvaCliente() {
+  var id=document.getElementById('clienteId').value||genId();
+  var ragione=document.getElementById('cRagione').value.trim();
+  var nome=document.getElementById('cNome').value.trim();
+  if(!ragione&&!nome){showInfo('Inserisci almeno il nome o la ragione sociale');return;}
+  var items=load(KEY_CLIENTI,[]);
+  var idx=items.findIndex(x=>x.id===id);
+  var obj={id,ragione,nome,cognome:document.getElementById('cCognome').value.trim(),
+    piva:document.getElementById('cPIVA').value.trim(),cf:document.getElementById('cCF').value.trim(),
+    sdi:document.getElementById('cSDI').value.trim(),indirizzo:document.getElementById('cIndirizzo').value.trim(),
+    citta:document.getElementById('cCitta').value.trim(),provincia:document.getElementById('cProvincia').value.trim(),
+    cap:document.getElementById('cCAP').value.trim(),paese:document.getElementById('cPaese').value.trim()||'IT',
+    noteInd:document.getElementById('cNoteInd').value.trim(),email:document.getElementById('cEmail').value.trim(),
+    tel:document.getElementById('cTel').value.trim(),pec:document.getElementById('cPEC').value.trim(),
+    fax:document.getElementById('cFax').value.trim(),note:document.getElementById('cNote').value.trim()};
+  if(idx>=0) items[idx]=obj; else items.push(obj);
+  save(KEY_CLIENTI,items);
+  chiudiDettaglio('viewCliente');
+  if(_fromFattura) {
+    scegliCliente();
+    _fromFattura = false;
+  } else {
+    renderFatture();
+  }
+  mostraModalBackupFisco();
+}
+
+function eliminaCliente() {
+  var id=document.getElementById('clienteId').value;
+  if(!id) return;
+  showConfirm('Elimina Cliente','Sei sicuro?',()=>{
+    save(KEY_CLIENTI,load(KEY_CLIENTI,[]).filter(x=>x.id!==id));
+    chiudiDettaglio('viewCliente');
+    renderFatture();
+  });
+}
+
+// ================================================================
+// PRODOTTI
+// ================================================================
+function nuovoProdotto() {
+  document.getElementById('prodottoId').value='';
+  ['pNome','pCodice','pNote','pCosto'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('pIVA').value='0';
+  document.getElementById('pNatura').value='N2.2';
+  apriDettaglio('viewProdotto');
+}
+
+function apriProdotto(id) {
+  var p=load(KEY_PRODOTTI,[]).find(x=>x.id===id);
+  if(!p) return;
+  document.getElementById('prodottoId').value=p.id;
+  document.getElementById('pNome').value=p.nome||'';
+  document.getElementById('pCodice').value=p.codice||'';
+  document.getElementById('pNote').value=p.note||'';
+  document.getElementById('pCosto').value=p.costo||'';
+  document.getElementById('pIVA').value=p.iva||'0';
+  document.getElementById('pNatura').value=p.natura||'N2.2';
+  apriDettaglio('viewProdotto');
+}
+
+function salvaProdotto() {
+  var id=document.getElementById('prodottoId').value||genId();
+  var nome=document.getElementById('pNome').value.trim();
+  if(!nome){showInfo('Inserisci il nome del prodotto');return;}
+  var items=load(KEY_PRODOTTI,[]);
+  var idx=items.findIndex(x=>x.id===id);
+  var obj={id,nome,codice:document.getElementById('pCodice').value.trim(),
+    note:document.getElementById('pNote').value.trim(),
+    costo:parseFloat(document.getElementById('pCosto').value)||0,
+    iva:document.getElementById('pIVA').value,
+    natura:document.getElementById('pNatura').value};
+  if(idx>=0) items[idx]=obj; else items.push(obj);
+  save(KEY_PRODOTTI,items);
+  chiudiDettaglio('viewProdotto');
+  if(_fromFattura) {
+    scegliProdottoDB();
+    _fromFattura = false;
+  } else {
+    renderFatture();
+  }
+  mostraModalBackupFisco();
+}
+
+function eliminaProdotto() {
+  var id=document.getElementById('prodottoId').value;
+  if(!id) return;
+  showConfirm('Elimina Prodotto','Sei sicuro?',()=>{
+    save(KEY_PRODOTTI,load(KEY_PRODOTTI,[]).filter(x=>x.id!==id));
+    chiudiDettaglio('viewProdotto');
+    renderFatture();
+  });
+}
+
+// ================================================================
+// FATTURE
+// ================================================================
+function nuovaFattura() {
+  _editingFatturaProdotti=[];
+  document.getElementById('fatturaId').value='';
+  document.getElementById('fatturaDetailTitle').textContent='Fattura';
+  // auto numero
+  var all=load(KEY_FATTURE,[]).filter(f=>f.annoFiscale===currentAnno);
+  var maxN=all.reduce((m,f)=>Math.max(m,parseInt(f.numeroFattura)||0),0);
+  document.getElementById('fNumero').value=maxN+1;
+  document.getElementById('fData').value=today();
+  // scadenza +30gg
+  var d=new Date(); d.setDate(d.getDate()+30);
+  document.getElementById('fScadenza').value=d.toISOString().split('T')[0];
+  document.getElementById('fTipo').value='TD01';
+  document.getElementById('fMetodoPag').value='Bonifico';
+  document.getElementById('fBollo').value='2';
+  setToggle('togglePreventivo','fatturaIsPreventivo',currentFattureTab==='preventivi');
+  setToggle('toggleBolloVirtuale','fBolloVirtuale',true);
+  setToggle('toggleContributi','fApplicaContributi',false);
+  ['fCRagione','fCNome','fCCognome','fCIndirizzo','fCCitta','fCProvincia','fCCAP','fCNoteInd','fCPIVA','fCCF','fCPEC','fCSDI','fRivalsaINPS','fPercCassa','fSpeseEsenti','fSpeseNonEsenti','fNote'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fCPaese').value='IT';
+  document.getElementById('fClienteId').value='';
+  renderFatturaProdotti();
+  apriDettaglio('viewFattura');
+}
+function apriExistingFattura(id) {
+  var f=load(KEY_FATTURE,[]).find(x=>x.id===id);
+  if(!f) return;
+  _editingFatturaProdotti=JSON.parse(JSON.stringify(f.prodotti||[]));
+  document.getElementById('fatturaId').value=f.id;
+  document.getElementById('fatturaDetailTitle').textContent=f.isPreventivo?'Preventivo':'Fattura';
+  document.getElementById('fNumero').value=f.numeroFattura||'';
+  document.getElementById('fData').value=f.dataFattura||today();
+  document.getElementById('fScadenza').value=f.dataScadenza||'';
+  document.getElementById('fTipo').value=f.tipoDocumento||'TD01';
+  setToggle('togglePreventivo','fatturaIsPreventivo',f.isPreventivo||false);
+  document.getElementById('fMetodoPag').value=f.metodoPagamento||'Bonifico';
+  document.getElementById('fBollo').value=f.marcaDaBollo||'';
+  setToggle('toggleBolloVirtuale','fBolloVirtuale',f.bolloVirtuale!==false);
+  setToggle('toggleContributi','fApplicaContributi',f.applicaContributi||false);
+  // cliente
+  var c=f.cliente||{};
+  document.getElementById('fClienteId').value=c.id||'';
+  document.getElementById('fCRagione').value=c.ragione||'';
+  document.getElementById('fCNome').value=c.nome||'';
+  document.getElementById('fCCognome').value=c.cognome||'';
+  document.getElementById('fCIndirizzo').value=c.indirizzo||'';
+  document.getElementById('fCCitta').value=c.citta||'';
+  document.getElementById('fCProvincia').value=c.provincia||'';
+  document.getElementById('fCCAP').value=c.cap||'';
+  document.getElementById('fCPaese').value=c.paese||'IT';
+  document.getElementById('fCNoteInd').value=c.noteInd||'';
+  document.getElementById('fCPIVA').value=c.piva||'';
+  document.getElementById('fCCF').value=c.cf||'';
+  document.getElementById('fCPEC').value=c.pec||'';
+  document.getElementById('fCSDI').value=c.sdi||'';
+  document.getElementById('fRivalsaINPS').value=f.rivalsaINPS||'';
+  document.getElementById('fPercCassa').value=f.percCassa||'';
+  document.getElementById('fSpeseEsenti').value=f.speseEsenti||'';
+  document.getElementById('fSpeseNonEsenti').value=f.speseNonEsenti||'';
+  document.getElementById('fNote').value=f.note||'';
+  renderFatturaProdotti();
+  apriDettaglio('viewFattura');
+}
+
+function getFatturaObj() {
+  var id=document.getElementById('fatturaId').value||genId();
+  var numero=parseInt(document.getElementById('fNumero').value)||1;
+  var isPreventivo=document.getElementById('fatturaIsPreventivo').value==='1';
+  var lordo=_editingFatturaProdotti.reduce((s,p)=>s+(p.costo*p.qty*(1-((p.sconto||0)/100))),0);
+  var bollo=parseFloat(document.getElementById('fBollo').value)||0;
+  var c={
+    id:document.getElementById('fClienteId').value,
+    ragione:document.getElementById('fCRagione').value.trim(),
+    nome:document.getElementById('fCNome').value.trim(),
+    cognome:document.getElementById('fCCognome').value.trim(),
+    indirizzo:document.getElementById('fCIndirizzo').value.trim(),
+    citta:document.getElementById('fCCitta').value.trim(),
+    provincia:document.getElementById('fCProvincia').value.trim(),
+    cap:document.getElementById('fCCAP').value.trim(),
+    paese:document.getElementById('fCPaese').value.trim()||'IT',
+    noteInd:document.getElementById('fCNoteInd').value.trim(),
+    piva:document.getElementById('fCPIVA').value.trim(),
+    cf:document.getElementById('fCCF').value.trim(),
+    pec:document.getElementById('fCPEC').value.trim(),
+    sdi:document.getElementById('fCSDI').value.trim()
+  };
+  return {
+    id, numeroFattura:numero, dataFattura:document.getElementById('fData').value,
+    dataScadenza:document.getElementById('fScadenza').value, tipoDocumento:document.getElementById('fTipo').value,
+    isPreventivo, importoLordo:Math.round(lordo*100)/100, marcaDaBollo:bollo,
+    bolloVirtuale:document.getElementById('fBolloVirtuale').value==='1',
+    applicaContributi:document.getElementById('fApplicaContributi').value==='1',
+    rivalsaINPS:parseFloat(document.getElementById('fRivalsaINPS').value)||0,
+    percCassa:parseFloat(document.getElementById('fPercCassa').value)||0,
+    speseEsenti:parseFloat(document.getElementById('fSpeseEsenti').value)||0,
+    speseNonEsenti:parseFloat(document.getElementById('fSpeseNonEsenti').value)||0,
+    note:document.getElementById('fNote').value.trim(),
+    metodoPagamento:document.getElementById('fMetodoPag').value,
+    cliente:c, prodotti:_editingFatturaProdotti,
+    annoFiscale:currentAnno, piattaforma:c.ragione||c.nome||('Fattura #'+numero),
+    stato:'non_inviata', timestampCreazione:Date.now()
+  };
+}
+function salvaFattura() {
+  var obj=getFatturaObj();
+  var items=load(KEY_FATTURE,[]);
+  var idx=items.findIndex(x=>x.id===obj.id);
+  if(idx>=0) items[idx]={...items[idx],...obj}; else items.push(obj);
+  save(KEY_FATTURE,items);
+  chiudiDettaglio('viewFattura');
+  renderFatture();
+  mostraModalBackupFisco();
+}
+
+function eliminaFattura() {
+  var id=document.getElementById('fatturaId').value;
+  if(!id) return;
+  showConfirm('Elimina Fattura','Sei sicuro di voler eliminare questa Fattura? L\'operazione non può essere annullata',()=>{
+    save(KEY_FATTURE,load(KEY_FATTURE,[]).filter(x=>x.id!==id));
+    chiudiDettaglio('viewFattura');
+    renderFatture();
+  });
+}
+
+function convertiInEntrata() {
+  showConfirm('Conferma Fattura','Sei sicuro di voler confermare questa Fattura come pagata? L\'entrata verrà creata in data di oggi ('+formatDate(today())+') per rispettare il principio di cassa',()=>{
+    var obj=getFatturaObj();
+    obj.stato='pagata';
+    var items=load(KEY_FATTURE,[]);
+    var idx=items.findIndex(x=>x.id===obj.id);
+    if(idx>=0) items[idx]={...items[idx],...obj}; else items.push(obj);
+    save(KEY_FATTURE,items);
+    // crea entrata
+    var entrate=load(KEY_ENTRATE,[]);
+    entrate.push({id:genId(),nome:'Fattura nr. '+obj.numeroFattura+'/'+currentAnno+' – '+(obj.cliente.ragione||obj.cliente.nome||''),
+      data:today(),ammontare:obj.importoLordo,rivalsaINPS:obj.rivalsaINPS||0,pagata:true});
+    save(KEY_ENTRATE,entrate);
+    chiudiDettaglio('viewFattura');
+    renderFatture();
+    showInfo('✅ Entrata creata nella sezione Cassa!');
+  });
+}
+
+// ================================================================
+// PRODOTTI IN FATTURA
+// ================================================================
+function renderFatturaProdotti() {
+  var html='';
+  _editingFatturaProdotti.forEach((p,i)=>{
+    var tot=p.costo*p.qty*(1-((p.sconto||0)/100));
+    html+=`<div class="list-item" onclick="apriProdottoInFattura(${i})">
+      <div class="list-icon" style="background:#333;"><i class="fas fa-box" style="color:var(--primary);"></i></div>
+      <div class="list-info"><div class="list-name">${p.qty} x ${esc(p.nome)}</div></div>
+      <div class="list-amount">${fmt(tot)} €</div>
+    </div>`;
+  });
+  document.getElementById('fProdottiList').innerHTML=html;
+}
+
+function aggiungiFatturaProdotto() {
+  document.getElementById('fpIndex').value='-1';
+  ['fpNome','fpCodice','fpNote','fpSconto'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fpCosto').value='';
+  document.getElementById('fpQty').value='1';
+  document.getElementById('fpIVA').value='0';
+  document.getElementById('fpNatura').value='N2.2';
+  setToggle('toggleNonImp','fpNonImp',false);
+  apriDettaglio('viewFatturaProdotto');
+}
+
+function apriProdottoInFattura(i) {
+  var p=_editingFatturaProdotti[i];
+  document.getElementById('fpIndex').value=i;
+  document.getElementById('fpNome').value=p.nome||'';
+  document.getElementById('fpCodice').value=p.codice||'';
+  document.getElementById('fpNote').value=p.note||'';
+  document.getElementById('fpCosto').value=p.costo||'';
+  document.getElementById('fpQty').value=p.qty||1;
+  document.getElementById('fpIVA').value=p.iva||'0';
+  document.getElementById('fpNatura').value=p.natura||'N2.2';
+  document.getElementById('fpSconto').value=p.sconto||'';
+  setToggle('toggleNonImp','fpNonImp',p.nonImp||false);
+  apriDettaglio('viewFatturaProdotto');
+}
+
+function salvaFatturaProdotto() {
+  var nome=document.getElementById('fpNome').value.trim();
+  if(!nome){showInfo('Inserisci il nome del prodotto');return;}
+  var obj={nome,codice:document.getElementById('fpCodice').value.trim(),
+    note:document.getElementById('fpNote').value.trim(),
+    costo:parseFloat(document.getElementById('fpCosto').value)||0,
+    qty:parseFloat(document.getElementById('fpQty').value)||1,
+    iva:document.getElementById('fpIVA').value,
+    natura:document.getElementById('fpNatura').value,
+    sconto:parseFloat(document.getElementById('fpSconto').value)||0,
+    nonImp:document.getElementById('fpNonImp').value==='1'};
+  var idx=parseInt(document.getElementById('fpIndex').value);
+  if(idx>=0) _editingFatturaProdotti[idx]=obj;
+  else _editingFatturaProdotti.push(obj);
+  chiudiDettaglio('viewFatturaProdotto');
+  renderFatturaProdotti();
+}
+
+var _fromFattura = false;
+
+function scegliCliente() {
+  _fromFattura = false;
+  var clienti=load(KEY_CLIENTI,[]);
+  document.getElementById('selClienteList').innerHTML=clienti.map(c=>`
+    <div class="list-item" onclick="selezionaCliente('${c.id}')">
+      <div class="list-icon"><i class="fas fa-user"></i></div>
+      <div class="list-info"><div class="list-name">${esc(c.ragione||c.nome||'Cliente')}</div><div class="list-sub">${esc(c.piva||'')}</div></div>
+    </div>`).join('')||'<div style="color:var(--dim);text-align:center;padding:40px;">Nessun cliente in database</div>';
+  apriDettaglio('viewSelCliente');
+}
+
+function nuovoClienteDaFattura() {
+  _fromFattura = true;
+  document.getElementById('clienteId').value='';
+  ['cRagione','cNome','cCognome','cPIVA','cCF','cSDI','cIndirizzo','cCitta','cProvincia','cCAP','cNoteInd','cEmail','cTel','cPEC','cFax','cNote'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('cPaese').value='IT';
+  apriDettaglio('viewCliente');
+}
+
+function nuovoProdottoDaFattura() {
+  _fromFattura = true;
+  document.getElementById('prodottoId').value='';
+  ['pNome','pCodice','pNote','pCosto'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('pIVA').value='0';
+  document.getElementById('pNatura').value='N2.2';
+  apriDettaglio('viewProdotto');
+}
+
+function selezionaCliente(id) {
+  var c=load(KEY_CLIENTI,[]).find(x=>x.id===id);
+  if(!c) return;
+  document.getElementById('fClienteId').value=c.id;
+  document.getElementById('fCRagione').value=c.ragione||'';
+  document.getElementById('fCNome').value=c.nome||'';
+  document.getElementById('fCCognome').value=c.cognome||'';
+  document.getElementById('fCIndirizzo').value=c.indirizzo||'';
+  document.getElementById('fCCitta').value=c.citta||'';
+  document.getElementById('fCProvincia').value=c.provincia||'';
+  document.getElementById('fCCAP').value=c.cap||'';
+  document.getElementById('fCPaese').value=c.paese||'IT';
+  document.getElementById('fCNoteInd').value=c.noteInd||'';
+  document.getElementById('fCPIVA').value=c.piva||'';
+  document.getElementById('fCCF').value=c.cf||'';
+  document.getElementById('fCPEC').value=c.pec||'';
+  document.getElementById('fCSDI').value=c.sdi||'';
+  chiudiDettaglio('viewSelCliente');
+}
+function scegliProdottoDB() {
+  var prodotti=load(KEY_PRODOTTI,[]);
+  document.getElementById('selProdottoList').innerHTML=prodotti.map(p=>`
+    <div class="list-item" onclick="selezionaProdottoDB('${p.id}')">
+      <div class="list-icon" style="background:#555;"><i class="fas fa-box"></i></div>
+      <div class="list-info"><div class="list-name">${esc(p.nome)}</div><div class="list-sub">${p.costo?fmt(p.costo)+' €':''}</div></div>
+    </div>`).join('')||'<div style="color:var(--dim);text-align:center;padding:40px;">Nessun prodotto in database</div>';
+  apriDettaglio('viewSelProdotto');
+}
+
+function selezionaProdottoDB(id) {
+  var p=load(KEY_PRODOTTI,[]).find(x=>x.id===id);
+  if(!p) return;
+  document.getElementById('fpNome').value=p.nome||'';
+  document.getElementById('fpCodice').value=p.codice||'';
+  document.getElementById('fpNote').value=p.note||'';
+  document.getElementById('fpCosto').value=p.costo||'';
+  document.getElementById('fpIVA').value=p.iva||'0';
+  document.getElementById('fpNatura').value=p.natura||'N2.2';
+  chiudiDettaglio('viewSelProdotto');
+}
+
+// ================================================================
+// XML FATTURAPA
+// ================================================================
+function apriXML() {
+  salvaFattura();
+  var id=document.getElementById('fatturaId').value;
+  var f=load(KEY_FATTURE,[]).find(x=>x.id===id);
+  if(!f) return;
+  var xml=generaXML(f);
+  _currentXML=xml;
+  _currentXMLFilename='fattura_'+f.numeroFattura+'_'+currentAnno+'.xml';
+  document.getElementById('xmlContent').textContent=xml;
+  apriDettaglio('viewXML');
+}
+
+function scaricaXML() {
+  var blob=new Blob([_currentXML],{type:'application/xml'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=_currentXMLFilename||'fattura.xml';
+  a.click();
+}
+
+function generaXML(f) {
+  var p=loadProfilo();
+  var c=f.cliente||{};
+  var oggi=f.dataFattura||today();
+  var progr=String(f.numeroFattura).padStart(5,'0');
+  var piva=p.piva||'XXXXXXXXXXXXXXX';
+  var trasmId=piva.replace(/\D/g,'')+progr;
+
+  var linee=f.prodotti&&f.prodotti.length?f.prodotti.map(function(pr,i){
+    var imp=Math.round(pr.costo*pr.qty*(1-((pr.sconto||0)/100))*100)/100;
+    var scontoTag=pr.sconto?'\n            <ScontoMaggiorazione>\n              <Tipo>SC</Tipo>\n              <Percentuale>'+pr.sconto.toFixed(2)+'</Percentuale>\n            </ScontoMaggiorazione>':'';
+    var naturaTag=(!parseInt(pr.iva)||pr.nonImp)?'\n            <Natura>'+(pr.natura||'N2.2')+'</Natura>':'';
+    return '        <DettaglioLinee>\n            <NumeroLinea>'+(i+1)+'</NumeroLinea>\n            <Descrizione>'+xmlEsc(pr.nome)+'</Descrizione>\n            <Quantita>'+pr.qty.toFixed(2)+'</Quantita>\n            <PrezzoUnitario>'+pr.costo.toFixed(2)+'</PrezzoUnitario>'+scontoTag+'\n            <PrezzoTotale>'+imp.toFixed(2)+'</PrezzoTotale>\n            <AliquotaIVA>'+(parseInt(pr.iva)||0)+'.00</AliquotaIVA>'+naturaTag+'\n        </DettaglioLinee>';
+  }).join('\n') : '        <DettaglioLinee>\n            <NumeroLinea>1</NumeroLinea>\n            <Descrizione>Servizio</Descrizione>\n            <Quantita>1.00</Quantita>\n            <PrezzoUnitario>'+(f.importoLordo||0).toFixed(2)+'</PrezzoUnitario>\n            <PrezzoTotale>'+(f.importoLordo||0).toFixed(2)+'</PrezzoTotale>\n            <AliquotaIVA>0.00</AliquotaIVA>\n            <Natura>N2.2</Natura>\n        </DettaglioLinee>';
+
+  var riepilogo=`        <DatiRiepilogo>
+            <AliquotaIVA>0.00</AliquotaIVA>
+            <Natura>N2.2</Natura>
+            <ImponibileImporto>${(f.importoLordo||0).toFixed(2)}</ImponibileImporto>
+            <Imposta>0.00</Imposta>
+            <RiferimentoNormativo>Regime forfettario ai sensi dell'art. 1, commi da 54 a 89, Legge n. 190/2014</RiferimentoNormativo>
+        </DatiRiepilogo>`;
+
+  var sdi=c.sdi||'0000000';
+  var destTag=c.pec?`<PECDestinatario>${xmlEsc(c.pec)}</PECDestinatario>`:`<CodiceDestinatario>${sdi.padEnd(7,'0').substring(0,7)}</CodiceDestinatario>`;
+
+  var metodoPagXML={
+    'Bonifico':'MP05','Contanti':'MP01','Assegno':'MP02','Assegno circolare':'MP03',
+    'Carta di pagamento':'MP08','SEPA Direct Debit':'MP19','SEPA Direct Debit CORE':'MP20',
+    'SEPA Direct Debit B2B':'MP21','RID':'MP10','Riba':'MP12','MAV':'MP13'
+  };
+  var mpCode=metodoPagXML[f.metodoPagamento]||'MP05';
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<p:FatturaElettronica versione="FPR12"
+  xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+  xmlns:p="http://ivaservizi.agenziaentrate.gov.it/docs/xsd/fatture/v1.2"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <FatturaElettronicaHeader>
+        <DatiTrasmissione>
+            <IdTrasmittente>
+                <IdPaese>${p.paese||'IT'}</IdPaese>
+                <IdCodice>${piva}</IdCodice>
+            </IdTrasmittente>
+            <ProgressivoInvio>${progr}</ProgressivoInvio>
+            <FormatoTrasmissione>FPR12</FormatoTrasmissione>
+            ${destTag}
+        </DatiTrasmissione>
+        <CedentePrestatore>
+            <DatiAnagrafici>
+                <IdFiscaleIVA>
+                    <IdPaese>${p.paese||'IT'}</IdPaese>
+                    <IdCodice>${piva}</IdCodice>
+                </IdFiscaleIVA>
+                <CodiceFiscale>${xmlEsc(p.cf||'')}</CodiceFiscale>
+                <Anagrafica>
+                    <Denominazione>${xmlEsc(p.nome||'')}</Denominazione>
+                </Anagrafica>
+                <RegimeFiscale>${p.regime||'RF19'}</RegimeFiscale>
+            </DatiAnagrafici>
+            <Sede>
+                <Indirizzo>${xmlEsc(p.indirizzo||'')}</Indirizzo>
+                <CAP>${xmlEsc(p.cap||'00000')}</CAP>
+                <Comune>${xmlEsc(p.citta||'')}</Comune>
+                <Provincia>${xmlEsc(p.provincia||'')}</Provincia>
+                <Nazione>${p.paese||'IT'}</Nazione>
+            </Sede>
+        </CedentePrestatore>
+        <CessionarioCommittente>
+            <DatiAnagrafici>
+                ${c.piva?`<IdFiscaleIVA><IdPaese>${c.paese||'IT'}</IdPaese><IdCodice>${xmlEsc(c.piva)}</IdCodice></IdFiscaleIVA>`:''}
+                ${c.cf?`<CodiceFiscale>${xmlEsc(c.cf)}</CodiceFiscale>`:''}
+                <Anagrafica>
+                    <Denominazione>${xmlEsc(c.ragione||c.nome+' '+(c.cognome||''))}</Denominazione>
+                </Anagrafica>
+            </DatiAnagrafici>
+            <Sede>
+                <Indirizzo>${xmlEsc(c.indirizzo||'')}</Indirizzo>
+                <CAP>${xmlEsc(c.cap||'00000')}</CAP>
+                <Comune>${xmlEsc(c.citta||'')}</Comune>
+                ${c.provincia?`<Provincia>${xmlEsc(c.provincia)}</Provincia>`:''}
+                <Nazione>${c.paese||'IT'}</Nazione>
+            </Sede>
+        </CessionarioCommittente>
+    </FatturaElettronicaHeader>
+    <FatturaElettronicaBody>
+        <DatiGenerali>
+            <DatiGeneraliDocumento>
+                <TipoDocumento>${f.tipoDocumento||'TD01'}</TipoDocumento>
+                <Divisa>EUR</Divisa>
+                <Data>${oggi}</Data>
+                <Numero>${f.numeroFattura}</Numero>
+                ${f.marcaDaBollo?`<DatiBollo><BolloVirtuale>SI</BolloVirtuale><ImportoBollo>${Number(f.marcaDaBollo).toFixed(2)}</ImportoBollo></DatiBollo>`:''}
+                ${f.note?`<Causale>${xmlEsc(f.note)}</Causale>`:''}
+            </DatiGeneraliDocumento>
+        </DatiGenerali>
+        <DatiBeniServizi>
+${linee}
+${riepilogo}
+        </DatiBeniServizi>
+        <DatiPagamento>
+            <CondizioniPagamento>TP02</CondizioniPagamento>
+            <DettaglioPagamento>
+                <ModalitaPagamento>${mpCode}</ModalitaPagamento>
+                ${f.dataScadenza?`<DataScadenzaPagamento>${f.dataScadenza}</DataScadenzaPagamento>`:''}
+                <ImportoPagamento>${(f.importoLordo||0).toFixed(2)}</ImportoPagamento>
+                ${p.iban?`<IBAN>${xmlEsc(p.iban)}</IBAN>`:''}
+            </DettaglioPagamento>
+        </DatiPagamento>
+    </FatturaElettronicaBody>
+</p:FatturaElettronica>`;
+}
+
+// ================================================================
+// PDF FATTURA
+// ================================================================
+function visualizzaPDF() { generaPDF(false); window.print(); }
+function esportaPDF() { generaPDF(true); setTimeout(()=>window.print(),100); }
+
+function generaPDF(autoClose) {
+salvaFattura();
+  var id=document.getElementById('fatturaId').value;
+  var f=load(KEY_FATTURE,[]).find(x=>x.id===id);
+  if(!f) return;
+  var p=loadProfilo();
+  var c=f.cliente||{};
+  var prodotti=f.prodotti||[];
+  var imponibile=f.importoLordo||0;
+  var bollo=f.marcaDaBollo||0;
+  var totale=imponibile+Number(bollo);
+
+  var righe=prodotti.map(pr=>{
+    var t=pr.costo*pr.qty*(1-((pr.sconto||0)/100));
+    return `<tr><td>${esc(pr.nome)}</td><td style="text-align:center">${pr.qty}</td><td style="text-align:right">${fmt(pr.costo)} €</td><td style="text-align:right">${fmt(t)} €</td></tr>`;
+  }).join('');
+
+  document.getElementById('printArea').innerHTML=`
+    <div style="max-width:720px;margin:auto;padding:20px;font-family:Arial,sans-serif;font-size:12px;color:#000;">
+      <div style="text-align:right;margin-bottom:20px;">
+        <strong>${esc(p.nome||'')}</strong><br>
+        ${p.indirizzo?esc(p.indirizzo)+' '+esc(p.cap||'')+' '+esc(p.citta||'')+'<br>':''}
+        ${p.piva?'P. IVA: '+esc(p.piva)+' - ':''}${p.cf?'C.F.: '+esc(p.cf)+'<br>':''}
+      </div>
+      <div style="text-align:right;margin-bottom:20px;font-weight:bold;">
+        ${f.isPreventivo?'PREVENTIVO':'FATTURA'} nr. ${f.numeroFattura}/${currentAnno} del ${formatDate(f.dataFattura||'')}
+      </div>
+      <hr>
+      <div style="display:flex;gap:40px;margin:16px 0;">
+        <div style="flex:1"><strong>FORNITORE</strong><br>${esc(p.nome||'')}<br>${p.piva?'P. IVA: '+esc(p.piva)+' - C.F.: '+esc(p.cf||'')+'<br>':''}</div>
+        <div style="flex:1"><strong>CLIENTE</strong><br>${esc(c.ragione||c.nome||'')}<br>${c.piva?'P. IVA: '+esc(c.piva)+'<br>':''}${c.indirizzo?esc(c.indirizzo)+'<br>':''}</div>
+      </div>
+      <hr>
+      <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+        <thead><tr style="border-bottom:1px solid #ccc;"><th style="text-align:left">Descrizione</th><th>Quantità</th><th style="text-align:right">Prezzo unitario</th><th style="text-align:right">Importo</th></tr></thead>
+        <tbody>${righe||'<tr><td colspan="4">—</td></tr>'}</tbody>
+      </table>
+      <hr>
+      <div style="font-size:10px;margin:12px 0;">
+        Operazione effettuata ai sensi dell'art. 1, commi da 54 a 89 della Legge n. 190/2014 - Regime forfettario - come modificato dall'art. 1 comma 9 della Legge 145/2018 e, pertanto, non è soggetto ad IVA e a ritenute d'acconto.<br>
+        ${f.bolloVirtuale&&bollo?'Imposta di bollo assolta in modo virtuale ai sensi dell\'articolo 15 del d.p.r. 642/1972 e del DM 17/06/2014<br>':''}
+        ${p.iban&&f.dataScadenza?'<strong>MODALITÀ DI PAGAMENTO</strong><br>'+esc(f.metodoPagamento||'Bonifico')+' su IBAN: '+esc(p.iban)+' entro il '+formatDate(f.dataScadenza):''}
+      </div>
+      <div style="text-align:right;margin-top:12px;">
+        Totale onorario: ${fmt(imponibile)} €<br>
+        ${bollo?'Marca da bollo: '+fmt(bollo)+' €<br>':''}
+        Imponibile: ${fmt(totale)} €<br>
+        Totale ${f.isPreventivo?'Preventivo':'Fattura'}: ${fmt(totale)} €<br>
+        <strong style="font-size:18px;">${fmt(totale)} €</strong><br>
+        <span style="font-size:11px;">${esc(p.nome||'')} ${p.email?'<br>'+esc(p.email):''}</span>
+      </div>
+    </div>`;
+}
+
+// ================================================================
+// SCADENZE
+// ================================================================
+function getScadenze(anno) {
+  var s=loadSettings();
+  var infoAnno=getAnnoAttivita(s);
+  var isPrimoAnno=infoAnno.anno===1;
+
+  // Entrate anno corrente (per saldo e bollo)
+  var entrate=load(KEY_ENTRATE,[]).filter(e=>new Date(e.data).getFullYear()===anno);
+  var lordoCorrente=entrate.reduce((a,e)=>a+(parseFloat(e.ammontare)||0),0);
+
+  // Entrate anno precedente (per acconti)
+  var entratePrec=load(KEY_ENTRATE,[]).filter(e=>new Date(e.data).getFullYear()===(anno-1));
+  var lordoPrec=entratePrec.reduce((a,e)=>a+(parseFloat(e.ammontare)||0),0);
+  // Se disponibile reddito anno precedente da impostazioni, usalo come fallback
+  if(lordoPrec===0 && s.redditoAnnoPrecedente>0) lordoPrec=s.redditoAnnoPrecedente;
+
+  var calcCorrente=calcolaFiscale(lordoCorrente,s);
+  var calcPrec=calcolaFiscale(lordoPrec,s);
+
+  var items=[];
+
+  // Marche da bollo: 2€ per fattura con importo > 77.47€
+  var fatture=load(KEY_FATTURE,[]);
+  var trimestri=[
+    {key:anno+'_bollo_q4prev', data:anno+'-02-28', desc:'Marche da bollo (4º trim. '+(anno-1)+')', mesi:[10,11,12], annoFattura:anno-1},
+    {key:anno+'_bollo_q1',     data:anno+'-06-01', desc:'Marche da bollo (1º trim. '+anno+')',      mesi:[1,2,3],    annoFattura:anno},
+    {key:anno+'_bollo_q2',     data:anno+'-09-30', desc:'Marche da bollo (2º trim. '+anno+')',      mesi:[4,5,6],    annoFattura:anno},
+    {key:anno+'_bollo_q3',     data:anno+'-11-30', desc:'Marche da bollo (3º trim. '+anno+')',      mesi:[7,8,9],    annoFattura:anno}
+  ];
+  trimestri.forEach(function(t){
+    var nBollo=fatture.filter(function(f){
+      var d=new Date(f.dataFattura||'');
+      return d.getFullYear()===t.annoFattura && t.mesi.indexOf(d.getMonth()+1)!==-1 && (f.importoLordo||0)>77.47;
+    }).length;
+    var imp=nBollo*2;
+    if(imp>0) items.push({key:t.key,data:t.data,desc:t.desc+' ('+nBollo+' fatt. × 2€)',tipo:'Bollo',imp:imp});
+  });
+
+  // Saldo imposta sostitutiva anno corrente → pagabile giugno anno prossimo
+  items.push({key:(anno+1)+'_imposta_sal',data:(anno+1)+'-06-30',desc:'Saldo imposta sostitutiva '+anno,tipo:'IRPEF',imp:calcCorrente.imposta});
+
+  // Saldo INPS anno corrente → pagabile giugno anno prossimo
+  items.push({key:(anno+1)+'_inps_sal',data:(anno+1)+'-06-30',desc:'Saldo INPS '+anno,tipo:'INPS',imp:calcCorrente.inpsDaPagare});
+
+  // Scadenze trimestrali contributi fissi Artigiani/Commercianti
+  if (s.tipoGestione === 'artigiani') {
+    var isComm = s.tipoArtigiano === 'commerciante';
+    var fissoBase = isComm ? 4611.64 : 4521.36;
+    var ridPerc = s.riduzioneINPS ? (s.pensionato ? 0.50 : 0.65) : 1;
+    var fisso = Math.round(fissoBase * ridPerc * 100) / 100;
+    var rata = Math.round(fisso / 4 * 100) / 100;
+    items.push({key:anno+'_inps_trim1',data:anno+'-05-16',desc:'INPS contributo fisso 1° rata',tipo:'INPS',imp:rata});
+    items.push({key:anno+'_inps_trim2',data:anno+'-08-20',desc:'INPS contributo fisso 2° rata',tipo:'INPS',imp:rata});
+    items.push({key:anno+'_inps_trim3',data:anno+'-11-16',desc:'INPS contributo fisso 3° rata',tipo:'INPS',imp:rata});
+    items.push({key:(anno+1)+'_inps_trim4',data:(anno+1)+'-02-16',desc:'INPS contributo fisso 4° rata',tipo:'INPS',imp:rata});
+  }
+
+  // Acconti: solo dal secondo anno in poi
+  if(!isPrimoAnno && lordoPrec>0) {
+    if (s.tipoGestione === 'artigiani') {
+      items.push({key:anno+'_inps_acc1',data:anno+'-06-30',desc:'INPS – 1° acconto percentuale (40% su '+(anno-1)+')',tipo:'INPS',imp:Math.round(calcPrec.inps*0.4*100)/100});
+      items.push({key:anno+'_inps_acc2',data:anno+'-11-30',desc:'INPS – 2° acconto percentuale (60% su '+(anno-1)+')',tipo:'INPS',imp:Math.round(calcPrec.inps*0.6*100)/100});
+    } else {
+      var baseAcc = Math.round(calcPrec.inps * 0.80 * 100) / 100;
+      items.push({key:anno+'_inps_acc1',data:anno+'-06-30',desc:'INPS – 1° acconto (40% su '+(anno-1)+')',tipo:'INPS',imp:Math.round(baseAcc*0.4*100)/100});
+      items.push({key:anno+'_inps_acc2',data:anno+'-11-30',desc:'INPS – 2° acconto (60% su '+(anno-1)+')',tipo:'INPS',imp:Math.round(baseAcc*0.6*100)/100});
+    }
+    items.push({key:anno+'_irpef_acc1',data:anno+'-06-30',desc:'Imposta sostitutiva – 1° acconto (40% su '+(anno-1)+')',tipo:'IRPEF',imp:Math.round(calcPrec.imposta*0.4*100)/100});
+    items.push({key:anno+'_irpef_acc2',data:anno+'-11-30',desc:'Imposta sostitutiva – 2° acconto (60% su '+(anno-1)+')',tipo:'IRPEF',imp:Math.round(calcPrec.imposta*0.6*100)/100});
+  }
+
+  return items;
+}
+
+function renderScadenze() {
+  var scad=getScadenze(currentAnno);
+  var done=load(KEY_SCADENZE,[]);
+  var byMonth={};
+  scad.forEach(s=>{
+    var m=s.data.substring(0,7); // yyyy-mm
+    if(!byMonth[m]) byMonth[m]=[];
+    byMonth[m].push(s);
+  });
+  var oggi=new Date(); oggi.setHours(0,0,0,0);
+  var mesiIT=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+  var html='';
+  var hasWarn=false;
+  var firstWarnKey='';
+  Object.keys(byMonth).sort().forEach(m=>{
+    var anno=parseInt(m.split('-')[0]);
+    var mese=parseInt(m.split('-')[1])-1;
+    var meseLbl=mesiIT[mese]+' '+anno;
+    html+=`<div class="scad-group">
+      <div class="scad-month-header"><span class="scad-month-label">${meseLbl}</span><span class="scad-month-line"></span></div>`;
+    byMonth[m].forEach(s=>{
+      var dt=new Date(s.data+'T00:00:00');
+      var isDone=done.includes(s.key);
+      var isWarn=!isDone&&(dt-oggi)<=7*24*3600*1000&&dt>=oggi;
+      var isPast=!isDone&&dt<oggi;
+      if(isWarn&&!hasWarn){hasWarn=true;firstWarnKey=s.key;}
+      var tipoClass=s.tipo==='INPS'?'tipo-inps':s.tipo==='Bollo'?'tipo-bollo':'tipo-irpef';
+      var tipoIcon=s.tipo==='INPS'?'🏛':s.tipo==='Bollo'?'📮':'📋';
+      var badgeClass=s.tipo==='INPS'?'badge-inps':s.tipo==='Bollo'?'badge-bollo':'badge-irpef';
+      var cardClass=isDone?'done-card':isWarn?'warn-card':isPast?'past-card':'';
+      var dataFmt=formatDate(s.data);
+      var impStr=s.imp>0?fmt(s.imp)+' €':'—';
+      var warnDot=isWarn?'<span style="display:inline-block;width:6px;height:6px;background:var(--orange);border-radius:50%;margin-left:6px;vertical-align:middle;"></span>':'';
+      var pastStr=isPast?'<span style="font-size:10px;color:var(--accent);margin-left:6px;">Scaduta</span>':'';
+      html+=`<div class="scad-card ${cardClass}" onclick="toggleScadenza('${s.key}')">
+        <div class="scad-icon ${tipoClass}">${tipoIcon}</div>
+        <div class="scad-body">
+          <div class="scad-name">${esc(s.desc)}${warnDot}</div>
+          <div class="scad-date-label">${dataFmt}${pastStr} &nbsp;<span class="badge ${badgeClass}">${s.tipo}</span></div>
+        </div>
+        <div class="scad-right">
+          <div class="scad-imp">${impStr}</div>
+          <div class="scad-toggle ${isDone?'done':''}"></div>
+        </div>
+      </div>`;
+    });
+    html+='</div>';
+  });
+  document.getElementById('scadenzeList').innerHTML=html||'<div style="color:var(--dim);text-align:center;padding:40px;">Nessuna scadenza</div>';
+  if(hasWarn) { var el=document.querySelector('.warn-card'); if(el&&el.scrollIntoView) el.scrollIntoView({behavior:'smooth',block:'start'}); }
+}
+function toggleScadenza(key) {
+  var done=load(KEY_SCADENZE,[]);
+  var idx=done.indexOf(key);
+  if(idx>=0) done.splice(idx,1); else done.push(key);
+  save(KEY_SCADENZE,done);
+  renderScadenze();
+}
+
+// ================================================================
+// TASSE
+// ================================================================
+function renderTasse() {
+  var s=loadSettings();
+  var entrate=load(KEY_ENTRATE,[]).filter(e=>new Date(e.data).getFullYear()===currentAnno);
+  var lordo=entrate.reduce((a,e)=>a+(parseFloat(e.ammontare)||0),0);
+  var calc=calcolaFiscale(lordo,s);
+  document.getElementById('tasseAnnoLabel').textContent=currentAnno;
+  document.getElementById('tCoeff').textContent=s.coefficiente+'%';
+  var infoAnnoTasse = getAnnoAttivita(s);
+  document.getElementById('tAliquota').textContent=(infoAnnoTasse.agevolato?5:s.aliquotaImposta)+'%';
+  if (s.tipoGestione === 'artigiani') {
+  var isComm = s.tipoArtigiano === 'commerciante';
+  var ridStr = s.riduzioneINPS ? ' (ridotto 35%)' : '';
+  document.getElementById('tINPSperc').textContent = (isComm ? 'Fisso 4.611€ + 24,48%' : 'Fisso 4.521€ + 24%') + ridStr;
+} else {
+  document.getElementById('tINPSperc').textContent = s.aliquotaINPS+'%'+(s.riduzioneINPS?' (ridotto 35%)':'');
+}
+  document.getElementById('tLordo').textContent=fmt(lordo)+' €';
+  document.getElementById('tImponibile').textContent=fmt(calc.imponibile)+' €';
+  document.getElementById('tINPS').textContent=fmt(calc.inps)+' €';
+  document.getElementById('tINPSVers').textContent=fmt(s.inpsVersato||0)+' €';
+  document.getElementById('tINPSPag').textContent=fmt(calc.inpsDaPagare)+' €';
+  document.getElementById('tImposta').textContent=fmt(calc.imposta)+' €';
+  document.getElementById('tNetto').textContent=fmt(calc.netto)+' €';
+  var percDinRaw = calcolaPercAccantonamentoDinamico(lordo, s);
+  var percDin = percDinRaw ? percDinRaw.perc : 0;
+  var accPerc = s.accantonamentoCustom != null ? s.accantonamentoCustom : percDin;
+  var modalitaS = s.modalitaAccantonamento||'tutto';
+  var strategia = modalitaS==='tutto' ? 'Tutto entro giugno' : modalitaS==='fisso' ? 'Cifra fissa' : 'Per scadenza';
+  document.getElementById('tAccantStrategia').textContent = strategia;
+  if (!percDinRaw) {
+    document.getElementById('tAccantVal').textContent = '—';
+    document.getElementById('tAccantPercLabel').textContent = '';
+    document.getElementById('tAccantProiezione').textContent = 'Inserisci le prime entrate per calcolare';
+    document.getElementById('tAccantMese').textContent = '—';
+    document.getElementById('tAccantDisp').textContent = '—';
+  } else {
+    var totAccant = lordo * accPerc / 100;
+    var mediaMese = percDinRaw.media || 0;
+    var quotaMese = mediaMese * accPerc / 100;
+    var dispMese = mediaMese - quotaMese;
+    document.getElementById('tAccantVal').textContent = fmt(totAccant) + ' €';
+    document.getElementById('tAccantPercLabel').textContent = '(' + Math.round(accPerc) + '%)';
+    document.getElementById('tAccantProiezione').textContent = 'Media mensile: ' + fmt(mediaMese) + ' € — Proiezione annua: ' + fmt(percDinRaw.proiezione) + ' €';
+    document.getElementById('tAccantMese').textContent = fmt(quotaMese) + ' €';
+    document.getElementById('tAccantDisp').textContent = fmt(dispMese) + ' €';
+  }
+  var fase = getFaseFiscale(s);
+  var tFaseEl = document.getElementById('tAccantFase');
+  var tFaseDescEl = document.getElementById('tAccantFaseDesc');
+  if (tFaseEl) { tFaseEl.textContent = fase.label; tFaseEl.style.color = fase.color; }
+  if (tFaseDescEl) { tFaseDescEl.textContent = fase.desc; }
+  var tWarnEl = document.getElementById('tAccantWarn');
+  if (tWarnEl) { var wt = getWarnText(s, lordo, percDin); tWarnEl.style.display = wt ? 'block' : 'none'; tWarnEl.textContent = wt; }
+}
+
+// ================================================================
+// PROFILO
+// ================================================================
+function apriProfilo() {
+  var p=loadProfilo();
+  document.getElementById('proNome').value=p.nome||'';
+  document.getElementById('proPIVA').value=p.piva||'';
+  document.getElementById('proCF').value=p.cf||'';
+  document.getElementById('proRegime').value=p.regime||'RF19';
+  document.getElementById('proIndirizzo').value=p.indirizzo||'';
+  document.getElementById('proCitta').value=p.citta||'';
+  document.getElementById('proProvincia').value=p.provincia||'';
+  document.getElementById('proCAP').value=p.cap||'';
+  document.getElementById('proPaese').value=p.paese||'IT';
+  document.getElementById('proEmail').value=p.email||'';
+  document.getElementById('proTel').value=p.tel||'';
+  document.getElementById('proIBAN').value=p.iban||'';
+  apriDettaglio('viewProfilo');
+}
+
+function salvaProfilo() {
+  var p={nome:document.getElementById('proNome').value.trim(),piva:document.getElementById('proPIVA').value.trim(),
+    cf:document.getElementById('proCF').value.trim(),regime:document.getElementById('proRegime').value.trim(),
+    indirizzo:document.getElementById('proIndirizzo').value.trim(),citta:document.getElementById('proCitta').value.trim(),
+    provincia:document.getElementById('proProvincia').value.trim(),cap:document.getElementById('proCAP').value.trim(),
+    paese:document.getElementById('proPaese').value.trim()||'IT',email:document.getElementById('proEmail').value.trim(),
+    tel:document.getElementById('proTel').value.trim(),iban:document.getElementById('proIBAN').value.trim()};
+  save(KEY_PROFILO,p);
+  chiudiDettaglio('viewProfilo');
+  showInfo('✅ Profilo salvato', mostraModalBackupFisco);
+}
+
+// ================================================================
+// IMPOSTAZIONI
+// ================================================================
+function calcolaAnnoAttivitaDaData(dataStr) {
+  if (!dataStr) return 0;
+  var inizio = new Date(dataStr);
+  var oggi = new Date();
+  var anni = oggi.getFullYear() - inizio.getFullYear();
+  if (oggi.getMonth() < inizio.getMonth() || (oggi.getMonth() === inizio.getMonth() && oggi.getDate() < inizio.getDate())) anni--;
+  return anni + 1;
+}
+function aggiornaCampiAccantonamento() {
+  var modalita = document.getElementById('fsModalitaAccantonamento').value;
+  document.getElementById('campoCifraFissa').style.display = modalita === 'fisso' ? 'block' : 'none';
+}
+
+function sincronizzaCifraFissa() {
+  var cifra = parseFloat(document.getElementById('fsCifraFissa').value) || 0;
+  var s = loadSettings();
+  var entrate = load(KEY_ENTRATE,[]).filter(function(e){ return new Date(e.data).getFullYear() === new Date().getFullYear(); });
+  var lordo = entrate.reduce(function(a,e){ return a+(parseFloat(e.ammontare)||0); }, 0);
+  var mesiConFatture = new Set(entrate.filter(function(e){ return (parseFloat(e.ammontare)||0)>0; }).map(function(e){ return new Date(e.data).getMonth(); }));
+  var media = lordo / Math.max(1, mesiConFatture.size);
+  var percEquiv = media > 0 ? Math.round(cifra / media * 100 * 10) / 10 : 0;
+  document.getElementById('fsAccant').value = percEquiv > 0 ? percEquiv : '';
+}
+function aggiornaAliquotaDaData() {
+  var data = document.getElementById('fsDataInizio').value;
+  var anno = calcolaAnnoAttivitaDaData(data);
+  if (anno > 0) {
+    document.getElementById('fsImposta').value = anno <= 5 ? 5 : 15;
+  }
+}
+
+function aggiornaCampiGestione() {
+  var tipo = document.getElementById('fsTipoGestione').value;
+  var pensionato = document.getElementById('fsPensionato').value==='1';
+  var dipendente = document.getElementById('fsDipendente').value==='1';
+  var under21 = document.getElementById('fsUnder21').value==='1';
+  var riduzione = document.getElementById('fsRidINPS').value==='1';
+  document.getElementById('campoTipoArtigiano').style.display = tipo==='artigiani' ? 'block' : 'none';
+  if (tipo === 'artigiani') {
+    document.getElementById('campoAliqINPS').style.display = 'none';
+  } else {
+    document.getElementById('campoAliqINPS').style.display = 'block';
+    var aliqBase = (pensionato||dipendente||under21) ? 24 : 26.07;
+    document.getElementById('fsINPS').value = riduzione ? Math.round(aliqBase*0.65*100)/100 : aliqBase;
+  }
+  aggiornaAliquotaDaData();
+}
+
+function attivaToggleEsclusivo(tipo) {
+  var tipi = ['pensionato','dipendente','under21'];
+  tipi.forEach(function(t) {
+    var fieldId = 'fs'+t.charAt(0).toUpperCase()+t.slice(1);
+    var togId = 'toggle'+t.charAt(0).toUpperCase()+t.slice(1);
+    var corrente = document.getElementById(fieldId).value==='1';
+    var nuovoStato = (t === tipo) ? !corrente : false;
+    document.getElementById(fieldId).value = nuovoStato ? '1' : '0';
+    var tog = document.getElementById(togId);
+    if(tog) { if(nuovoStato) tog.classList.add('on'); else tog.classList.remove('on'); }
+  });
+  document.getElementById('campoRedditoDip').style.display = document.getElementById('fsDipendente').value==='1' ? 'block' : 'none';
+  aggiornaCampiGestione();
+}
+
+function apriImpostazioni() {
+  var s=loadSettings();
+  document.getElementById('fsAnno').value=s.annoFiscaleAttivo;
+  document.getElementById('fsTipoGestione').value=s.tipoGestione||'separata';
+  document.getElementById('fsTipoArtigiano').value=s.tipoArtigiano||'artigiano';
+  document.getElementById('fsModalitaAccantonamento').value=s.modalitaAccantonamento||'tutto';
+  aggiornaCampiAccantonamento();
+  if ((s.modalitaAccantonamento||'tutto') === 'fisso') {
+    var entrateFs = load(KEY_ENTRATE,[]).filter(function(e){ return new Date(e.data).getFullYear()===new Date().getFullYear(); });
+    var lordoFs = entrateFs.reduce(function(a,e){ return a+(parseFloat(e.ammontare)||0); }, 0);
+    var mesiFs = new Set(entrateFs.filter(function(e){ return (parseFloat(e.ammontare)||0)>0; }).map(function(e){ return new Date(e.data).getMonth(); }));
+    var mediaFs = lordoFs / Math.max(1, mesiFs.size);
+    var accFs = s.accantonamentoCustom || 0;
+    if (mediaFs > 0 && accFs > 0) document.getElementById('fsCifraFissa').value = Math.round(mediaFs * accFs / 100);
+  }
+  document.getElementById('fsCoeff').value=s.coefficiente;
+  document.getElementById('fsImposta').value=s.aliquotaImposta;
+  document.getElementById('fsINPS').value=s.aliquotaINPS;
+  setToggle('toggleRidINPS','fsRidINPS',s.riduzioneINPS);
+  document.getElementById('fsInpsVers').value=s.inpsVersato||0;
+  setToggle('togglePensionato','fsPensionato',s.pensionato);
+  setToggle('toggleDipendente','fsDipendente',s.dipendente);
+  setToggle('toggleUnder21','fsUnder21',s.under21);
+  document.getElementById('fsRedditoDip').value=s.redditoDipendente||0;
+  document.getElementById('campoRedditoDip').style.display=s.dipendente?'block':'none';
+  document.getElementById('fsDataInizio').value=s.dataInizioAttivita||'';
+  document.getElementById('fsReddPrec').value=s.redditoAnnoPrecedente||0;
+  document.getElementById('fsCostComm').value=s.costoCommercialista!=null?s.costoCommercialista:0;
+  document.getElementById('fsAccant').value=s.accantonamentoCustom!=null?s.accantonamentoCustom:'';
+  aggiornaCampiGestione();
+  apriDettaglio('viewImpostazioni');
+}
+
+function salvaImpostazioni() {
+  var anno=parseInt(document.getElementById('fsAnno').value);
+  if(isNaN(anno)||anno<2020||anno>2099){showInfo('Anno non valido');return;}
+  var mancanti=[];
+  if(!document.getElementById('fsDataInizio').value) mancanti.push('Data inizio attività');
+  if(!document.getElementById('fsCoeff').value) mancanti.push('Coefficiente redditività');
+  if(!document.getElementById('fsImposta').value) mancanti.push('Aliquota imposta sostitutiva');
+  if(document.getElementById('fsTipoGestione').value==='separata' && !document.getElementById('fsINPS').value) mancanti.push('Aliquota INPS');
+  if(mancanti.length>0){
+    ['fsDataInizio','fsCoeff','fsImposta'].forEach(id=>{var el=document.getElementById(id);if(!el.value)el.classList.add('field-error');else el.classList.remove('field-error');});
+    showInfo('⚠️ Campi obbligatori mancanti:\n' + mancanti.join('\n'));
+    return;
+  }
+  ['fsDataInizio','fsCoeff','fsImposta','fsINPS'].forEach(id=>document.getElementById(id).classList.remove('field-error'));
+  var s={annoFiscaleAttivo:anno,
+    coefficiente:parseFloat(document.getElementById('fsCoeff').value)||67,
+    aliquotaImposta:parseFloat(document.getElementById('fsImposta').value)||15,
+    aliquotaINPS:parseFloat(document.getElementById('fsINPS').value)||26.07,
+    tipoGestione:document.getElementById('fsTipoGestione').value||'separata',
+    tipoArtigiano:document.getElementById('fsTipoArtigiano').value||'artigiano',
+    modalitaAccantonamento:document.getElementById('fsModalitaAccantonamento').value||'tutto',
+    riduzioneINPS:document.getElementById('fsRidINPS').value==='1',
+    inpsVersato:parseFloat(document.getElementById('fsInpsVers').value)||0,
+    primoAnno:false,
+    pensionato:document.getElementById('fsPensionato').value==='1',
+    dipendente:document.getElementById('fsDipendente').value==='1',
+    under21:document.getElementById('fsUnder21').value==='1',
+    redditoDipendente:parseFloat(document.getElementById('fsRedditoDip').value)||0,
+    dataInizioAttivita:document.getElementById('fsDataInizio').value||'',
+    accantonamentoCustom:document.getElementById('fsAccant').value!==''?parseFloat(document.getElementById('fsAccant').value):null,
+    costoCommercialista:document.getElementById('fsCostComm').value!==''?parseFloat(document.getElementById('fsCostComm').value):0,
+    redditoAnnoPrecedente:parseFloat(document.getElementById('fsReddPrec').value)||0,
+    altriRedditiSostituto:document.getElementById('fsDipendente').value==='1'
+  };
+  saveSettings(s);
+  currentAnno=anno;
+  updateAnnoDisplay();
+  chiudiDettaglio('viewImpostazioni');
+  renderHome();
+  renderTasse();
+  renderScadenze();
+  showInfo('✅ Impostazioni salvate', mostraModalBackupFisco);
+}
+
+function cambiaAnno() {
+  var n=prompt('Anno fiscale:',currentAnno);
+  if(n&&!isNaN(parseInt(n))) {
+    currentAnno=parseInt(n);
+    var s=loadSettings(); s.annoFiscaleAttivo=currentAnno; saveSettings(s);
+    updateAnnoDisplay();
+    var cur=document.querySelector('.nav-btn.active');
+    if(cur) cur.click(); else renderHome();
+  }
+}
+
+// ================================================================
+// CONFIRM MODAL
+// ================================================================
+function showConfirm(title,msg,cb) {
+  document.getElementById('confirmTitle').textContent=title;
+  document.getElementById('confirmMsg').textContent=msg;
+  _confirmCallback=cb;
+  document.getElementById('confirmModal').classList.add('open');
+}
+function confirmOk() {document.getElementById('confirmModal').classList.remove('open');if(_confirmCallback)_confirmCallback();}
+function confirmCancel() {document.getElementById('confirmModal').classList.remove('open');}
+var _infoCallback = null;
+function showInfo(msg, cb) {
+  _infoCallback = cb || null;
+  document.getElementById('infoModalMsg').textContent = msg;
+  document.getElementById('infoModal').classList.add('open');
+}
+
+function mostraModalBackupFisco() {
+  document.getElementById('fiscoBackupModal').classList.add('open');
+}
+
+function eseguiFiscoBackup() {
+  document.getElementById('fiscoBackupModal').classList.remove('open');
+  var lang = localStorage.getItem('app_language') || 'it';
+  var backupCount = parseInt(localStorage.getItem('rider_backup_counter') || '0') + 1;
+  localStorage.setItem('rider_backup_counter', backupCount);
+  var dataObj = {
+    timestamp: Date.now(),
+    version: '2.1',
+    db: JSON.parse(localStorage.getItem('rider_db_final_v34') || 'null'),
+    fiscoFatture: JSON.parse(localStorage.getItem('fisco_invoices_v1_it') || '[]'),
+    fiscoSettings: JSON.parse(localStorage.getItem('fisco_settings_v1_it') || 'null'),
+    fiscoClienti: JSON.parse(localStorage.getItem('fisco2_clienti') || '[]'),
+    fiscoProdotti: JSON.parse(localStorage.getItem('fisco2_prodotti') || '[]'),
+    fiscoEntrate: JSON.parse(localStorage.getItem('fisco2_entrate') || '[]'),
+    fiscoSpese: JSON.parse(localStorage.getItem('fisco2_spese') || '[]'),
+    fiscoProfilo: JSON.parse(localStorage.getItem('fisco2_profilo') || 'null'),
+    fiscoScadenzeDone: JSON.parse(localStorage.getItem('fisco2_scadenze_done') || '[]'),
+    userSettings_it: JSON.parse(localStorage.getItem('user_settings_it') || 'null'),
+    userSettings_en: JSON.parse(localStorage.getItem('user_settings_en') || 'null'),
+    app_language: lang,
+    ultimo_mezzo: localStorage.getItem('ultimo_mezzo_' + lang) || '',
+    ultimo_carburante_turno: localStorage.getItem('ultimo_carburante_turno_' + lang) || '',
+    ultimo_carburante_benza: localStorage.getItem('ultimo_carburante_benza_' + lang) || ''
+  };
+  var blob = new Blob([JSON.stringify(dataObj, null, 2)], {type:'application/json'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'ridertracker_backup_' + new Date().toISOString().slice(0,10) + '_(' + backupCount + ').json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ================================================================
+// IMPORTA XML FATTURA
+// ================================================================
+function renderImportaXML() {
+  var list = document.getElementById('fattureList');
+  list.innerHTML = `
+    <div style="padding:16px;">
+      <div style="font-size:12px;color:var(--dim);margin-bottom:12px;line-height:1.5;">
+        Carica l'XML di una fattura ricevuta da una piattaforma (Deliveroo, Glovo, ecc.) per verificarne la correttezza prima di inviarla allo SDI.
+      </div>
+      <div class="import-drop" id="importDrop" onclick="document.getElementById('importFileInput').click()" 
+           ondragover="event.preventDefault();this.classList.add('drag')" 
+           ondragleave="this.classList.remove('drag')"
+           ondrop="importHandleDrop(event)">
+        <i class="fas fa-file-code"></i>
+        <div class="import-drop-label">Tocca per selezionare il file XML</div>
+        <div class="import-drop-sub">oppure trascina qui il file .xml</div>
+      </div>
+      <input type="file" id="importFileInput" accept=".xml,text/xml,application/xml" style="display:none;" onchange="importHandleFile(this.files[0])">
+      <div id="importResult"></div>
+    </div>`;
+}
+
+function importHandleDrop(event) {
+  event.preventDefault();
+  document.getElementById('importDrop').classList.remove('drag');
+  var file = event.dataTransfer.files[0];
+  if(file) importHandleFile(file);
+}
+
+function importHandleFile(file) {
+  if(!file) return;
+  if(!file.name.toLowerCase().endsWith('.xml')) { showInfo('Seleziona un file .xml'); return; }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var parser = new DOMParser();
+      var doc = parser.parseFromString(e.target.result, 'application/xml');
+      if(doc.querySelector('parsererror')) { showInfo('File XML non valido o corrotto.'); return; }
+      analizzaXMLFattura(doc, file.name);
+    } catch(err) { showInfo('Errore nella lettura del file: '+err.message); }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function getXML(doc, tag) {
+  var el = doc.querySelector(tag);
+  return el ? el.textContent.trim() : '';
+}
+
+function analizzaXMLFattura(doc, filename) {
+  // Estrai dati dal XML
+  var tipoDoc     = getXML(doc,'TipoDocumento');
+  var numero      = getXML(doc,'Numero');
+  var data        = getXML(doc,'Data');
+  var divisa      = getXML(doc,'Divisa');
+  var cedentePIVA = getXML(doc,'CedentePrestatore IdFiscaleIVA IdCodice') || getXML(doc,'IdCodice');
+  var cedenteCF   = getXML(doc,'CedentePrestatore CodiceFiscale') || getXML(doc,'CodiceFiscale');
+  var cedenteNome = getXML(doc,'CedentePrestatore Denominazione') || getXML(doc,'Denominazione');
+  var regimeFisc  = getXML(doc,'RegimeFiscale');
+  var clienteNome = '';
+  var clientePIVA = '';
+  var clienteSDI  = getXML(doc,'CodiceDestinatario');
+  var clientePEC  = getXML(doc,'PECDestinatario');
+  // Cessionario
+  var cess = doc.querySelector('CessionarioCommittente');
+  if(cess) {
+    clienteNome = (cess.querySelector('Denominazione')||{textContent:''}).textContent.trim() ||
+                  ((cess.querySelector('Nome')||{textContent:''}).textContent.trim()+' '+
+                   (cess.querySelector('Cognome')||{textContent:''}).textContent.trim()).trim();
+    clientePIVA = (cess.querySelector('IdCodice')||{textContent:''}).textContent.trim();
+  }
+  // Importi
+  var importoPag = 0;
+  doc.querySelectorAll('ImportoPagamento').forEach(el=>{ importoPag += parseFloat(el.textContent)||0; });
+  var bollo = getXML(doc,'ImportoBollo');
+  var bolloVirt = getXML(doc,'BolloVirtuale');
+  // Linee
+  var linee = doc.querySelectorAll('DettaglioLinee');
+  var descrizioni = Array.from(linee).map(l=>(l.querySelector('Descrizione')||{textContent:''}).textContent.trim()).filter(Boolean);
+
+  // Confronto con il profilo utente
+  var p = loadProfilo();
+  var s = loadSettings();
+  // Cerca fattura corrispondente per numero
+  var fattureSalvate = load(KEY_FATTURE,[]).filter(f=>f.annoFiscale===currentAnno||new Date(f.dataFattura||'').getFullYear()===currentAnno);
+  var fatturaMatch = fattureSalvate.find(f=>String(f.numeroFattura)===String(numero));
+
+  // Genera report
+  var rows = [];
+  function row(label, val, status, note) {
+    rows.push({label, val, status, note:''+( note||'')});
+  }
+
+  // Verifica cedente (chi emette: la piattaforma emette PER te)
+  var pivaOk = cedentePIVA && p.piva && cedentePIVA.replace(/\s/g,'').toUpperCase()===p.piva.replace(/\s/g,'').toUpperCase();
+  var cfOk   = cedenteCF && p.cf && cedenteCF.replace(/\s/g,'').toUpperCase()===p.cf.replace(/\s/g,'').toUpperCase();
+  row('P.IVA cedente', cedentePIVA, pivaOk?'ok':(cedentePIVA?'warn':'err'), pivaOk?'✓ Corrisponde al tuo profilo':'⚠ Verifica: profilo ha '+( p.piva||'non impostata'));
+  row('C.F. cedente', cedenteCF, cfOk?'ok':(cedenteCF?'warn':'err'), cfOk?'✓ Corrisponde':'⚠ Profilo ha '+(p.cf||'non impostato'));
+  row('Regime fiscale', regimeFisc, regimeFisc===( p.regime||'RF19')?'ok':'warn', regimeFisc===(p.regime||'RF19')?'✓ Corretto':'⚠ Profilo: '+(p.regime||'RF19'));
+  row('Tipo documento', tipoDoc, tipoDoc?'ok':'err', '');
+  row('Numero fattura', numero, numero?'ok':'err', fatturaMatch?'✓ Trovata in archivio':'⚠ Non trovata in archivio');
+  row('Data', data?data.split('-').reverse().join('/'):'—', data?'ok':'err', '');
+  row('Importo totale', importoPag?fmt(importoPag)+' €':'—', importoPag?'ok':'err',
+    fatturaMatch?( Math.abs(importoPag-( fatturaMatch.importoLordo||0))<0.02?'✓ Coincide con fattura in archivio':'⚠ Archivio: '+fmt(fatturaMatch.importoLordo)+' €'):'');
+  if(bollo) row('Marca da bollo', fmt(parseFloat(bollo))+' €', bolloVirt==='SI'?'ok':'warn', bolloVirt==='SI'?'✓ Virtuale':'⚠ Non virtuale');
+  row('Destinatario SDI', clienteSDI||clientePEC||'—', (clienteSDI||clientePEC)?'ok':'warn', clientePEC?'tramite PEC':'');
+  if(descrizioni.length) row('Righe fattura', descrizioni.length+' riga'+(descrizioni.length>1?'ghe':''), 'ok', descrizioni.slice(0,2).join(', ')+(descrizioni.length>2?'…':''));
+
+  // Calcolo allineamento importo con regime
+  if(importoPag && s) {
+    var calc = calcolaFiscale(importoPag, s);
+    row('Accantonamento stimato', fmt(importoPag*(s.accantonamentoCustom!=null?s.accantonamentoCustom:calc.percAccant)/100)+' €', 'ok', 'Su questa fattura');
+  }
+
+  // Render
+  var statusIcon = {'ok':'✓','warn':'!','err':'✗'};
+  var hasErr = rows.some(r=>r.status==='err');
+  var hasWarn = rows.some(r=>r.status==='warn');
+  var summaryColor = hasErr?'var(--accent)':hasWarn?'var(--orange)':'#4CAF50';
+  var summaryText = hasErr?'Attenzione: rilevati problemi':hasWarn?'Verificato con avvisi':'Tutto OK – pronta per SDI';
+
+  var html = `
+  <div style="background:var(--card);border:1px solid var(--border);border-left:3px solid ${summaryColor};border-radius:14px;padding:14px 16px;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px;">${esc(filename)}</div>
+      <div style="font-size:16px;font-weight:700;color:${summaryColor};">${summaryText}</div>
+      ${fatturaMatch?`<div style="font-size:12px;color:var(--primary);margin-top:4px;">📎 Collegata a fattura nr. ${fatturaMatch.numeroFattura}/${currentAnno}</div>`:'<div style="font-size:12px;color:var(--dim);margin-top:4px;">Nessuna fattura corrispondente trovata in archivio</div>'}
+    </div>
+    <div class="card">
+      <div class="card-title">Analisi campi</div>
+      ${rows.map(r=>`
+        <div class="check-row">
+          <div class="check-icon check-${r.status}">${statusIcon[r.status]}</div>
+          <div class="check-label">${esc(r.label)}</div>
+          <div style="text-align:right;flex-shrink:0;max-width:55%;">
+            <div style="font-size:12px;font-weight:600;color:var(--text);">${esc(r.val)}</div>
+            ${r.note?`<div style="font-size:10px;color:var(--dim);margin-top:1px;">${esc(r.note)}</div>`:''}
+          </div>
+        </div>`).join('')}
+    </div>
+    <button class="btn-secondary" onclick="renderImportaXML()" style="margin-top:4px;">🔄 Carica un altro file</button>`;
+
+  document.getElementById('importResult').innerHTML = html;
+}
+
+// ================================================================
+// APP LINK
+// ================================================================
+function tornaApp() {
+  if(window.history.length>1) window.history.back();
+  else window.location.href='app.html';
+}
+
+// ================================================================
+// UTILS
+// ================================================================
+function genId(){return '_'+Math.random().toString(36).substr(2,9)+'_'+Date.now();}
+function today(){return new Date().toISOString().split('T')[0];}
+function fmt(n){var x=parseFloat(n)||0;return x.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function formatDate(d){if(!d)return'';var p=d.split('-');if(p.length===3)return parseInt(p[2])+'/'+parseInt(p[1])+'/'+p[0];return d;}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function xmlEsc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');}
+function dateInRange(dateStr, filtro) {
+  if(!dateStr) return false;
+  var d = new Date(dateStr);
+  var now = new Date();
+  if(filtro.periodo === 'anno') {
+    return d.getFullYear() === currentAnno;
+  } else if(filtro.periodo === 'mese') {
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  } else if(filtro.periodo === 'trimestre') {
+    var tre = new Date(now); tre.setMonth(tre.getMonth() - 3);
+    return d >= tre && d <= now;
+  } else if(filtro.periodo === 'custom') {
+    var from = filtro.dataFrom ? new Date(filtro.dataFrom) : null;
+    var to = filtro.dataTo ? new Date(filtro.dataTo) : null;
+    if(from && d < from) return false;
+    if(to && d > to) return false;
+    return true;
+  }
+  return true;
+}
+
+function updateCassaFilterLabel() {
+  var el = document.getElementById('cassaFilterLabel');
+  if(!el) return;
+  var pMap = { anno: "Tutto l'anno", mese: 'Questo mese', trimestre: 'Ultimo trimestre', custom: 'Intervallo' };
+  var periodoLabel = pMap[cassaFiltro.periodo] || "Tutto l'anno";
+  var catLabel = cassaFiltro.categoria !== 'Tutte' ? ' · ' + cassaFiltro.categoria : ' · Qualsiasi';
+  el.textContent = periodoLabel + catLabel;
+}
+
+function updateFattureFilterLabel() {
+  var el = document.getElementById('fattureFilterLabel');
+  if(!el) return;
+  var pMap = { anno: "Tutto l'anno", mese: 'Questo mese', trimestre: 'Ultimo trimestre', custom: 'Intervallo' };
+  var periodoLabel = pMap[fattureFiltro.periodo] || "Tutto l'anno";
+  var statoLabel = fattureFiltro.stato === 'pagata' ? ' · Pagata' : fattureFiltro.stato === 'non_pagata' ? ' · Non pagata' : '';
+  el.textContent = periodoLabel + statoLabel;
+}
+
+function apriModificaFiltriCassa() {
+  document.getElementById('fcPeriodo').value = cassaFiltro.periodo;
+  document.getElementById('fcDateFrom').value = cassaFiltro.dataFrom;
+  document.getElementById('fcDateTo').value = cassaFiltro.dataTo;
+  document.getElementById('fcCategoria').value = cassaFiltro.categoria;
+  toggleFCDate();
+  document.getElementById('fcCategoriaRow').style.display = currentCassaTab === 'spese' ? 'block' : 'none';
+  document.getElementById('filterModalCassa').classList.add('open');
+}
+
+function chiudiFilterCassa() {
+  document.getElementById('filterModalCassa').classList.remove('open');
+}
+
+function toggleFCDate() {
+  document.getElementById('fcDateRange').style.display = document.getElementById('fcPeriodo').value === 'custom' ? 'block' : 'none';
+}
+
+function applicaFilterCassa() {
+  cassaFiltro.periodo = document.getElementById('fcPeriodo').value;
+  cassaFiltro.dataFrom = document.getElementById('fcDateFrom').value;
+  cassaFiltro.dataTo = document.getElementById('fcDateTo').value;
+  cassaFiltro.categoria = document.getElementById('fcCategoria').value;
+  chiudiFilterCassa();
+  updateCassaFilterLabel();
+  renderCassa();
+}
+
+function apriModificaFiltriFatture() {
+  document.getElementById('ffPeriodo').value = fattureFiltro.periodo;
+  document.getElementById('ffDateFrom').value = fattureFiltro.dataFrom;
+  document.getElementById('ffDateTo').value = fattureFiltro.dataTo;
+  document.getElementById('ffStato').value = fattureFiltro.stato;
+  toggleFFDate();
+  document.getElementById('filterModalFatture').classList.add('open');
+}
+
+function chiudiFilterFatture() {
+  document.getElementById('filterModalFatture').classList.remove('open');
+}
+
+function toggleFFDate() {
+  document.getElementById('ffDateRange').style.display = document.getElementById('ffPeriodo').value === 'custom' ? 'block' : 'none';
+}
+
+function applicaFilterFatture() {
+  fattureFiltro.periodo = document.getElementById('ffPeriodo').value;
+  fattureFiltro.dataFrom = document.getElementById('ffDateFrom').value;
+  fattureFiltro.dataTo = document.getElementById('ffDateTo').value;
+  fattureFiltro.stato = document.getElementById('ffStato').value;
+  chiudiFilterFatture();
+  updateFattureFilterLabel();
+  renderFatture();
+}
+
+// Init
+function fixHeight() {
+  document.body.style.height = window.innerHeight + 'px';
+}
+fixHeight();
+window.addEventListener('resize', fixHeight);
+init();
+
+// ================================================================
+// ANDROID BACK BUTTON HANDLER
+// ================================================================
+history.replaceState({fisco: 'base'}, '');
+history.pushState({fisco: 'active'}, '');
+
+window.addEventListener('popstate', function() {
+    // 1. Chiudi eventuali modal overlay aperte
+    var openModal = document.querySelector('.modal-overlay.open');
+    if (openModal) {
+        openModal.classList.remove('open');
+        history.pushState({fisco: 'active'}, '');
+        return;
+    }
+    // 2. Chiudi eventuali detail-view aperte
+    var openDetail = document.querySelector('.detail-view.open');
+    if (openDetail) {
+        openDetail.classList.remove('open');
+        history.pushState({fisco: 'active'}, '');
+        return;
+    }
+    // 3. Se non siamo su Home, torna alla Home di fisco
+    var activePage = document.querySelector('.page.active');
+    if (activePage && activePage.id !== 'pageHome') {
+        switchPage('Home');
+        history.pushState({fisco: 'active'}, '');
+        return;
+    }
+    // 4. Siamo su Home: esci verso app.html
+    window.location.href = 'app.html';
+});
+</script>
+</body>
+</html>
