@@ -41,3 +41,10 @@ self.addEventListener("fetch", e => {
     caches.match(req).then(r => r || fetch(req))
   );
 });
+
+// Keep-alive: risponde ai ping dell'app per mantenere il SW attivo
+self.addEventListener("message", e => {
+  if (e.data === "keepalive") {
+    e.source.postMessage("alive");
+  }
+});
