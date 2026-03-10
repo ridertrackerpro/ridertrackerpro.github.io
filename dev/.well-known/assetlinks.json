@@ -3,6 +3,6 @@
   "target": {
     "namespace": "android_app",
     "package_name": "io.github.ridertrackerpro.twa",
-    "sha256_cert_fingerprints": ["46:C8:A0:3F:2A:1E:66:31:E4:3F:88:F2:A8:97:C3:F3:8F:5A:61:1D:68:31:0E:05:0C:E0:90:3C:C2:C7:18:89"]
+    "sha256_cert_fingerprints": ["26:40:E2:6E:73:65:9A:45:41:95:DC:CA:6D:42:50:AC:41:AA:FD:CC:7E:D7:9C:19:9B:61:2E:7A:60:B4:10:14"]
   }
 }]
