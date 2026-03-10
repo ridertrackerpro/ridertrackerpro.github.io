@@ -2,7 +2,7 @@
   "name": "Rider Tracker Pro",
   "short_name": "RiderTracker",
   "description": "Controllo reale del guadagno per Rider professionisti",
-  "start_url": "index.html",
+  "start_url": "/app.html",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
