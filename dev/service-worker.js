@@ -1,4 +1,4 @@
-const CACHE = "ridertrackerpro-v3.0.3";
+const CACHE = "ridertrackerpro-v3.0.6";
 
 const FILES = [
   "./",
