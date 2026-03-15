@@ -2410,7 +2410,7 @@ function apriM(id) {
         const ultimoMezzo = _vaAM ? (_vaAM.tipo || 'auto') : (localStorage.getItem('ultimo_mezzo_' + currentLang) || 'auto');
         document.getElementById('tMezzo').value = ultimoMezzo;
         document.getElementById('labelMezzo').innerText = _getMezzoLabel(ultimoMezzo);
-        var _noCons = ultimoMezzo === 'bici' || ultimoMezzo === 'escooter' || ultimoMezzo === 'scooter';
+        var _noCons = ultimoMezzo === 'bici' || ultimoMezzo === 'escooter';
         document.getElementById('tC').style.display = _noCons ? 'none' : '';
         document.getElementById('fakeSelectCarb').style.display = _noCons ? 'none' : '';
         const ultimoCarb = localStorage.getItem('ultimo_carburante_turno_' + currentLang) || 'benzina';
@@ -3604,7 +3604,7 @@ function verificaKmOdometroBlur() {
 function selezionaMezzo(valore) {
     document.getElementById('tMezzo').value = valore;
     document.getElementById('labelMezzo').innerText = _getMezzoLabel(valore);
-    var noCons = valore === 'bici' || valore === 'escooter' || valore === 'scooter';
+    var noCons = valore === 'bici' || valore === 'escooter';
     document.getElementById('tC').style.display = noCons ? 'none' : '';
     document.getElementById('fakeSelectCarb').style.display = noCons ? 'none' : '';
     if (noCons) {
@@ -3760,7 +3760,7 @@ function salvaTurno() {
     }
 
     const _mezzoTurno = document.getElementById('tMezzo').value;
-    const _mezzoNoCons = _mezzoTurno === 'bici' || _mezzoTurno === 'escooter' || _mezzoTurno === 'scooter';
+    const _mezzoNoCons = _mezzoTurno === 'bici' || _mezzoTurno === 'escooter';
 
     if (_mezzoNoCons) {
         effettuaSalvataggioTurno(0, null);
