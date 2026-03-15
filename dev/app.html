@@ -6337,10 +6337,26 @@ function vehOnCarbChange() {
     var fuelSec = document.getElementById('vehFuelSection');
     var bifuelSec = document.getElementById('vehBifuelSection');
     var cons2Wrap = document.getElementById('vehConsMedio2Wrap');
+    var lblSer1 = document.getElementById('lblVehSerbatoio');
     var lblSer2 = document.getElementById('lblVehSerbatoio2');
     var noCons = _isNoCons(carb);
     var isEN = (typeof currentLang !== 'undefined' && currentLang === 'en');
     if (fuelSec) fuelSec.style.display = noCons ? 'none' : 'block';
+
+    // Unità volume per label serbatoio
+    var volLabel = (userSettings.volume === 'gallons_us' || userSettings.volume === 'gallons_uk') ? 'gal' : 'L';
+
+    // Aggiorna label serbatoio 1 in base al carburante
+    if (lblSer1) {
+        if (carb === 'metano') {
+            var metUnit = getMetanoUnit();
+            lblSer1.innerText = isEN ? 'Tank Capacity (' + metUnit + ') *' : 'Capacità Serbatoio (' + metUnit + ') *';
+        } else if (carb === 'bifuel_benzina_gpl' || carb === 'bifuel_benzina_metano') {
+            lblSer1.innerText = isEN ? 'Gasoline Tank (' + volLabel + ') *' : 'Serbatoio Benzina (' + volLabel + ') *';
+        } else {
+            lblSer1.innerText = isEN ? 'Tank Capacity (' + volLabel + ') *' : 'Capacità Serbatoio (' + volLabel + ') *';
+        }
+    }
 
     // Unità consumo dalle preferenze
     var consUnit = 'km/L';
@@ -6365,9 +6381,10 @@ function vehOnCarbChange() {
         if (cons2Wrap) cons2Wrap.style.display = 'block';
         if (lblSer2) {
             if (carb === 'bifuel_benzina_gpl') {
-                lblSer2.innerText = isEN ? 'LPG Tank Capacity (L) *' : 'Capacità Bombola GPL (L) *';
+                lblSer2.innerText = isEN ? 'LPG Tank Capacity (' + volLabel + ') *' : 'Capacità Bombola GPL (' + volLabel + ') *';
             } else {
-                lblSer2.innerText = isEN ? 'CNG Tank Capacity (kg) *' : 'Capacità Serbatoio Metano (kg) *';
+                var metUnit = getMetanoUnit();
+                lblSer2.innerText = isEN ? 'CNG Tank Capacity (' + metUnit + ') *' : 'Capacità Serbatoio Metano (' + metUnit + ') *';
             }
         }
         // Placeholder bifuel: 1° benzina, 2° GPL/Metano
@@ -6699,7 +6716,7 @@ function aggiornaTestiSettings() {
     var lc = el('lblVehCarb');
     if (lc) lc.innerText = it ? 'Tipo Carburante *' : 'Fuel Type *';
     var ls = el('lblVehSerbatoio');
-    if (ls) ls.innerText = it ? 'Capacità Serbatoio (L) *' : 'Tank Capacity (L) *';
+    if (ls) { vehOnCarbChange(); }
     // Placeholders
     var pm = el('vehMarca');
     if (pm) pm.placeholder = it ? 'Marca *' : 'Brand *';
