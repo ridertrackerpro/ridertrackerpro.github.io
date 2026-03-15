@@ -300,13 +300,14 @@ html, body { touch-action: pan-x pan-y; }
     html, body { 
         height: auto !important; 
         overflow: visible !important; 
-        position: static !important; 
+        position: static !important;
+        width: 100% !important;
     }
-    body * { visibility: hidden; } 
+    body > *:not(#reportView) { display: none !important; }
     #reportView, #reportView * { visibility: visible; } 
     .no-print { display: none !important; visibility: hidden !important; } 
-    #reportView { position: absolute; left: 0; top: 0; width: 100%; display: block !important; height: auto !important; } 
-    .report-scroll-area { overflow: visible !important; height: auto !important; max-height: none !important; } 
+    #reportView { position: static !important; left: auto; top: auto; width: 100%; display: block !important; height: auto !important; } 
+    .report-scroll-area { overflow: visible !important; height: auto !important; max-height: none !important; position: static !important; } 
     
     /* CORNICI: evita spezzatura se la sezione entra in una pagina intera */
     .report-section { 
