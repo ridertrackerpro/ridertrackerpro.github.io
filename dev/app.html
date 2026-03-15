@@ -807,33 +807,32 @@ body {
         <input type="hidden" id="tOEnd">
 
         <!-- ── KM INIZIO / KM FINE odometro ── -->
-        <div style="display:flex; gap:8px; margin-bottom:6px; margin-top:0;" id="rowKmOdo">
-
+        <div style="display:flex; gap:8px; margin-bottom:6px;" id="rowKmOdo">
             <div style="position:relative; flex:1; min-width:0;">
-                <input type="number" id="tKStart" data-translate-placeholder="ph_km_start" style="text-align:center; padding:11px 36px 11px 14px;" inputmode="decimal" autocomplete="off" oninput="salvaKmPartenzaTmp(); calcolaKmDaOdometro();">
+                <input type="number" id="tKStart" data-translate-placeholder="ph_km_start" style="text-align:center; padding:11px 36px 11px 14px; margin-bottom:0;" inputmode="decimal" autocomplete="off" oninput="salvaKmPartenzaTmp(); calcolaKmDaOdometro();">
                 <button onclick="azzeraKmStart()" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:transparent; border:none; color:var(--accent); font-size:15px; cursor:pointer; padding:0; line-height:1;">✕</button>
             </div>
             <div style="position:relative; flex:1; min-width:0;">
-                <input type="number" id="tKEnd" data-translate-placeholder="ph_km_end" style="text-align:center; padding:11px 36px 11px 14px;" inputmode="decimal" autocomplete="off" oninput="calcolaKmDaOdometro();" onblur="verificaKmOdometroBlur();">
+                <input type="number" id="tKEnd" data-translate-placeholder="ph_km_end" style="text-align:center; padding:11px 36px 11px 14px; margin-bottom:0;" inputmode="decimal" autocomplete="off" oninput="calcolaKmDaOdometro();" onblur="verificaKmOdometroBlur();">
                 <button onclick="azzeraKmEnd()" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:transparent; border:none; color:var(--accent); font-size:15px; cursor:pointer; padding:0; line-height:1;">✕</button>
             </div>
         </div>
 
         <!-- ── KM TOTALI + CONSUMI (nascosti per noCons) ── -->
-        <div style="display:flex; gap:8px; margin-bottom:0;" id="rowKmCons">
-            <input type="number" id="tK" style="text-align:center; padding:11px 14px; flex:1; min-width:0;" data-translate-placeholder="ph_km_short" inputmode="decimal" autocomplete="off">
-            <input type="number" id="tC" style="text-align:center; padding:11px 14px; flex:1; min-width:0;" data-translate-placeholder="ph_cons_short" step="0.1" inputmode="decimal" autocomplete="off">
+        <div style="display:flex; gap:8px; margin-bottom:6px; margin-top:0;" id="rowKmCons">
+            <input type="number" id="tK" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" data-translate-placeholder="ph_km_short" inputmode="decimal" autocomplete="off">
+            <input type="number" id="tC" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" data-translate-placeholder="ph_cons_short" step="0.1" inputmode="decimal" autocomplete="off">
         </div>
-        <div id="consHint" style="font-size:10px; color:var(--primary); margin:6px 0 0 2px; min-height:0; font-style:italic; line-height:1.2;"></div>
+        <div id="consHint" style="font-size:10px; color:var(--primary); margin:0 0 6px 2px; min-height:0; font-style:italic; line-height:1.2;"></div>
 
         <!-- ── ORE LAVORATE + LORDO affiancati ── -->
-        <div id="rowOre" style="display:flex; gap:8px; margin-top:6px; margin-bottom:0;">
-            <input type="number" id="tO" style="text-align:center; padding:11px 14px; flex:1; min-width:0;" data-translate-placeholder="ph_ore_short" step="0.1" inputmode="decimal" autocomplete="off">
-            <input type="number" id="tL" style="text-align:center; padding:11px 14px; flex:1; min-width:0;" data-translate-placeholder="ph_lordo_short" inputmode="decimal" autocomplete="off">
+        <div id="rowOre" style="display:flex; gap:8px; margin-bottom:6px; margin-top:auto; padding-top:20px;">
+            <input type="number" id="tO" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" data-translate-placeholder="ph_ore_short" step="0.1" inputmode="decimal" autocomplete="off">
+            <input type="number" id="tL" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" data-translate-placeholder="ph_lordo_short" inputmode="decimal" autocomplete="off">
         </div>
 
         <!-- ── CELLA GPS ── -->
-        <div style="border:1px solid #333; border-radius:14px; padding:6px 12px 10px; margin-top:6px; margin-bottom:10px;">
+        <div style="border:1px solid #333; border-radius:14px; padding:12px 12px 10px; margin-top:0; margin-bottom:10px;">
             <div id="lblGpsSection" style="font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:1.5px; color:#aaa; margin-bottom:10px; display:flex; align-items:center; justify-content:center; gap:7px; text-align:center;">
                 🛰️ Rilevazione GPS Turno
             </div>
@@ -2484,6 +2483,7 @@ function apriM(id) {
         document.getElementById('labelMezzo').innerText = _getMezzoLabel(ultimoMezzo);
         var _noCons = ultimoMezzo === 'bici' || ultimoMezzo === 'escooter';
         document.getElementById('tC').style.display = _noCons ? 'none' : '';
+        document.getElementById('tK').style.width = _noCons ? '100%' : '';
         document.getElementById('fakeSelectCarb').style.display = _noCons ? 'none' : '';
         const ultimoCarb = localStorage.getItem('ultimo_carburante_turno_' + currentLang) || 'benzina';
         document.getElementById('tCarburante').value = ultimoCarb;
@@ -3705,6 +3705,7 @@ function selezionaMezzo(valore) {
     document.getElementById('labelMezzo').innerText = _getMezzoLabel(valore);
     var noCons = valore === 'bici' || valore === 'escooter';
     document.getElementById('tC').style.display = noCons ? 'none' : '';
+    document.getElementById('tK').style.width = noCons ? '100%' : '';
     document.getElementById('fakeSelectCarb').style.display = noCons ? 'none' : '';
     if (noCons) {
         document.getElementById('tC').value = '';
@@ -4641,12 +4642,12 @@ window.onload = function() {
     setTimeout(function() {
         var percEl = document.getElementById('perc');
         var targetP = percEl ? parseInt(percEl.innerText) || 0 : 0;
+        try {
+            var audio = new Audio('https://ridertrackerpro.github.io/dev/intro.mp3');
+            audio.volume = 1.0;
+            audio.play().catch(function(){});
+        } catch(e) {}
         if (targetP > 0) {
-            try {
-                var audio = new Audio('https://ridertrackerpro.github.io/dev/intro.mp3');
-                audio.volume = 1.0;
-                audio.play().catch(function(){});
-            } catch(e) {}
             _meterAnimate(targetP);
         }
     }, 300);
@@ -6199,15 +6200,15 @@ _syncVeicoloAttivo = function() {
 
     if (noCons) {
         if (rowKmCons) rowKmCons.style.display = 'none';
-        if (rowOre)    rowOre.style.display = 'block';  // Sempre visibile: serve per ore lavorate
+        if (rowOre)    rowOre.style.display = 'flex';
         if (consHint)  consHint.style.minHeight = '0';
         if (consHint)  consHint.innerText = '';
         if (carbTurno) carbTurno.value = 'nessuno';
         if (fieldCons) { fieldCons.value = '0'; fieldCons.disabled = true; }
+        var tKEl = document.getElementById('tK');
+        if (tKEl) tKEl.style.width = '100%';
         var mezzoEl = document.getElementById('tMezzo');
         if (mezzoEl) mezzoEl.value = va.tipo || 'bici';
-        // Bici: nessun odometro → nascondi km inizio/fine
-        // E-Scooter/E-Bike: molti hanno display km → tieni visibile
         var rowKmOdo = document.getElementById('rowKmOdo');
         if (rowKmOdo) rowKmOdo.style.display = (va.tipo === 'bici') ? 'none' : 'flex';
         return;
@@ -6218,6 +6219,10 @@ _syncVeicoloAttivo = function() {
     if (fieldCons) fieldCons.disabled = false;
     var rowKmOdoEl = document.getElementById('rowKmOdo');
     if (rowKmOdoEl) rowKmOdoEl.style.display = 'flex';
+    var tKEl2 = document.getElementById('tK');
+    if (tKEl2) tKEl2.style.width = '';
+    var tCEl2 = document.getElementById('tC');
+    if (tCEl2) tCEl2.style.display = '';
     var consHintEl = document.getElementById('consHint');
     if (consHintEl) consHintEl.style.minHeight = '';
 
