@@ -1352,7 +1352,7 @@ body {
     </div>
    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; grid-column:1 / -1; margin-top:2px;">
         <button style="height:44px; font-size:11px; font-weight:900; padding:0; background:var(--primary); color:#000; border:none; border-radius:15px; cursor:pointer;" onclick="apriReport()"><i class="fas fa-file-alt" style="margin-right:5px;"></i><span data-translate="btn_monthly_summary">RIEPILOGO MESE</span></button>
-        <button style="height:44px; font-size:11px; font-weight:900; padding:0; background:var(--accent); color:#fff; border:none; border-radius:15px; cursor:pointer;" onclick="apriResaView()"><i class="fas fa-chart-line" style="margin-right:5px;"></i><span data-translate="btn_yield_chart">RESA €/ORA</span></button>
+        <button style="height:44px; font-size:11px; font-weight:900; padding:0; background:var(--orange); color:#000; border:none; border-radius:15px; cursor:pointer;" onclick="apriResaView()"><i class="fas fa-chart-line" style="margin-right:5px;"></i><span data-translate="btn_yield_chart">RESA €/ORA</span></button>
     </div>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; grid-column:1 / -1; margin-top:2px;">
         <button style="height:36px; font-size:10px; font-weight:700; padding:0; background:#222; border:1px solid #444; color:var(--primary); border-radius:15px; cursor:pointer;" onclick="salvaBackup()"><i class="fas fa-download" style="margin-right:4px;"></i><span data-translate="export_backup">ESPORTA</span></button>
@@ -2036,7 +2036,7 @@ let userSettings = JSON.parse(localStorage.getItem('user_settings')) || {
     volume: 'liters',
     mass: 'kg',
     currency: 'EUR',
-    consumption: 'l_100km'
+    consumption: 'km_l'
 };
 
 function aggiornaLabelSettings(){
@@ -6336,20 +6336,45 @@ function vehOnCarbChange() {
     var carb = document.getElementById('vehCarburante').value;
     var fuelSec = document.getElementById('vehFuelSection');
     var bifuelSec = document.getElementById('vehBifuelSection');
-    var cons2 = document.getElementById('vehConsMedio2');
+    var cons2Wrap = document.getElementById('vehConsMedio2Wrap');
     var lblSer2 = document.getElementById('lblVehSerbatoio2');
     var noCons = _isNoCons(carb);
+    var isEN = (typeof currentLang !== 'undefined' && currentLang === 'en');
     if (fuelSec) fuelSec.style.display = noCons ? 'none' : 'block';
-    if (_isBifuel(carb)) {
+
+    // Unità consumo dalle preferenze
+    var consUnit = 'km/L';
+    if (userSettings.consumption === 'l_100km') consUnit = 'L/100km';
+    else if (userSettings.consumption === 'mpg_us') consUnit = 'MPG (US)';
+    else if (userSettings.consumption === 'mpg_uk') consUnit = 'MPG (UK)';
+    if (userSettings.distance === 'miles') {
+        if (userSettings.consumption === 'l_100km') consUnit = 'L/100mi';
+        else if (userSettings.consumption === 'km_l') consUnit = 'mi/L';
+    }
+
+    var isBf = _isBifuel(carb);
+    if (isBf) {
         if (bifuelSec) bifuelSec.style.display = 'block';
-        if (cons2) cons2.style.display = '';
+        if (cons2Wrap) cons2Wrap.style.display = 'block';
         if (lblSer2) {
-            var lbl2 = carb === 'bifuel_benzina_gpl' ? 'Capacità Bombola GPL (L) *' : 'Capacità Serbatoio Metano (m³ equiv.) *';
-            lblSer2.innerText = lbl2;
+            if (carb === 'bifuel_benzina_gpl') {
+                lblSer2.innerText = isEN ? 'LPG Tank Capacity (L) *' : 'Capacità Bombola GPL (L) *';
+            } else {
+                lblSer2.innerText = isEN ? 'CNG Tank Capacity (m³ equiv.) *' : 'Capacità Serbatoio Metano (m³ equiv.) *';
+            }
         }
+        // Placeholder bifuel: 1° benzina, 2° GPL/Metano
+        var lbl2Carb = carb === 'bifuel_benzina_gpl' ? 'GPL' : (isEN ? 'CNG' : 'Metano');
+        var lblBenz = isEN ? 'Gasoline' : 'Benzina';
+        var c1 = document.getElementById('vehConsMedio');
+        var c2 = document.getElementById('vehConsMedio2');
+        if (c1) c1.placeholder = (isEN ? 'Consumption ' : 'Consumo ') + lblBenz + ' (' + consUnit + ')';
+        if (c2) c2.placeholder = (isEN ? 'Consumption ' : 'Consumo ') + lbl2Carb + ' (' + consUnit + ')';
     } else {
         if (bifuelSec) bifuelSec.style.display = 'none';
-        if (cons2) cons2.style.display = 'none';
+        if (cons2Wrap) cons2Wrap.style.display = 'none';
+        var c1 = document.getElementById('vehConsMedio');
+        if (c1) c1.placeholder = (isEN ? 'Avg consumption' : 'Consumo medio') + ' (' + consUnit + ')';
     }
 
     // Dim carburante select if noCons
