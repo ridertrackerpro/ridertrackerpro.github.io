@@ -6352,6 +6352,13 @@ function vehOnCarbChange() {
         else if (userSettings.consumption === 'km_l') consUnit = 'mi/L';
     }
 
+    // Unità specifica metano (kg, lb o GGE)
+    var metanoUnit = getMetanoUnit();
+    var distLabel = userSettings.distance === 'miles' ? '100mi' : '100km';
+    var consUnitMetano = userSettings.consumption === 'l_100km'
+        ? metanoUnit + '/' + distLabel
+        : (userSettings.distance === 'miles' ? 'mi' : 'km') + '/' + metanoUnit;
+
     var isBf = _isBifuel(carb);
     if (isBf) {
         if (bifuelSec) bifuelSec.style.display = 'block';
@@ -6360,21 +6367,23 @@ function vehOnCarbChange() {
             if (carb === 'bifuel_benzina_gpl') {
                 lblSer2.innerText = isEN ? 'LPG Tank Capacity (L) *' : 'Capacità Bombola GPL (L) *';
             } else {
-                lblSer2.innerText = isEN ? 'CNG Tank Capacity (m³ equiv.) *' : 'Capacità Serbatoio Metano (m³ equiv.) *';
+                lblSer2.innerText = isEN ? 'CNG Tank Capacity (kg) *' : 'Capacità Serbatoio Metano (kg) *';
             }
         }
         // Placeholder bifuel: 1° benzina, 2° GPL/Metano
         var lbl2Carb = carb === 'bifuel_benzina_gpl' ? 'GPL' : (isEN ? 'CNG' : 'Metano');
+        var cons2Unit = carb === 'bifuel_benzina_metano' ? consUnitMetano : consUnit;
         var lblBenz = isEN ? 'Gasoline' : 'Benzina';
         var c1 = document.getElementById('vehConsMedio');
         var c2 = document.getElementById('vehConsMedio2');
         if (c1) c1.placeholder = (isEN ? 'Consumption ' : 'Consumo ') + lblBenz + ' (' + consUnit + ')';
-        if (c2) c2.placeholder = (isEN ? 'Consumption ' : 'Consumo ') + lbl2Carb + ' (' + consUnit + ')';
+        if (c2) c2.placeholder = (isEN ? 'Consumption ' : 'Consumo ') + lbl2Carb + ' (' + cons2Unit + ')';
     } else {
         if (bifuelSec) bifuelSec.style.display = 'none';
         if (cons2Wrap) cons2Wrap.style.display = 'none';
         var c1 = document.getElementById('vehConsMedio');
-        if (c1) c1.placeholder = (isEN ? 'Avg consumption' : 'Consumo medio') + ' (' + consUnit + ')';
+        var unitForThis = carb === 'metano' ? consUnitMetano : consUnit;
+        if (c1) c1.placeholder = (isEN ? 'Avg consumption' : 'Consumo medio') + ' (' + unitForThis + ')';
     }
 
     // Dim carburante select if noCons
