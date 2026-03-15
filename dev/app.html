@@ -295,6 +295,7 @@ html, body { touch-action: pan-x pan-y; }
 .clickable:active { opacity: 0.6; }
 
 @media print { 
+    @page { margin: 10mm 5mm 10mm 5mm; }
     /* Layout pagina */
     html, body { 
         height: auto !important; 
@@ -329,6 +330,7 @@ html, body { touch-action: pan-x pan-y; }
     
     /* RIEPILOGO FINALE IN CORNICE SEPARATA */
     .summary-box { 
+        break-inside: avoid;
         page-break-inside: avoid !important;
         border: 3px solid #000 !important;
         padding: 20px !important;
