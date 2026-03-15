@@ -4934,19 +4934,25 @@ function stampaPagina() {
         return;
     }
 
-    // Capacitor Android: genera PDF con html2canvas + jsPDF
     var it = (typeof currentLang === 'undefined' || currentLang !== 'en');
     var btnFooter = document.querySelector('.report-fixed-footer');
     if (btnFooter) btnFooter.style.display = 'none';
 
     var content = document.querySelector('#reportView .report-scroll-area');
 
-    // Attendi rendering completo prima di catturare
+    // Scrolla in cima per misurazioni corrette
+    content.scrollTop = 0;
+
     setTimeout(function() {
         var summaryEl = content.querySelector('.summary-box');
 
-        // Nascondi summary-box e cattura il contenuto sopra
-        if (summaryEl) summaryEl.style.visibility = 'hidden';
+        // Posizione summary relativa al contenitore scrollabile (metodo corretto)
+        var summaryTopPx = 0;
+        if (summaryEl) {
+            summaryTopPx = summaryEl.getBoundingClientRect().top
+                         - content.getBoundingClientRect().top
+                         + content.scrollTop;
+        }
 
         html2canvas(content, {
             scale: 2,
@@ -4956,49 +4962,39 @@ function stampaPagina() {
             windowWidth: content.scrollWidth,
             height: content.scrollHeight,
             logging: false
-        }).then(function(canvasTop) {
-            // Ripristina e cattura solo la summary-box
-            if (summaryEl) summaryEl.style.visibility = '';
+        }).then(function(canvas) {
+            if (btnFooter) btnFooter.style.display = '';
 
-            var captureBottom = summaryEl
-                ? html2canvas(summaryEl, {
-                    scale: 2,
-                    useCORS: true,
-                    backgroundColor: '#ffffff',
-                    logging: false
-                })
-                : Promise.resolve(null);
+            var pdf = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+            var pageW = pdf.internal.pageSize.getWidth();
+            var pageH = pdf.internal.pageSize.getHeight();
+            var imgW  = pageW;
+            var imgH  = (canvas.height * imgW) / canvas.width;
 
-            captureBottom.then(function(canvasBottom) {
-                if (btnFooter) btnFooter.style.display = '';
+            // Converti posizione summary da px DOM a mm PDF
+            var summaryMm = summaryEl
+                ? (summaryTopPx / content.scrollHeight) * imgH
+                : imgH;
 
-                var pdf = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-                var pageW = pdf.internal.pageSize.getWidth();
-                var pageH = pdf.internal.pageSize.getHeight();
-
-                // Aggiungi contenuto superiore (potenzialmente multi-pagina)
-                var imgTopData = canvasTop.toDataURL('image/png');
-                var imgTopH = (canvasTop.height * pageW) / canvasTop.width;
-                var y = 0;
-                while (y < imgTopH) {
-                    if (y > 0) pdf.addPage();
-                    pdf.addImage(imgTopData, 'PNG', 0, -y, pageW, imgTopH);
-                    y += pageH;
+            // Costruisci pagine evitando tagli dentro la summary-box
+            var pages = [];
+            var y = 0;
+            while (y < imgH) {
+                var nextY = y + pageH;
+                if (summaryEl && y < summaryMm && nextY > summaryMm) {
+                    // Il taglio cadrebbe dentro la summary: salta a summaryMm
+                    nextY = summaryMm;
                 }
+                pages.push(y);
+                y = nextY;
+            }
 
-                // Aggiungi summary-box: se non ci sta sul foglio corrente, nuova pagina
-                if (canvasBottom) {
-                    var imgBotH = (canvasBottom.height * pageW) / canvasBottom.width;
-                    var usedOnLastPage = imgTopH % pageH;
-                    if (usedOnLastPage + imgBotH > pageH) {
-                        pdf.addPage();
-                        pdf.addImage(canvasBottom.toDataURL('image/png'), 'PNG', 0, 0, pageW, imgBotH);
-                    } else {
-                        pdf.addImage(canvasBottom.toDataURL('image/png'), 'PNG', 0, usedOnLastPage, pageW, imgBotH);
-                    }
-                }
+            pages.forEach(function(pageY, i) {
+                if (i > 0) pdf.addPage();
+                pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, -pageY, imgW, imgH);
+            });
 
-                var pdfBase64 = pdf.output('datauristring').split(',')[1];
+            var pdfBase64 = pdf.output('datauristring').split(',')[1];
             var meseLabel = (document.getElementById('reportMeseLabel') || {}).innerText || 'report';
             var fileName = 'RiderTracker_' + meseLabel.replace(/\s/g,'_') + '.pdf';
             try {
@@ -5022,14 +5018,8 @@ function stampaPagina() {
             } catch(e) {
                 mostraAlertApp(it ? 'Plugin non disponibile.' : 'Plugin not available.');
             }
-            }).catch(function(e) {
-                if (btnFooter) btnFooter.style.display = '';
-                if (summaryEl) summaryEl.style.visibility = '';
-                mostraAlertApp(it ? 'Errore generazione PDF: ' + e.message : 'PDF generation error: ' + e.message);
-            });
         }).catch(function(e) {
             if (btnFooter) btnFooter.style.display = '';
-            if (summaryEl) summaryEl.style.visibility = '';
             mostraAlertApp(it ? 'Errore generazione PDF: ' + e.message : 'PDF generation error: ' + e.message);
         });
     }, 400);
