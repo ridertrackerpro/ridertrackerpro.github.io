@@ -4982,6 +4982,7 @@ function stampaPagina() {
             }
 
             // Costruisci pagine evitando tagli dentro sezioni che entrano in una pagina
+            var TOLERANCE_MM = 15; // se mancano <=15mm per stare, non spostare
             var pages = [];
             var y = 0;
             while (y < imgH) {
@@ -4991,8 +4992,11 @@ function stampaPagina() {
                 for (var si = 0; si < sectionsMm.length; si++) {
                     var sec = sectionsMm[si];
                     if (sec.heightMm <= pageH && nextY > sec.topMm && nextY < sec.bottomMm) {
-                        // Taglio cade dentro questa sezione: anticipa a prima della sezione
-                        nextY = sec.topMm;
+                        // Se manca poco per completarla (<=TOLERANCE), lascia stare
+                        var overflow = sec.bottomMm - nextY;
+                        if (overflow > TOLERANCE_MM) {
+                            nextY = sec.topMm;
+                        }
                         break;
                     }
                 }
@@ -5001,9 +5005,17 @@ function stampaPagina() {
                 y = nextY;
             }
 
+            var imgData = canvas.toDataURL('image/png');
             pages.forEach(function(pageY, i) {
                 if (i > 0) pdf.addPage();
-                pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, -pageY, imgW, imgH);
+                pdf.addImage(imgData, 'PNG', 0, -pageY, imgW, imgH);
+                // Maschera contenuto oltre il taglio previsto
+                var sliceEnd = (i < pages.length - 1) ? pages[i + 1] : imgH;
+                var visibleH = sliceEnd - pageY;
+                if (visibleH < pageH) {
+                    pdf.setFillColor(255, 255, 255);
+                    pdf.rect(0, visibleH, pageW, pageH - visibleH, 'F');
+                }
             });
 
             var pdfBase64 = pdf.output('datauristring').split(',')[1];
