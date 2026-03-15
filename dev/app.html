@@ -4972,7 +4972,7 @@ function stampaPagina() {
                 window.Capacitor.Plugins.Filesystem.writeFile({
                     path: fileName,
                     data: pdfBase64,
-                    directory: 'DOCUMENTS',
+                    directory: 'CACHE',
                     recursive: true
                 }).then(function(result) {
                     window.Capacitor.Plugins.Share.share({
