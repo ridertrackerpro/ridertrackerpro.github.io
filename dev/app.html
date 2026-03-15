@@ -5928,11 +5928,23 @@ function _gpsPos(pos){
         if(d>0.5 && dt<3){return;}
         // Filtro spike: scarta velocità GPS superiore a 250 km/h
         if(spd>250){return;}
+        // Filtro spike: velocità chip incoerente con spostamento reale
+        // Se il chip dice >50 km/h ma lo spostamento reale dice <10 km/h, usa lo spostamento
+        if(dt>0.5){
+            var spdCalc=(d/dt)*3600;
+            if(spd>50 && spdCalc<10){
+                spd=spdCalc;
+            }
+        }
         if(d>0.000001 && d<2) GPS.km+=d;
         // Fallback: se il chip GPS non riporta velocità, calcolala dalla posizione
         if(spd===0 && d>0.000001){
             if(dt>0.5) spd=Math.min((d/dt)*3600, 200);
         }
+    } else {
+        // Primo punto: il chip GPS spesso riporta speed spazzatura al primo fix
+        // Senza punto precedente non possiamo verificare, forza a 0
+        spd=0;
     }
     // Salva la posizione filtrata (non quella grezza) per mappa e distanza
     GPS.pts.push({la:fla,lo:flo,ts:ts,spd:spd,acc:acc});
