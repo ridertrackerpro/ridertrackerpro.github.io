@@ -1066,6 +1066,17 @@ body {
 </div>
 
 
+<div id="modalAnnullaGPS" class="modal no-print" style="z-index:10011;">
+    <div class="modal-content" style="border-color:var(--accent);">
+        <h3 id="modalAnnullaGPSTitle" style="color:var(--accent); font-size:16px;">Annulla sessione GPS</h3>
+        <p id="modalAnnullaGPSMsg" style="font-size:13px; color:var(--text); margin:15px 0; line-height:1.5;">Sei sicuro di voler annullare? La sessione GPS verrà interrotta e i dati non salvati andranno persi.</p>
+        <div class="confirm-buttons">
+            <button class="btn-confirm-cancel" id="modalAnnullaGPSBack" onclick="document.getElementById('modalAnnullaGPS').style.display='none'">CONTINUA</button>
+            <button class="btn-confirm-ok" id="modalAnnullaGPSOk" style="background:var(--accent); color:#fff;" onclick="annullaTurnoConfermato()">SÌ, ANNULLA</button>
+        </div>
+    </div>
+</div>
+
 <div id="modalAlertApp" class="modal no-print" style="z-index:10010;">
     <div class="modal-content" style="border-color: var(--primary);">
         <p id="modalAlertAppMsg" style="font-size:14px; color:var(--text); margin:10px 0 20px; line-height:1.5;"></p>
@@ -1528,6 +1539,10 @@ vehicle_scooter: 'Scooter',
         cat_lavaggio: 'Lavaggio veicolo',
         cat_elettronica: 'Elettronica',
         cat_altro: 'Altro (specificare)',
+        cancel_gps_title: 'Annulla sessione GPS',
+        cancel_gps_msg: 'Sei sicuro di voler annullare? La sessione GPS verrà interrotta e i dati non salvati andranno persi.',
+        cancel_gps_ok: 'SÌ, ANNULLA',
+        cancel_gps_back: 'CONTINUA',
     },
     en: { 
     extra_distance: "Extra Distance",
@@ -1712,7 +1727,11 @@ chart_eur_km: '/KM',
         cat_lavaggio: 'Vehicle wash',
         cat_elettronica: 'Electronics',
         cat_altro: 'Other (specify)',
-        hour_short: 'H'
+        hour_short: 'H',
+        cancel_gps_title: 'Cancel GPS session',
+        cancel_gps_msg: 'Are you sure you want to cancel? The GPS session will be stopped and unsaved data will be lost.',
+        cancel_gps_ok: 'YES, CANCEL',
+        cancel_gps_back: 'CONTINUE',
     }
 };
 let currentLang = localStorage.getItem('app_language') || 'it';
@@ -3464,10 +3483,33 @@ function _resetCampiTurno() {
 }
 
 function annullaTurno() {
-    if (typeof gpsAttivo !== 'undefined' && gpsAttivo) gpsTermina();
+    if (GPS.active) {
+        // GPS attivo: mostra conferma prima di annullare
+        var it = currentLang !== 'en';
+        document.getElementById('modalAnnullaGPSTitle').innerText = it ? 'Annulla sessione GPS' : 'Cancel GPS session';
+        document.getElementById('modalAnnullaGPSMsg').innerText = it
+            ? 'Sei sicuro di voler annullare? La sessione GPS verrà interrotta e i dati non salvati andranno persi.'
+            : 'Are you sure you want to cancel? The GPS session will be stopped and unsaved data will be lost.';
+        document.getElementById('modalAnnullaGPSBack').innerText = it ? 'CONTINUA' : 'CONTINUE';
+        document.getElementById('modalAnnullaGPSOk').innerText = it ? 'SÌ, ANNULLA' : 'YES, CANCEL';
+        document.getElementById('modalAnnullaGPS').style.display = 'flex';
+        return;
+    }
+    // Nessun GPS: annulla direttamente e torna in homepage
     editingId = null; editingCat = null;
     _resetCampiTurno();
     chiudiModali();
+}
+
+function annullaTurnoConfermato() {
+    document.getElementById('modalAnnullaGPS').style.display = 'none';
+    // Ferma GPS correttamente
+    gpsTermina();
+    // Reset campi ma rimane in schermata turno
+    editingId = null; editingCat = null;
+    _resetCampiTurno();
+    // Riapri il modale turno pulito
+    apriM('modalTurno');
 }
 
 function azzeraKmStart() {
