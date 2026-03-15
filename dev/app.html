@@ -307,9 +307,10 @@ html, body { touch-action: pan-x pan-y; }
     #reportView { position: absolute; left: 0; top: 0; width: 100%; display: block !important; height: auto !important; } 
     .report-scroll-area { overflow: visible !important; height: auto !important; max-height: none !important; } 
     
-    /* CORNICI: evita spezzatura solo se non supera la pagina intera */
+    /* CORNICI: evita spezzatura se la sezione entra in una pagina intera */
     .report-section { 
-        page-break-inside: auto;
+        break-inside: avoid;
+        page-break-inside: avoid;
         border: 2px solid #000 !important;
         padding: 15px !important;
         margin-bottom: 20px !important;
@@ -319,11 +320,12 @@ html, body { touch-action: pan-x pan-y; }
 
     /* Solo l'header e le prime righe di ogni cornice restano unite */
     .report-section > h3 {
+        break-after: avoid;
         page-break-after: avoid;
     }
     
-    table { page-break-inside: auto; }
-    tr { page-break-inside: avoid; page-break-after: auto; }
+    table { break-inside: auto; page-break-inside: auto; }
+    tr { break-inside: avoid; page-break-inside: avoid; page-break-after: auto; }
     
     /* RIEPILOGO FINALE IN CORNICE SEPARATA */
     .summary-box { 
@@ -4944,14 +4946,14 @@ function stampaPagina() {
     content.scrollTop = 0;
 
     setTimeout(function() {
-        var summaryEl = content.querySelector('.summary-box');
-
-        // Posizione summary relativa al contenitore scrollabile (metodo corretto)
-        var summaryTopPx = 0;
-        if (summaryEl) {
-            summaryTopPx = summaryEl.getBoundingClientRect().top
-                         - content.getBoundingClientRect().top
-                         + content.scrollTop;
+        // Misura TUTTE le sezioni (report-section + summary-box)
+        var allSections = content.querySelectorAll('.report-section, .summary-box');
+        var contRect = content.getBoundingClientRect();
+        var sectionsPx = [];
+        for (var si = 0; si < allSections.length; si++) {
+            var secRect = allSections[si].getBoundingClientRect();
+            var topPx = secRect.top - contRect.top + content.scrollTop;
+            sectionsPx.push({ topPx: topPx, heightPx: secRect.height });
         }
 
         html2canvas(content, {
@@ -4971,20 +4973,30 @@ function stampaPagina() {
             var imgW  = pageW;
             var imgH  = (canvas.height * imgW) / canvas.width;
 
-            // Converti posizione summary da px DOM a mm PDF
-            var summaryMm = summaryEl
-                ? (summaryTopPx / content.scrollHeight) * imgH
-                : imgH;
+            // Converti posizioni sezioni da px DOM a mm PDF
+            var sectionsMm = [];
+            for (var si = 0; si < sectionsPx.length; si++) {
+                var topMm = (sectionsPx[si].topPx / content.scrollHeight) * imgH;
+                var hMm = (sectionsPx[si].heightPx / content.scrollHeight) * imgH;
+                sectionsMm.push({ topMm: topMm, bottomMm: topMm + hMm, heightMm: hMm });
+            }
 
-            // Costruisci pagine evitando tagli dentro la summary-box
+            // Costruisci pagine evitando tagli dentro sezioni che entrano in una pagina
             var pages = [];
             var y = 0;
             while (y < imgH) {
                 var nextY = y + pageH;
-                if (summaryEl && y < summaryMm && nextY > summaryMm) {
-                    // Il taglio cadrebbe dentro la summary: salta a summaryMm
-                    nextY = summaryMm;
+                if (nextY >= imgH) { pages.push(y); break; }
+                // Controlla se nextY taglia una sezione che entra in una pagina singola
+                for (var si = 0; si < sectionsMm.length; si++) {
+                    var sec = sectionsMm[si];
+                    if (sec.heightMm <= pageH && nextY > sec.topMm && nextY < sec.bottomMm) {
+                        // Taglio cade dentro questa sezione: anticipa a prima della sezione
+                        nextY = sec.topMm;
+                        break;
+                    }
                 }
+                if (nextY <= y) nextY = y + pageH; // Safety anti-loop infinito
                 pages.push(y);
                 y = nextY;
             }
