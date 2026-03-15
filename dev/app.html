@@ -4969,7 +4969,9 @@ function stampaPagina() {
 
             var pdf = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
             var pageW = pdf.internal.pageSize.getWidth();
-            var pageH = pdf.internal.pageSize.getHeight();
+            var pageHFull = pdf.internal.pageSize.getHeight();
+            var TOP_MARGIN = 8; // mm di spazio bianco in cima a ogni pagina
+            var pageH = pageHFull - TOP_MARGIN;
             var imgW  = pageW;
             var imgH  = (canvas.height * imgW) / canvas.width;
 
@@ -5008,13 +5010,13 @@ function stampaPagina() {
             var imgData = canvas.toDataURL('image/png');
             pages.forEach(function(pageY, i) {
                 if (i > 0) pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, -pageY, imgW, imgH);
+                pdf.addImage(imgData, 'PNG', 0, TOP_MARGIN - pageY, imgW, imgH);
                 // Maschera contenuto oltre il taglio previsto
                 var sliceEnd = (i < pages.length - 1) ? pages[i + 1] : imgH;
                 var visibleH = sliceEnd - pageY;
                 if (visibleH < pageH) {
                     pdf.setFillColor(255, 255, 255);
-                    pdf.rect(0, visibleH, pageW, pageH - visibleH, 'F');
+                    pdf.rect(0, TOP_MARGIN + visibleH, pageW, pageHFull - TOP_MARGIN - visibleH, 'F');
                 }
             });
 
