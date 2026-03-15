@@ -3512,6 +3512,7 @@ function tornaAlTurno() {
 }
 
 function _resetCampiTurno() {
+    GPS.completed = false;
     ['tL','tO','tK','tC','tKStart','tKEnd'].forEach(function(id){
         var e=document.getElementById(id); if(e) e.value='';
     });
@@ -3536,8 +3537,8 @@ function _resetCampiTurno() {
 }
 
 function annullaTurno() {
-    if (GPS.active) {
-        // GPS attivo: mostra conferma prima di annullare
+    if (GPS.active || GPS.completed) {
+        // GPS attivo o completato ma non salvato: mostra conferma prima di annullare
         var it = currentLang !== 'en';
         document.getElementById('modalAnnullaGPSTitle').innerText = it ? 'Annulla sessione GPS' : 'Cancel GPS session';
         document.getElementById('modalAnnullaGPSMsg').innerText = it
@@ -3558,6 +3559,7 @@ function annullaTurnoConfermato() {
     document.getElementById('modalAnnullaGPS').style.display = 'none';
     // Fix1: flag per bloccare il modale lordo in gpsTermina
     GPS.cancelMode = true;
+    GPS.completed = false;
     gpsTermina();
     // Fix2+3: pulizia notifica e reset UI GPS
     _gpsNotifClear();
@@ -4557,6 +4559,11 @@ function obSkip() {
 function obFinish() {
     localStorage.setItem('onboarding_done', '1');
     document.getElementById('onboardingOverlay').style.display = 'none';
+    try {
+        var audio = new Audio('https://ridertrackerpro.github.io/dev/intro.mp3');
+        audio.volume = 1.0;
+        audio.play().catch(function(){});
+    } catch(e) {}
 }
 
 
@@ -4637,19 +4644,45 @@ function mostraMeteo(obj) {
 
 window.onload = function() {
 
-    // Fix7+8: costruisce meter segments e lancia animazione + suono intro
+    // Fix7+8: costruisce meter segments e lancia animazione sweep + suono intro
     _meterBuild();
     setTimeout(function() {
         var percEl = document.getElementById('perc');
         var targetP = percEl ? parseInt(percEl.innerText) || 0 : 0;
-        try {
-            var audio = new Audio('https://ridertrackerpro.github.io/dev/intro.mp3');
-            audio.volume = 1.0;
-            audio.play().catch(function(){});
-        } catch(e) {}
-        if (targetP > 0) {
-            _meterAnimate(targetP);
-        }
+
+        // Animazione sweep: 0→100→0 in ~1s, poi vai al valore reale
+        var container = document.getElementById('meterSegments');
+        var nSeg = container ? container.children.length : 40;
+        var segs = container ? container.children : [];
+        var sweepUp = 0;
+        var sweepInterval = setInterval(function() {
+            sweepUp++;
+            for (var i = 0; i < nSeg; i++) segs[i].classList.toggle('active', i < sweepUp);
+            if (sweepUp >= nSeg) {
+                clearInterval(sweepInterval);
+                // Sweep down
+                var sweepDown = nSeg;
+                var downInterval = setInterval(function() {
+                    sweepDown--;
+                    for (var i = 0; i < nSeg; i++) segs[i].classList.toggle('active', i < sweepDown);
+                    if (sweepDown <= 0) {
+                        clearInterval(downInterval);
+                        // Settle al valore reale
+                        if (targetP > 0) _meterAnimate(targetP);
+                        // Suono: solo se onboarding NON è visibile
+                        var ob = document.getElementById('onboardingOverlay');
+                        if (!ob || ob.style.display === 'none') {
+                            try {
+                                var audio = new Audio('https://ridertrackerpro.github.io/dev/intro.mp3');
+                                audio.volume = 1.0;
+                                audio.play().catch(function(){});
+                            } catch(e) {}
+                        }
+                    }
+                }, 12);
+            }
+        }, 12);
+
     }, 300);
 
     // ── Ripristino sessione GPS interrotta da background ──
@@ -5771,6 +5804,7 @@ function gpsTermina(){
     }
     // Modale con istruzioni (Fix1: non mostrare se si sta annullando)
     if (!GPS.cancelMode) {
+        GPS.completed = true;
         mostraAlertApp(currentLang==='en'
             ? '✅ GPS tracking complete!\n\nKM recorded: '+GPS.km.toFixed(2)+'\nStops: '+GPS.soste.length+'\n\nTo save the shift:\n• Fill in GROSS EARNED (required)\n• Fill in fuel consumption (optional)\n\nThen press SAVE SHIFT.'
             : '✅ Rilevamento GPS completato!\n\nKM registrati: '+GPS.km.toFixed(2)+'\nSoste: '+GPS.soste.length+'\n\nPer salvare il turno:\n• Compila LORDO GUADAGNATO (obbligatorio)\n• Compila il consumo carburante (facoltativo)\n\nPoi premi SALVA TURNO.');
