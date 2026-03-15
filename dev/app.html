@@ -4959,12 +4959,38 @@ function stampaPagina() {
             var pageH = pdf.internal.pageSize.getHeight();
             var imgW = pageW;
             var imgH = (canvas.height * imgW) / canvas.width;
+            var scale = imgH / content.scrollHeight;
+
+            // Calcola posizione summary-box nell'immagine in mm
+            var summaryEl = content.querySelector('.summary-box');
+            var summaryStartMm = 0, summaryEndMm = imgH;
+            if (summaryEl) {
+                var contentRect = content.getBoundingClientRect();
+                var summaryRect = summaryEl.getBoundingClientRect();
+                var relTop = summaryRect.top - contentRect.top;
+                var relBottom = summaryRect.bottom - contentRect.top;
+                summaryStartMm = (relTop / content.scrollHeight) * imgH;
+                summaryEndMm = (relBottom / content.scrollHeight) * imgH;
+            }
+
+            // Costruisci lista pagine con salto intelligente prima di summary-box
+            var pages = [];
             var y = 0;
             while (y < imgH) {
-                if (y > 0) pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, -y, imgW, imgH);
-                y += pageH;
+                var nextY = y + pageH;
+                // Se il taglio cadrebbe dentro la summary-box, anticipa il salto
+                if (summaryEl && nextY > summaryStartMm && y < summaryStartMm) {
+                    nextY = summaryStartMm;
+                }
+                pages.push(y);
+                y = nextY;
             }
+
+            pages.forEach(function(pageY, i) {
+                if (i > 0) pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, -pageY, imgW, imgH);
+            });
+
             var pdfBase64 = pdf.output('datauristring').split(',')[1];
             var meseLabel = (document.getElementById('reportMeseLabel') || {}).innerText || 'report';
             var fileName = 'RiderTracker_' + meseLabel.replace(/\s/g,'_') + '.pdf';
