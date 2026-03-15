@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="manifest" href="manifest.json">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
         window.onerror = function(message, source, lineno, colno, error) {
     alert("JS ERROR:\n\n" + message + "\nLine: " + lineno);
@@ -146,7 +148,7 @@ html, body { touch-action: pan-x pan-y; }
         .modal.keyboard-open .modal-content { max-height: 85vh; overflow-y: auto; }
         #archivioBody { overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1; }
         #archivioHeader { display:flex; align-items:center; gap:8px; padding:8px 10px; background:linear-gradient(135deg,#0d2e2b,#111); cursor:pointer; flex-shrink:0; }
-        #reportView { display:none; position:fixed; inset:0; z-index:8000; background:#fff; color:#000; flex-direction:column; text-align:left; }
+        #reportView { display:none; position:fixed; inset:0; z-index:8000; background:#fff; color:#000; flex-direction:column; text-align:left; padding-top: max(15px, env(safe-area-inset-top, 15px)); box-sizing: border-box; }
 #chartOra, #chartKm { min-height: 200px; }
         .report-scroll-area { flex: 1; overflow-y: auto; padding: 10px; -webkit-overflow-scrolling: touch; }
         .report-header-mini { border-bottom:2px solid #000; padding-bottom:10px; margin-bottom:15px; text-align: center; }
@@ -305,13 +307,19 @@ html, body { touch-action: pan-x pan-y; }
     #reportView { position: absolute; left: 0; top: 0; width: 100%; display: block !important; height: auto !important; } 
     .report-scroll-area { overflow: visible !important; height: auto !important; max-height: none !important; } 
     
-    /* OGNI CORNICE NON VIENE MAI SPEZZATA */
+    /* CORNICI: evita spezzatura solo se non supera la pagina intera */
     .report-section { 
-        page-break-inside: avoid !important;
+        page-break-inside: auto;
         border: 2px solid #000 !important;
         padding: 15px !important;
         margin-bottom: 20px !important;
         background: #fff !important;
+        overflow: visible !important;
+    }
+
+    /* Solo l'header e le prime righe di ogni cornice restano unite */
+    .report-section > h3 {
+        page-break-after: avoid;
     }
     
     table { page-break-inside: auto; }
@@ -905,7 +913,7 @@ body {
     <div class="modal-content" style="max-width:280px; padding:16px;">
         <h3 data-translate="select_fuel" style="font-size:13px; margin-bottom:12px; text-align:center;">SELEZIONA CARBURANTE</h3>
         <div id="carbTurnoOptions" style="display:flex; flex-direction:column; gap:8px;"></div>
-        <button class="btn-modal btn-close" onclick="document.getElementById('modalSelectCarburanteTurno').style.display='none'" data-translate="cancel" style="margin-top:10px; padding:10px;">ANNULLA</button>
+        <button class="btn-modal btn-close" onclick="document.getElementById('modalSelectCarburanteTurno').style.display='none'; document.getElementById('modalTurno').style.display='flex';" data-translate="cancel" style="margin-top:10px; padding:10px;">ANNULLA</button>
     </div>
 </div>
 
@@ -989,7 +997,7 @@ body {
         </div>
         <div style="display:flex; gap:8px; margin-top:12px;">
             <button style="flex:1; padding:12px; border-radius:12px; border:none; font-weight:bold; font-size:12px; background:var(--accent); color:#fff; cursor:pointer;" onclick="azzeraPickerOra()" data-translate="btn_reset_time">AZZERA</button>
-            <button style="flex:1; padding:12px; border-radius:12px; border:none; font-weight:bold; font-size:12px; background:#333; color:#fff; cursor:pointer;" onclick="document.getElementById('modalPickerOra').style.display='none'" data-translate="cancel">ANNULLA</button>
+            <button style="flex:1; padding:12px; border-radius:12px; border:none; font-weight:bold; font-size:12px; background:#333; color:#fff; cursor:pointer;" onclick="annullaPickerOra()" data-translate="cancel">ANNULLA</button>
         </div>
         <button style="width:100%; margin-top:8px; padding:12px; border-radius:12px; border:none; font-weight:bold; font-size:12px; background:#252525; color:var(--primary); cursor:pointer;" onclick="tornaAlTurnoSenzaSalvare()" data-translate="btn_back_to_shift">TORNA AL TURNO</button>
     </div>
@@ -1473,7 +1481,7 @@ vehicle_scooter: 'Scooter',
         ph_desc: 'Descrizione (opzionale)',
         ph_hours: 'Ore lavorate',
         ph_km: 'KM percorsi',
-        ph_miles_driven: 'Miglia percorse',
+        ph_miles_driven: 'Miglia (mi)',
         ph_spent: 'Speso',
         ph_gross_earned: 'Lordo guadagnato',
         ph_cons_l: 'Cons (L/100km)',
@@ -1504,7 +1512,7 @@ vehicle_scooter: 'Scooter',
         btn_reset_time: 'AZZERA',
         btn_back_to_shift: 'TORNA AL TURNO',
         ph_lordo_short: 'Lordo €',
-        ph_ore_short: 'Ore lavorate',
+        ph_ore_short: 'Ore lav.',
         ph_km_short: 'KM',
         ph_cons_short: 'Cons',
         detail_shifts: 'DETTAGLIO TURNI',
@@ -1661,7 +1669,7 @@ chart_eur_km: '/KM',
         ph_desc: 'Description (optional)',
         ph_hours: 'Hours',
         ph_spent: 'Spent',
-        ph_cons_l: 'Consumption (L/100km)',
+        ph_cons_l: 'Cons (L/100km)',
         ph_cons_kg: 'kg/100km',
         ph_cons_gge: 'GGE/100mi',
         ph_km_start: 'Start KM',
@@ -1689,7 +1697,7 @@ chart_eur_km: '/KM',
         btn_reset_time: 'CLEAR',
         btn_back_to_shift: 'BACK TO SHIFT',
         ph_lordo_short: 'Gross €',
-        ph_ore_short: 'Hours worked',
+        ph_ore_short: 'Hours',
         ph_km_short: 'KM',
         ph_cons_short: 'Cons',
         ph_gross_earned: 'Gross earned',
@@ -1880,6 +1888,8 @@ if (bPInput) {
         inputKm.placeholder = userSettings.distance === 'miles'
             ? t('ph_miles_driven')
             : t('ph_km');
+        // Also update data-translate-placeholder so t() picks it up on lang change
+        inputKm.setAttribute('data-translate-placeholder', userSettings.distance === 'miles' ? 'ph_miles_driven' : 'ph_km');
     }
 
     const inputCons = document.getElementById('tC');
@@ -2438,16 +2448,17 @@ function _meterAnimate(targetP) {
     if (!container) return;
     var nSeg = container.children.length;
     var targetSegs = Math.round(targetP / 100 * nSeg);
+    if (targetSegs <= 0) return;
     var current = 0;
-    var step = Math.max(1, Math.round(targetSegs / 30));
+    var intervalMs = Math.round(1000 / targetSegs);
     var interval = setInterval(function() {
         if (current >= targetSegs) { clearInterval(interval); return; }
-        current = Math.min(current + step, targetSegs);
+        current++;
         var segs = container.children;
         for (var i = 0; i < nSeg; i++) {
             segs[i].classList.toggle('active', i < current);
         }
-    }, 40);
+    }, intervalMs);
 }
 
 function isDataFutura(d, m, y) {
@@ -3122,7 +3133,10 @@ const elRepKmTot = document.getElementById('repKmTot');
 if (elRepKmTot) elRepKmTot.innerText = fromKm(tK).toFixed(0) + ' ' + distUnit;
 
 const elRepCostoKm = document.getElementById('repCostoKm');
-if (elRepCostoKm) elRepCostoKm.innerText = currencySymbol() + (tK > 0 ? fromEuro(spesaBTotReale / tK).toFixed(3) : '0.000');
+if (elRepCostoKm) {
+    const tKDisplay = fromKm(tK);
+    elRepCostoKm.innerText = currencySymbol() + (tKDisplay > 0 ? fromEuro(spesaBTotReale / tK).toFixed(3) : '0.000');
+}
 
 const elRepTaxPerc = document.getElementById('repTaxPerc');
 if (elRepTaxPerc) elRepTaxPerc.innerText = db.tax || 0;
@@ -3361,11 +3375,9 @@ function formattaPrezzo(input) {
 }
 
 function getUnitaCarburante(tipo) {
-    if (tipo === 'metano') return 'kg';
-
+    if (tipo === 'metano') return getMetanoUnit();
     if (userSettings.volume === 'gallons_us') return 'gal';
     if (userSettings.volume === 'gallons_uk') return 'gal(UK)';
-
     return 'L';
 }
 
@@ -3441,6 +3453,7 @@ function calcolaOreDaOrari() {
 var _pickerOraTarget = 'start';
 var _pickerOraH = -1;
 var _pickerOraM = -1;
+var _pickerOraValPrecedente = '';
 
 var _turnoTimerStart = null; // timestamp ms inizio turno manuale
 
@@ -3557,14 +3570,19 @@ function annullaTurno() {
 
 function annullaTurnoConfermato() {
     document.getElementById('modalAnnullaGPS').style.display = 'none';
-    // Fix1: flag per bloccare il modale lordo in gpsTermina
-    GPS.cancelMode = true;
+    // Chiudi anche l'alert lordo se è ancora aperto
+    document.getElementById('modalAlertApp').style.display = 'none';
+    if (GPS.active) {
+        // GPS ancora in corso: fermalo
+        GPS.cancelMode = true;
+        gpsTermina();
+    }
     GPS.completed = false;
-    gpsTermina();
-    // Fix2+3: pulizia notifica e reset UI GPS
+    GPS.cancelMode = false;
+    // Pulizia notifica e reset UI GPS
     _gpsNotifClear();
     gpsResetUI();
-    // Reset campi, rimane in schermata turno
+    // Reset campi
     editingId = null; editingCat = null;
     _resetCampiTurno();
     // Riapri il modale turno pulito
@@ -3600,6 +3618,22 @@ function azzeraPickerOra() {
     _renderPickerOra();
 }
 
+function annullaPickerOra() {
+    if (_pickerOraTarget === 'start') {
+        document.getElementById('tOStart').value = '';
+        document.getElementById('labelOraStart').innerText = currentLang === 'en' ? 'Start time' : 'Ora inizio';
+        localStorage.removeItem('ora_inizio_tmp');
+    } else {
+        document.getElementById('tOEnd').value = '';
+        document.getElementById('labelOraEnd').innerText = currentLang === 'en' ? 'End time' : 'Ora fine';
+    }
+    document.getElementById('tO').value = '';
+    _pickerOraH = -1;
+    _pickerOraM = -1;
+    document.getElementById('modalPickerOra').style.display = 'none';
+    document.getElementById('modalTurno').style.display = 'flex';
+}
+
 function tornaAlTurnoSenzaSalvare() {
     document.getElementById('modalPickerOra').style.display = 'none';
     document.getElementById('modalTurno').style.display = 'flex';
@@ -3610,6 +3644,7 @@ function apriPickerOra(target) {
     var val = target === 'start'
         ? document.getElementById('tOStart').value
         : document.getElementById('tOEnd').value;
+    _pickerOraValPrecedente = val || '';
     _pickerOraH = val ? parseInt(val.split(':')[0]) : -1;
     _pickerOraM = val ? parseInt(val.split(':')[1]) : -1;
     var title = document.getElementById('modalPickerOraTitle');
@@ -3668,11 +3703,6 @@ function _applicaPickerOra() {
         document.getElementById('labelOraEnd').innerText = val;
     }
     calcolaOreDaOrari();
-    // Auto-chiude il picker e torna al turno dopo 150ms (feedback visivo selezione)
-    setTimeout(function() {
-        document.getElementById('modalPickerOra').style.display = 'none';
-        document.getElementById('modalTurno').style.display = 'flex';
-    }, 150);
 }
 function salvaKmPartenzaTmp() {
     var v = document.getElementById('tKStart').value;
@@ -3751,6 +3781,7 @@ function selezionaCarburanteTurno(tipo, testo) {
     })();
     localStorage.setItem('ultimo_carburante_turno_' + currentLang, tipo);
     document.getElementById('modalSelectCarburanteTurno').style.display = 'none';
+    document.getElementById('modalTurno').style.display = 'flex';
 }
 
 function mostraModalPrezzoIniziale(tipoCarburante) {
@@ -4174,6 +4205,16 @@ function chiudiModali() {
     var mc = document.getElementById('mainContainer');
     if (mc) mc.scrollTop = 0;
     editingId = null; editingCat = null;
+    if (window._playIntroOnHome) {
+        window._playIntroOnHome = false;
+        setTimeout(function() {
+            try {
+                var audio = new Audio('https://ridertrackerpro.github.io/dev/intro.mp3');
+                audio.volume = 1.0;
+                audio.play().catch(function(){});
+            } catch(e) {}
+        }, 300);
+    }
 }
 
 function resetModaleElimina() {
@@ -4197,9 +4238,32 @@ function modificaVoce(categoria, id) {
         document.getElementById('tO').value = item.ore;
         document.getElementById('tK').value = fromKm(item.km).toFixed(1);
         document.getElementById('tC').value = consL100kmToDisplayValue(item.cons);
+        // Ripristina orari
+        if (item.oraStart) {
+            document.getElementById('tOStart').value = item.oraStart;
+            document.getElementById('labelOraStart').innerText = item.oraStart;
+        }
+        if (item.oraEnd) {
+            document.getElementById('tOEnd').value = item.oraEnd;
+            document.getElementById('labelOraEnd').innerText = item.oraEnd;
+        }
         if (item.mezzo) {
             document.getElementById('tMezzo').value = item.mezzo;
             document.getElementById('labelMezzo').innerText = _getMezzoLabel(item.mezzo);
+            // Apply noCons display state based on saved mezzo
+            var _editNoCons = item.mezzo === 'bici' || item.mezzo === 'escooter';
+            var _tCEl = document.getElementById('tC');
+            var _tKEl = document.getElementById('tK');
+            var _rowKmConsEl = document.getElementById('rowKmCons');
+            if (_editNoCons) {
+                if (_tCEl) { _tCEl.style.display = 'none'; _tCEl.value = ''; }
+                if (_tKEl) _tKEl.style.width = '100%';
+                if (_rowKmConsEl) _rowKmConsEl.style.display = 'none';
+            } else {
+                if (_tCEl) { _tCEl.style.display = ''; }
+                if (_tKEl) _tKEl.style.width = '';
+                if (_rowKmConsEl) _rowKmConsEl.style.display = 'flex';
+            }
         }
         if (item.tipoCarburante) {
             document.getElementById('tCarburante').value = item.tipoCarburante;
@@ -4559,11 +4623,7 @@ function obSkip() {
 function obFinish() {
     localStorage.setItem('onboarding_done', '1');
     document.getElementById('onboardingOverlay').style.display = 'none';
-    try {
-        var audio = new Audio('https://ridertrackerpro.github.io/dev/intro.mp3');
-        audio.volume = 1.0;
-        audio.play().catch(function(){});
-    } catch(e) {}
+    window._playIntroOnHome = true;
 }
 
 
@@ -4859,16 +4919,77 @@ window.onload = function() {
 function stampaDirettaDaAlert() {
     chiudiModali();
     apriReport(window._alertMesePrecedente || null);
-    window.print();
+    setTimeout(function() { stampaPagina(); }, 300);
 }
 
 function stampaPagina() {
-    const rv = document.getElementById('reportView');
-    if (!rv.style.display || rv.style.display === 'none') {
+    var rv = document.getElementById('reportView');
+    if (!rv || rv.style.display === 'none') {
         apriReport(reportMeseKey || null);
     }
     rv.style.display = 'flex';
-    window.print();
+
+    // Fallback browser
+    if (!window.Capacitor || !window.Capacitor.isNativePlatform()) {
+        window.print();
+        return;
+    }
+
+    // Capacitor Android: genera PDF con html2canvas + jsPDF
+    var it = (typeof currentLang === 'undefined' || currentLang !== 'en');
+    var btnFooter = document.querySelector('.report-fixed-footer');
+    if (btnFooter) btnFooter.style.display = 'none';
+
+    var content = document.querySelector('#reportView .report-scroll-area');
+    html2canvas(content, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        scrollY: 0,
+        windowWidth: content.scrollWidth,
+        height: content.scrollHeight
+    }).then(function(canvas) {
+        if (btnFooter) btnFooter.style.display = '';
+        var imgData = canvas.toDataURL('image/png');
+        var pdf = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        var pageW = pdf.internal.pageSize.getWidth();
+        var pageH = pdf.internal.pageSize.getHeight();
+        var imgW = pageW;
+        var imgH = (canvas.height * imgW) / canvas.width;
+        var y = 0;
+        while (y < imgH) {
+            if (y > 0) pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, -y, imgW, imgH);
+            y += pageH;
+        }
+        var pdfBase64 = pdf.output('datauristring').split(',')[1];
+        var meseLabel = (document.getElementById('reportMeseLabel') || {}).innerText || 'report';
+        var fileName = 'RiderTracker_' + meseLabel.replace(/\s/g,'_') + '.pdf';
+        try {
+            window.Capacitor.Plugins.Filesystem.writeFile({
+                path: fileName,
+                data: pdfBase64,
+                directory: 'CACHE',
+                encoding: 'base64'
+            }).then(function(result) {
+                window.Capacitor.Plugins.Share.share({
+                    title: it ? 'Riepilogo Rider Tracker' : 'Rider Tracker Report',
+                    text:  it ? 'Riepilogo mensile' : 'Monthly report',
+                    url:   result.uri,
+                    dialogTitle: it ? 'Condividi / Stampa PDF' : 'Share / Print PDF'
+                }).catch(function(e) {
+                    mostraAlertApp(it ? 'Condivisione non disponibile.' : 'Share not available.');
+                });
+            }).catch(function(e) {
+                mostraAlertApp(it ? 'Errore salvataggio PDF: ' + e.message : 'PDF save error: ' + e.message);
+            });
+        } catch(e) {
+            mostraAlertApp(it ? 'Plugin non disponibile.' : 'Plugin not available.');
+        }
+    }).catch(function(e) {
+        if (btnFooter) btnFooter.style.display = '';
+        mostraAlertApp(it ? 'Errore generazione PDF.' : 'PDF generation error.');
+    });
 }
 </script>
 <div id="modalRating" class="modal no-print">
@@ -5087,6 +5208,10 @@ document.getElementById('modalSettings').addEventListener('click', function(e) {
         chiudiModalSettings();
     }
 });
+
+// Impedisce che il click sui bottoni si propaghi al backdrop
+var _msContent = document.querySelector('#modalSettings .modal-content');
+if (_msContent) _msContent.addEventListener('click', function(e) { e.stopPropagation(); });
 
 function apriLanguageSettings() {
     apriLanguageEN();
@@ -5462,7 +5587,7 @@ var GPS = {
     tStart:null, inSosta:false, sostaT:null,
     tempoTimer:null, checkpointTimer:null, swPingTimer:null,
     STOP_KMH:1, STOP_MIN_S:60,
-    cancelMode:false
+    cancelMode:false, completed:false
 };
 
 /* ── WAKE LOCK: impedisce allo schermo di spegnersi durante GPS ── */
@@ -5485,7 +5610,28 @@ document.addEventListener('visibilitychange', function() {
 
 /* ── NOTIFICA PERSISTENTE: mantiene il browser "sveglio" su Android ── */
 var _gpsNotifId = null;
+var _GPS_NOTIF_CAP_ID = 1001; // ID fisso per LocalNotifications Capacitor
+
 function _gpsNotifShow() {
+    // Capacitor Android nativo: usa LocalNotifications
+    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+        try {
+            var it = (typeof currentLang === 'undefined' || currentLang !== 'en');
+            window.Capacitor.Plugins.LocalNotifications.schedule({
+                notifications: [{
+                    id: _GPS_NOTIF_CAP_ID,
+                    title: it ? '🛰️ Rider Tracker — GPS attivo' : '🛰️ Rider Tracker — GPS active',
+                    body:  it ? 'Registrazione turno in corso.' : 'Shift recording in progress.',
+                    ongoing: true,
+                    autoCancel: false,
+                    sound: null,
+                    smallIcon: 'ic_stat_notify'
+                }]
+            });
+        } catch(e) {}
+        return;
+    }
+    // Web/PWA: usa Web Notification API
     if (!('Notification' in window)) return;
     if (Notification.permission === 'granted') {
         _gpsNotifDo();
@@ -5496,9 +5642,10 @@ function _gpsNotifShow() {
     }
 }
 function _gpsNotifDo() {
+    var it = (typeof currentLang === 'undefined' || currentLang !== 'en');
     try {
-        var n = new Notification('🛰️ Rider Tracker — GPS attivo', {
-            body: 'Registrazione turno in corso. Tieni l\'app aperta.',
+        var n = new Notification(it ? '🛰️ Rider Tracker — GPS attivo' : '🛰️ Rider Tracker — GPS active', {
+            body: it ? 'Registrazione turno in corso. Tieni l\'app aperta.' : 'Shift recording in progress. Keep the app open.',
             icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><text y="26" font-size="28">🛰️</text></svg>',
             tag: 'gps-active',
             requireInteraction: true,
@@ -5508,6 +5655,15 @@ function _gpsNotifDo() {
     } catch(e) {}
 }
 function _gpsNotifClear() {
+    // Capacitor Android nativo: cancella con LocalNotifications
+    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+        try {
+            window.Capacitor.Plugins.LocalNotifications.cancel({
+                notifications: [{ id: _GPS_NOTIF_CAP_ID }]
+            });
+        } catch(e) {}
+    }
+    // Web/PWA: chiudi la Web Notification
     if (_gpsNotifId) { try { _gpsNotifId.close(); } catch(e){} _gpsNotifId = null; }
 }
 
@@ -5613,6 +5769,7 @@ function gpsAvvia(){
     if(!navigator.geolocation){mostraAlertApp('GPS non disponibile su questo dispositivo.');return;}
     GPS.active=true; GPS.pts=[]; GPS.soste=[]; GPS.km=0; GPS.vmax=0;
     GPS.tStart=Date.now(); GPS.inSosta=false; GPS.sostaT=null;
+    GPS.completed=false; GPS.cancelMode=false;
     _kalmanReset();
 
     // Persisti stato GPS su localStorage (sopravvive al background)
@@ -6291,11 +6448,24 @@ function _carbLabelShort(carb, it) {
 }
 
 function _aggiornaSelectorCarburante(carbs) {
+    var it = (typeof currentLang === 'undefined' || currentLang !== 'en');
     var container = document.getElementById('carbTurnoOptions');
     var pillContainer = document.getElementById('carbPillContainer');
     var selectWrap = document.getElementById('turnoCarburante_select');
-    var carbNames = { benzina:'⛽ Benzina', gpl:'🔵 GPL', metano:'💨 Metano', diesel:'🛢️ Gasolio', miscela:'🔀 Miscela' };
-    var carbShort  = { benzina:'⛽ Benz', gpl:'🔵 GPL', metano:'💨 Met', diesel:'🛢️ Die', miscela:'🔀 Mix' };
+    var carbNames = {
+        benzina: it ? '⛽ Benzina' : '⛽ Gasoline',
+        gpl:     it ? '🔵 GPL'     : '🔵 LPG',
+        metano:  it ? '💨 Metano'  : '💨 CNG',
+        diesel:  it ? '🛢️ Gasolio' : '🛢️ Diesel',
+        miscela: it ? '🔀 Miscela' : '🔀 Mix'
+    };
+    var carbShort = {
+        benzina: it ? '⛽ Benz' : '⛽ Gas',
+        gpl:     '🔵 GPL',
+        metano:  it ? '💨 Met'  : '💨 CNG',
+        diesel:  it ? '🛢️ Die'  : '🛢️ Die',
+        miscela: '🔀 Mix'
+    };
     if (container) {
         container.innerHTML = carbs.map(function(carb) {
             var lbl = carbNames[carb] || carb;
