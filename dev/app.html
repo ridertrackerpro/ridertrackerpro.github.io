@@ -5056,15 +5056,16 @@ function stampaPagina() {
                     for (var si = 0; si < sectionsMm.length; si++) {
                         var sec = sectionsMm[si];
                         if (sec.isSummary) continue;
-                        if (sec.heightMm <= pageH && nextY > sec.topMm && nextY < sec.bottomMm) {
-    var overflow = sec.bottomMm - nextY;
-
-    if (overflow > 5 || (nextY - y) < (pageH - 5)) {
-        nextY = sec.topMm;
-    }
-
-    break;
-}
+                        if (sec.heightMm <= pageH) {
+                    // Se la sezione inizia nella pagina corrente
+                    if (sec.topMm >= y && sec.topMm < nextY) {
+                        // E il suo bordo inferiore supera il limite di sicurezza (15mm prima del taglio)
+                        if (sec.bottomMm > (nextY - 15)) {
+                            nextY = sec.topMm;
+                            break;
+                        }
+                    }
+                }
                     }
                 }
                 if (nextY <= y) nextY = y + pageH;
