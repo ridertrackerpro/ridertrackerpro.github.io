@@ -5039,7 +5039,6 @@ function stampaPagina() {
             }
 
             // ── 5. PAGINAZIONE INTELLIGENTE ──
-            var TOLERANCE_MM = 15;
             // Trova il summary-box per forzare pagina dedicata
             var summaryMm = null;
             for (var si = 0; si < sectionsMm.length; si++) {
@@ -5056,12 +5055,9 @@ function stampaPagina() {
                 } else {
                     for (var si = 0; si < sectionsMm.length; si++) {
                         var sec = sectionsMm[si];
-                        if (sec.isSummary) continue; // summary gestito sopra
+                        if (sec.isSummary) continue;
                         if (sec.heightMm <= pageH && nextY > sec.topMm && nextY < sec.bottomMm) {
-                            var overflow = sec.bottomMm - nextY;
-                            if (overflow > TOLERANCE_MM) {
-                                nextY = sec.topMm;
-                            }
+                            nextY = sec.topMm;
                             break;
                         }
                     }
