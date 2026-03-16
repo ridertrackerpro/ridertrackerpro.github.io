@@ -4412,10 +4412,13 @@ function salvaBackup() {
     const fileName = `ridertracker_backup_${new Date().toISOString().slice(0, 10)}_(${backupCount}).json`;
 
     // Capacitor Android: mostra scelta salva/condividi
-    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-        window._backupData = { jsonStr: jsonStr, fileName: fileName };
-        document.getElementById('modalBackupChoice').style.display = 'flex';
-    } else {
+    try {
+        var el = document.getElementById('modalBackupChoice');
+        if (!el) { alert('DEBUG: modalBackupChoice non trovato nel DOM'); return; }
+        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+            window._backupData = { jsonStr: jsonStr, fileName: fileName };
+            el.style.display = 'flex';
+        } else {
         // Browser fallback
         const blob = new Blob([jsonStr], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -4425,6 +4428,7 @@ function salvaBackup() {
         a.click();
         URL.revokeObjectURL(url);
     }
+    } catch(e) { alert('DEBUG salvaBackup: ' + e.message); }
 }
 function _backupSalvaLocale() {
     document.getElementById('modalBackupChoice').style.display = 'none';
