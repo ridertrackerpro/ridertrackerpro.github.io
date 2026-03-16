@@ -163,6 +163,7 @@ html, body { touch-action: pan-x pan-y; }
 .report-table td, .report-table th { 
     padding: 3px 2px;
     white-space: normal;
+    word-break: break-word;
     border: 1px solid #000;
     text-align: center;
 }
@@ -1213,7 +1214,7 @@ body {
 <th data-translate="col_shifts">TURNI</th>
 <th id="thDistanza">KM</th>
 <th data-translate="col_avg">MEDIA</th>
-<th data-translate="fuel_cost">BENZINA</th>
+<th data-translate="fuel_cost_short">CARB.</th>
 <th data-translate="col_net">NETTO</th>
 <th id="thEuroOra">€/H</th>
 </tr>
@@ -1386,6 +1387,7 @@ ph_description_optional: "Descrizione (opzionale)",
         consumption: 'Q.TÀ CONSUMO',
         avg_consumption: 'MEDIA CONSUMI',
         fuel_cost: 'SPESA CARBURANTE:',
+        fuel_cost_short: 'CARB.',
         net_target: 'OBIETTIVO NETTO',
         ph_inserisci: 'INSERISCI',
         taxation: 'TASSAZIONE',
@@ -1575,6 +1577,7 @@ ph_description_optional: "Description (optional)",
         consumption: 'FUEL QTY',
         avg_consumption: 'AVG CONSUMPTION',
         fuel_cost: 'FUEL COST:',
+        fuel_cost_short: 'FUEL',
         net_target: 'NET TARGET',
         ph_inserisci: 'ENTER',
         taxation: 'TAXATION',
