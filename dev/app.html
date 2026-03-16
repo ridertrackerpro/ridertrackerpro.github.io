@@ -5029,6 +5029,15 @@ function stampaPagina() {
             });
         }
 
+        // Misura tutte le righe tr per evitare tagli a metà riga
+        var allRows = printBox.querySelectorAll('tr');
+        var boxRect2 = printBox.getBoundingClientRect();
+        var rowsPx = [];
+        for (var ri = 0; ri < allRows.length; ri++) {
+            var rRect = allRows[ri].getBoundingClientRect();
+            rowsPx.push({ topPx: rRect.top - boxRect2.top });
+        }
+
         // ── 3. RENDER html2canvas sul clone largo ──
         var cloneScrollH = printBox.scrollHeight;
         html2canvas(printBox, {
@@ -5063,6 +5072,12 @@ function stampaPagina() {
                 sectionsMm.push({ topMm: topMm, bottomMm: topMm + hMm, heightMm: hMm, isSummary: sectionsPx[si].isSummary });
             }
 
+            // Converti posizioni righe tr in mm PDF
+            var rowsMm = [];
+            for (var ri = 0; ri < rowsPx.length; ri++) {
+                rowsMm.push((rowsPx[ri].topPx / totalPx) * imgH);
+            }
+
             // ── 5. PAGINAZIONE INTELLIGENTE ──
             // Trova il summary-box per forzare pagina dedicata
             var summaryMm = null;
@@ -5078,19 +5093,31 @@ function stampaPagina() {
                 if (summaryMm && y < summaryMm.topMm && nextY > summaryMm.topMm) {
                     nextY = summaryMm.topMm;
                 } else {
+                    var adjusted = false;
                     for (var si = 0; si < sectionsMm.length; si++) {
                         var sec = sectionsMm[si];
                         if (sec.isSummary) continue;
                         if (sec.heightMm <= pageH) {
-                    // Se la sezione inizia nella pagina corrente
-                    if (sec.topMm >= y && sec.topMm < nextY) {
-                        // E il suo bordo inferiore supera il limite di sicurezza (15mm prima del taglio)
-                        if (sec.bottomMm > (nextY - 15)) {
-                            nextY = sec.topMm;
-                            break;
+                            if (sec.topMm >= y && sec.topMm < nextY) {
+                                if (sec.bottomMm > (nextY - 15)) {
+                                    nextY = sec.topMm;
+                                    adjusted = true;
+                                    break;
+                                }
+                            }
                         }
                     }
-                }
+                    // Se non spostata (sezione oversize), allinea al bordo superiore della riga più vicina
+                    if (!adjusted) {
+                        var bestRow = nextY;
+                        for (var ri = 0; ri < rowsMm.length; ri++) {
+                            if (rowsMm[ri] > y && rowsMm[ri] <= nextY) {
+                                bestRow = rowsMm[ri];
+                            }
+                        }
+                        if (bestRow > y && bestRow < nextY) {
+                            nextY = bestRow;
+                        }
                     }
                 }
                 if (nextY <= y) nextY = y + pageH;
