@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="manifest" href="manifest.json">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
         window.onerror = function(message, source, lineno, colno, error) {
     alert("JS ERROR:\n\n" + message + "\nLine: " + lineno);
@@ -23,19 +25,21 @@
 }
 
 * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action: manipulation; }
-        html { background:var(--bg); }
-        body { font-family:sans-serif; background:var(--bg); color:var(--text); margin:0; padding:0; text-align:center; height: 100dvh; width: 100vw; position: fixed; inset: 0; display: flex; align-items: flex-start; justify-content: center; overflow: hidden; }
+html, body { touch-action: pan-x pan-y; }
+        html { background:var(--bg); overflow:hidden; overscroll-behavior:none; }
+        body { font-family:sans-serif; background:var(--bg); color:var(--text); margin:0; padding:0; text-align:center; height: 100dvh; height: 100vh; width: 100%; display: flex; align-items: flex-start; justify-content: center; overflow: hidden; overscroll-behavior:none; }
         
         button, .foot-btn, .btn-full, .btn-modal, .btn-option, .clickable { cursor: pointer; -webkit-user-select: none; user-select: none; }
         @media all and (display-mode: standalone) {
             body { align-items: center; justify-content: center; margin-top: 0; }
-            #mainContainer { max-height: 100vh; max-width: 480px; width: 100%; }
+            #mainContainer { max-height: 100dvh; max-height: 100vh; max-width: 480px; width: 100%; }
         }
         
         #mainContainer {
     width: 100%;
     max-width: 100%;
     height: 100dvh;
+    height: 100vh;
     margin: 0;
     padding: 15px 4px 12px 4px;
     box-sizing: border-box;
@@ -43,6 +47,7 @@
     flex-direction: column;
     overflow-y: auto;
     overflow-x: hidden;
+    overscroll-behavior: none;
     scrollbar-width: none;
     -ms-overflow-style: none;
         }
@@ -74,8 +79,11 @@
         .card input { width:80%; background:transparent; border:none; border-bottom:1px solid #444; color:#fff; text-align:center; font-size:14px; outline:none; }
         .progress-container { background:var(--card); padding:6px 12px; border-radius:12px; margin-top: 0; margin-bottom:8px; border:1px solid #333; display: flex; flex-direction: column; gap: 4px; }
         .progress-header { display:flex; justify-content:center; font-weight:bold; color:var(--primary); font-size:12px; text-transform: uppercase; letter-spacing: 1px; }
-        .progress-bar { background:#222; height:14px; border-radius:6px; overflow:hidden; border:1px solid #444; }
-        #bar { background:linear-gradient(90deg, var(--primary), #ccff00); height:100%; width:0%; transition:0.3s; }
+        .progress-bar { background:#111; height:14px; border-radius:0; overflow:hidden; border:1px solid #333; display:flex; gap:1px; padding:1px; }
+        #bar { height:100%; width:0%; transition:width 1.2s cubic-bezier(0.22,1,0.36,1); border-radius:0; background:transparent; display:none; }
+        .meter-segments { display:flex; gap:1px; height:100%; width:100%; align-items:stretch; }
+        .meter-seg { flex:1; border-radius:0; transition:opacity 0.1s; opacity:0.15; }
+        .meter-seg.active { opacity:1; }
         .dash-info { display: flex; justify-content: space-between; align-items: center; padding: 0 5px; margin-top: 5px; }
         #liveClock { font-weight:bold; color:var(--dim); font-size:11px; text-transform: uppercase; }
         #mediaOraria { font-weight:bold; color:var(--primary); font-size:12px; }
@@ -132,10 +140,17 @@
         .modal h3 { margin-top: 0; font-size: 18px; color: var(--primary); text-transform: uppercase; }
         .modal input { width:100%; padding:12px; background:var(--input-bg); border:1px solid #444; color:#fff; border-radius:12px; margin-bottom:10px; outline:none; font-size: 16px; }
         #histView { display:none; position:fixed; inset:0; z-index:9000; background:var(--bg); flex-direction: column; padding: 15px; }
-        #listaStorico { flex-grow: 1; overflow-y: auto; margin-bottom: 15px; border-top: 1px solid #333; border-bottom: 1px solid #333; -webkit-overflow-scrolling: touch; }
-        #reportView { display:none; position:fixed; inset:0; z-index:8000; background:#fff; color:#000; flex-direction:column; text-align:left; }
+        #listaStorico { flex-grow: 1; overflow-y: auto; border-top: 1px solid #333; border-bottom: 1px solid #333; -webkit-overflow-scrolling: touch; }
+        #archivioStorico { flex-shrink: 0; max-height: 45vh; display: flex; flex-direction: column; border-top: 1px solid #333; margin-top: 6px; }
+        #archivioStorico.collapsed #archivioBody { display: none; }
+        /* Fix tastiera virtuale gestito via JS */
+        .modal.keyboard-open { align-items: flex-start; padding-top: 8px; }
+        .modal.keyboard-open .modal-content { max-height: 85vh; overflow-y: auto; }
+        #archivioBody { overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1; }
+        #archivioHeader { display:flex; align-items:center; gap:8px; padding:8px 10px; background:linear-gradient(135deg,#0d2e2b,#111); cursor:pointer; flex-shrink:0; }
+        #reportView { display:none; position:fixed; inset:0; z-index:8000; background:#fff; color:#000; flex-direction:column; text-align:left; padding-top: max(15px, env(safe-area-inset-top, 15px)); box-sizing: border-box; }
 #chartOra, #chartKm { min-height: 200px; }
-        .report-scroll-area { flex: 1; overflow-y: auto; padding: 10px; -webkit-overflow-scrolling: touch; }
+        .report-scroll-area { flex: 1; overflow-y: auto; padding: 4px; -webkit-overflow-scrolling: touch; }
         .report-header-mini { border-bottom:2px solid #000; padding-bottom:10px; margin-bottom:15px; text-align: center; }
         .report-header-mini h2 { font-size:16px; margin:0; text-transform:uppercase; color: #000; letter-spacing: 1px; }
   .report-table { 
@@ -147,7 +162,8 @@
 }
 .report-table td, .report-table th { 
     padding: 3px 2px;
-    white-space: nowrap;
+    white-space: normal;
+    word-break: break-word;
     border: 1px solid #000;
     text-align: center;
 }
@@ -280,34 +296,44 @@
 .clickable:active { opacity: 0.6; }
 
 @media print { 
+    @page { margin: 10mm 5mm 10mm 5mm; }
     /* Layout pagina */
     html, body { 
         height: auto !important; 
         overflow: visible !important; 
-        position: static !important; 
+        position: static !important;
+        width: 100% !important;
     }
-    body * { visibility: hidden; } 
+    body > *:not(#reportView) { display: none !important; }
     #reportView, #reportView * { visibility: visible; } 
     .no-print { display: none !important; visibility: hidden !important; } 
-    #reportView { position: absolute; left: 0; top: 0; width: 100%; display: block !important; height: auto !important; } 
-    .report-scroll-area { overflow: visible !important; height: auto !important; max-height: none !important; } 
+    #reportView { position: static !important; left: auto; top: auto; width: 100%; display: block !important; height: auto !important; } 
+    .report-scroll-area { overflow: visible !important; height: auto !important; max-height: none !important; position: static !important; } 
     
-    /* OGNI CORNICE NON VIENE MAI SPEZZATA */
+    /* CORNICI: evita spezzatura se la sezione entra in una pagina intera */
     .report-section { 
-        page-break-inside: avoid !important;
+        break-inside: avoid;
+        page-break-inside: avoid;
         border: 2px solid #000 !important;
         padding: 15px !important;
         margin-bottom: 20px !important;
         background: #fff !important;
+        overflow: visible !important;
+    }
+
+    /* Solo l'header e le prime righe di ogni cornice restano unite */
+    .report-section > h3 {
+        break-after: avoid;
+        page-break-after: avoid;
     }
     
-    table { page-break-inside: auto; }
-    tr { page-break-inside: avoid; page-break-after: auto; }
+    table { break-inside: auto; page-break-inside: auto; }
+    tr { break-inside: avoid; page-break-inside: avoid; page-break-after: auto; }
     
     /* RIEPILOGO FINALE IN CORNICE SEPARATA */
     .summary-box { 
+        break-inside: avoid;
         page-break-inside: avoid !important;
-        page-break-before: always !important;
         border: 3px solid #000 !important;
         padding: 20px !important;
         background: #fff !important;
@@ -375,9 +401,11 @@
         border-radius: 0;
         background: var(--bg);
         height: 100dvh;
+        height: 100vh;
         padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
         overflow-y: auto;
         overflow-x: hidden;
+        overscroll-behavior: none;
         box-sizing: border-box;
     }
 }
@@ -533,7 +561,7 @@
 }
 #modalDettaglioTurno.aperto { display:flex; }
 .det-sheet {
-    background:#0f0f0f; width:100%; max-height:96vh;
+    background:#0f0f0f; width:100%; max-height:96dvh; max-height:96vh;
     border-radius:22px 22px 0 0; border-top:1px solid #222;
     display:flex; flex-direction:column; overflow:hidden;
     animation:sheetUp .3s cubic-bezier(.22,1,.36,1);
@@ -578,7 +606,55 @@
 
 /* ── STORICO: bottone dettagli ── */
 .btn-det-turno { padding:7px 9px; cursor:pointer; border:1px solid #00CCBC; border-radius:7px; display:flex; align-items:center; }
-    </style>
+    
+/* ═══════════════════════════════════════════════════
+   CAPACITOR ANDROID FIX - Layout definitivo
+   Status bar: ~28px | Nav bar: ~48px
+═══════════════════════════════════════════════════ */
+
+/* FIX 1: Centra il body (era flex-start) */
+body {
+    align-items: center !important;
+}
+
+/* FIX 2: MainContainer - rispetta status bar in cima */
+#mainContainer {
+    padding-top: max(15px, env(safe-area-inset-top, 15px)) !important;
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 12px)) !important;
+    height: 100dvh !important;
+    height: 100vh !important;
+    overflow-y: hidden !important;
+    box-sizing: border-box !important;
+}
+
+/* FIX 3: Onboarding - bottoni SALTA/AVANTI non coperti dalla nav bar */
+#onboardingOverlay {
+    padding-bottom: max(36px, calc(36px + env(safe-area-inset-bottom, 48px))) !important;
+}
+
+/* FIX 4: Storico - bottone CHIUDI visibile sopra nav bar */
+#histView {
+    padding-bottom: max(15px, calc(15px + env(safe-area-inset-bottom, 48px))) !important;
+    box-sizing: border-box !important;
+}
+
+/* FIX 5: Dettaglio turno - bottoni CHIUDI/CENTRA visibili */
+.det-foot {
+    padding-bottom: max(22px, calc(22px + env(safe-area-inset-bottom, 48px))) !important;
+}
+
+/* FIX 6: Resa view - bottone CHIUDI visibile */
+#resaView > div {
+    padding-bottom: max(10px, calc(10px + env(safe-area-inset-bottom, 48px))) !important;
+    box-sizing: border-box !important;
+}
+
+/* FIX 7: Report view fixed footer */
+.report-fixed-footer {
+    padding-bottom: max(45px, calc(45px + env(safe-area-inset-bottom, 48px))) !important;
+}
+
+</style>
 </head>
 <body>
     <div id="mainContainer">
@@ -588,9 +664,10 @@
               align-items: center;
               justify-content: center;
               width: 100%;
-              margin: 15px 0 10px 0;
+              margin: 8px 0 8px 0;
               line-height: 1.03;">
 
+    <!-- Riga titolo centrato -->
     <div onclick="document.getElementById('modalFineMese').style.display = 'flex';"
          style="display: flex;
                 align-items: center;
@@ -604,10 +681,14 @@
         <span style="color: var(--bg); background: var(--primary); padding: 2px 6px; border-radius: 5px; margin-left: 7px; font-size: 20px; font-weight: 900;">PRO</span>
     </div>
 
+    <!-- Wrapper sottotitolo + bottoni: stessa larghezza -->
+    <div style="display:flex; flex-direction:column; align-items:stretch; width:fit-content; margin-top:8px;">
+
+    <!-- Riga version/copyright -->
     <div style="display: flex;
                 align-items: center;
                 gap: 8px;
-                margin-top: 6px;
+                margin-bottom: 6px;
                 font-weight: bold;
                 text-transform: uppercase;
                 font-size: 9px;
@@ -624,26 +705,20 @@
         </span>
     </div>
 
-    <div style="display: flex;
-                align-items: center;
-                gap: 14px;
-                margin-top: 6px;">
-        <span id="btnSettings"
+    <!-- ⚙️ e ℹ️ sotto il sottotitolo -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px;">
+        <button id="btnSettings"
               onclick="apriModalSettings()"
-              style="font-size: 20px; cursor: pointer; transition: 0.2s; opacity: 0.7; line-height:1;"
-              title="Settings">⚙️</span>
-        <span id="flagIT"
-              onclick="apriLanguageIT()"
-              style="font-size: 22px; cursor: pointer; transition: 0.2s; opacity: 1;"
-              title="Italiano">🇮🇹</span>
-        <span id="flagEN"
-              onclick="apriLanguageEN()"
-              style="font-size: 22px; cursor: pointer; transition: 0.2s; opacity: 0.4;"
-              title="English">🇺🇸</span>
-        <span onclick="apriInfo()"
-              style="font-size: 20px; cursor: pointer; transition: 0.2s; opacity: 0.7; line-height:1;"
-              title="Info">ℹ️</span>
+              style="height:36px; font-size:10px; font-weight:700; padding:0 8px; background:#222; border:1px solid #444; color:var(--primary); border-radius:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px;"
+              title="Settings"><i class="fas fa-cog" style="font-size:12px;"></i><span id="lblBtnSettings">IMPOSTAZIONI</span></button>
+        <button onclick="apriInfo()"
+              style="height:36px; font-size:10px; font-weight:700; padding:0 8px; background:#222; border:1px solid #444; color:var(--primary); border-radius:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px;"
+              title="Info"><i class="fas fa-info-circle" style="font-size:12px;"></i> <span id="lblBtnInfo">INFO</span></button>
     </div>
+
+    </div>
+
+    <!-- Bandiere gestite nel modale Impostazioni -->
 
   </div>
       <div class="grid">
@@ -685,7 +760,7 @@
 <div class="progress-container">
 
     <div class="progress-header" id="perc">0%</div>
-    <div class="progress-bar"><div id="bar"></div></div>
+    <div class="progress-bar"><div id="bar"></div><div class="meter-segments" id="meterSegments"></div></div>
     <div class="dash-info">
         <div id="liveClock">00/00/00 00:00:00</div>
         <div id="mediaOraria">0.00</div>
@@ -747,34 +822,32 @@
         <!-- ── KM INIZIO / KM FINE odometro ── -->
         <div style="display:flex; gap:8px; margin-bottom:6px;" id="rowKmOdo">
             <div style="position:relative; flex:1; min-width:0;">
-                <input type="number" id="tKStart" data-translate-placeholder="ph_km_start" style="text-align:center; padding:11px 36px 11px 14px;" inputmode="decimal" autocomplete="off" oninput="salvaKmPartenzaTmp(); calcolaKmDaOdometro();">
+                <input type="number" id="tKStart" data-translate-placeholder="ph_km_start" style="text-align:center; padding:11px 36px 11px 14px; margin-bottom:0;" inputmode="decimal" autocomplete="off" oninput="salvaKmPartenzaTmp(); calcolaKmDaOdometro();">
                 <button onclick="azzeraKmStart()" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:transparent; border:none; color:var(--accent); font-size:15px; cursor:pointer; padding:0; line-height:1;">✕</button>
             </div>
             <div style="position:relative; flex:1; min-width:0;">
-                <input type="number" id="tKEnd" data-translate-placeholder="ph_km_end" style="text-align:center; padding:11px 36px 11px 14px;" inputmode="decimal" autocomplete="off" oninput="calcolaKmDaOdometro();" onblur="verificaKmOdometroBlur();">
+                <input type="number" id="tKEnd" data-translate-placeholder="ph_km_end" style="text-align:center; padding:11px 36px 11px 14px; margin-bottom:0;" inputmode="decimal" autocomplete="off" oninput="calcolaKmDaOdometro();" onblur="verificaKmOdometroBlur();">
                 <button onclick="azzeraKmEnd()" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:transparent; border:none; color:var(--accent); font-size:15px; cursor:pointer; padding:0; line-height:1;">✕</button>
             </div>
         </div>
 
         <!-- ── KM TOTALI + CONSUMI (nascosti per noCons) ── -->
-        <div style="display:flex; gap:8px; margin-bottom:0;" id="rowKmCons">
-            <input type="number" id="tK" style="text-align:center; padding:11px 14px; flex:1; min-width:0;" data-translate-placeholder="ph_km_short" inputmode="decimal" autocomplete="off">
-            <input type="number" id="tC" style="text-align:center; padding:11px 14px; flex:1; min-width:0;" data-translate-placeholder="ph_cons_short" step="0.1" inputmode="decimal" autocomplete="off">
+        <div style="display:flex; gap:8px; margin-bottom:6px; margin-top:0;" id="rowKmCons">
+            <input type="number" id="tK" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" data-translate-placeholder="ph_km_short" inputmode="decimal" autocomplete="off">
+            <input type="number" id="tC" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" data-translate-placeholder="ph_cons_short" step="0.1" inputmode="decimal" autocomplete="off">
         </div>
-        <div id="consHint" style="font-size:10px; color:var(--primary); margin:2px 0 4px 2px; min-height:0; font-style:italic; line-height:1.2;"></div>
+        <div id="consHint" style="font-size:10px; color:var(--primary); margin:0 0 6px 2px; min-height:0; font-style:italic; line-height:1.2;"></div>
 
         <!-- ── ORE LAVORATE + LORDO affiancati ── -->
-        <div id="rowOre" style="display:flex; gap:8px; margin-bottom:6px;">
-            <input type="number" id="tO" style="text-align:center; padding:11px 14px; flex:1; min-width:0;" data-translate-placeholder="ph_ore_short" step="0.1" inputmode="decimal" autocomplete="off">
-            <input type="number" id="tL" style="text-align:center; padding:11px 14px; flex:1; min-width:0;" data-translate-placeholder="ph_lordo_short" inputmode="decimal" autocomplete="off">
+        <div id="rowOre" style="display:flex; gap:8px; margin-bottom:6px; margin-top:auto; padding-top:20px;">
+            <input type="number" id="tO" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" data-translate-placeholder="ph_ore_short" step="0.1" inputmode="decimal" autocomplete="off">
+            <input type="number" id="tL" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" data-translate-placeholder="ph_lordo_short" inputmode="decimal" autocomplete="off">
         </div>
 
         <!-- ── CELLA GPS ── -->
-        <div style="border:1px solid #333; border-radius:14px; padding:12px 12px 10px; margin-top:14px; margin-bottom:10px;">
-            <div id="lblGpsSection" style="font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:1.5px; color:#aaa; margin-bottom:10px; display:flex; align-items:center; gap:7px;">
-                <span style="flex:1; height:1px; background:#2a2a2a;"></span>
-                🛰️ Turno GPS
-                <span style="flex:1; height:1px; background:#2a2a2a;"></span>
+        <div style="border:1px solid #333; border-radius:14px; padding:12px 12px 10px; margin-top:0; margin-bottom:10px;">
+            <div id="lblGpsSection" style="font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:1.5px; color:#aaa; margin-bottom:10px; display:flex; align-items:center; justify-content:center; gap:7px; text-align:center;">
+                🛰️ Rilevazione GPS Turno
             </div>
             <div id="gpsLiveBar" class="gps-live-bar">
                 <div class="gps-live-top">
@@ -801,10 +874,8 @@
 
         <!-- ── CELLA MANUALE ── -->
         <div style="border:1px solid #333; border-radius:14px; padding:12px 12px 10px; margin-bottom:6px;">
-            <div id="lblManualSection" style="font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:1.5px; color:#aaa; margin-bottom:10px; display:flex; align-items:center; gap:7px;">
-                <span style="flex:1; height:1px; background:#2a2a2a;"></span>
-                ✏️ Turno Manuale
-                <span style="flex:1; height:1px; background:#2a2a2a;"></span>
+            <div id="lblManualSection" style="font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:1.5px; color:#aaa; margin-bottom:10px; display:flex; align-items:center; justify-content:center; gap:7px; text-align:center;">
+                ✏️ Inserimento Manuale Turno
             </div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
                 <button class="turno-btn turno-btn-start" id="btnIniziaTurno" onclick="iniziaTurno()" data-translate="btn_start_shift">INIZIA TURNO</button>
@@ -847,7 +918,7 @@
     <div class="modal-content" style="max-width:280px; padding:16px;">
         <h3 data-translate="select_fuel" style="font-size:13px; margin-bottom:12px; text-align:center;">SELEZIONA CARBURANTE</h3>
         <div id="carbTurnoOptions" style="display:flex; flex-direction:column; gap:8px;"></div>
-        <button class="btn-modal btn-close" onclick="document.getElementById('modalSelectCarburanteTurno').style.display='none'" data-translate="cancel" style="margin-top:10px; padding:10px;">ANNULLA</button>
+        <button class="btn-modal btn-close" onclick="document.getElementById('modalSelectCarburanteTurno').style.display='none'; document.getElementById('modalTurno').style.display='flex';" data-translate="cancel" style="margin-top:10px; padding:10px;">ANNULLA</button>
     </div>
 </div>
 
@@ -931,7 +1002,7 @@
         </div>
         <div style="display:flex; gap:8px; margin-top:12px;">
             <button style="flex:1; padding:12px; border-radius:12px; border:none; font-weight:bold; font-size:12px; background:var(--accent); color:#fff; cursor:pointer;" onclick="azzeraPickerOra()" data-translate="btn_reset_time">AZZERA</button>
-            <button style="flex:1; padding:12px; border-radius:12px; border:none; font-weight:bold; font-size:12px; background:#333; color:#fff; cursor:pointer;" onclick="document.getElementById('modalPickerOra').style.display='none'" data-translate="cancel">ANNULLA</button>
+            <button style="flex:1; padding:12px; border-radius:12px; border:none; font-weight:bold; font-size:12px; background:#333; color:#fff; cursor:pointer;" onclick="annullaPickerOra()" data-translate="cancel">ANNULLA</button>
         </div>
         <button style="width:100%; margin-top:8px; padding:12px; border-radius:12px; border:none; font-weight:bold; font-size:12px; background:#252525; color:var(--primary); cursor:pointer;" onclick="tornaAlTurnoSenzaSalvare()" data-translate="btn_back_to_shift">TORNA AL TURNO</button>
     </div>
@@ -1016,6 +1087,17 @@
 </div>
 
 
+<div id="modalAnnullaGPS" class="modal no-print" style="z-index:10011;">
+    <div class="modal-content" style="border-color:var(--accent);">
+        <h3 id="modalAnnullaGPSTitle" style="color:var(--accent); font-size:16px;">Annulla sessione GPS</h3>
+        <p id="modalAnnullaGPSMsg" style="font-size:13px; color:var(--text); margin:15px 0; line-height:1.5;">Sei sicuro di voler annullare? La sessione GPS verrà interrotta e i dati non salvati andranno persi.</p>
+        <div class="confirm-buttons">
+            <button class="btn-confirm-cancel" id="modalAnnullaGPSBack" onclick="document.getElementById('modalAnnullaGPS').style.display='none'">CONTINUA</button>
+            <button class="btn-confirm-ok" id="modalAnnullaGPSOk" style="background:var(--accent); color:#fff;" onclick="annullaTurnoConfermato()">SÌ, ANNULLA</button>
+        </div>
+    </div>
+</div>
+
 <div id="modalAlertApp" class="modal no-print" style="z-index:10010;">
     <div class="modal-content" style="border-color: var(--primary);">
         <p id="modalAlertAppMsg" style="font-size:14px; color:var(--text); margin:10px 0 20px; line-height:1.5;"></p>
@@ -1065,11 +1147,19 @@
         <span style="color:var(--primary); font-size:15px; font-weight:900; letter-spacing:2px; text-transform:uppercase;" data-translate="history">STORICO</span>
     </div>
     <div id="listaStorico"></div>
-    <button class="btn-full" onclick="document.getElementById('histView').style.display='none'" style="margin-bottom: 25px; padding: 15px;"><i class="fas fa-times"></i> <span data-translate="close">CHIUDI</span></button>
+    <div id="archivioStorico" class="collapsed">
+        <div id="archivioHeader" onclick="toggleArchivio()">
+            <i class="fas fa-archive" style="color:var(--primary); font-size:12px;"></i>
+            <span style="font-size:11px; color:var(--primary); font-weight:900; letter-spacing:1px; text-transform:uppercase;" data-translate="archive_root">ARCHIVIO</span>
+            <i class="fas fa-chevron-down" id="archivioChevron" style="color:#888; margin-left:auto; transition:transform 0.2s;"></i>
+        </div>
+        <div id="archivioBody"></div>
+    </div>
+    <button class="btn-full" onclick="document.getElementById('histView').style.display='none'" style="margin-top:8px; margin-bottom: 25px; padding: 15px;"><i class="fas fa-times"></i> <span data-translate="close">CHIUDI</span></button>
 </div>
 <div id="reportView">
 <div class="report-scroll-area">
-<div style="padding:15px;">
+<div style="padding:6px;">
 
 <h2 style="text-align:center; font-size:18px; margin-bottom:20px;">
 <span data-translate="report_title">RIEPILOGO MESE DI</span>
@@ -1123,8 +1213,8 @@
 <th data-translate="col_period">PERIODO</th>
 <th data-translate="col_shifts">TURNI</th>
 <th id="thDistanza">KM</th>
-<th data-translate="col_avg">MEDIA</th>
-<th data-translate="fuel_cost">BENZINA</th>
+<th id="thMediaEff" data-translate="col_avg">MEDIA</th>
+<th data-translate="fuel_cost_short">CARB.</th>
 <th data-translate="col_net">NETTO</th>
 <th id="thEuroOra">€/H</th>
 </tr>
@@ -1266,7 +1356,7 @@
     </div>
    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; grid-column:1 / -1; margin-top:2px;">
         <button style="height:44px; font-size:11px; font-weight:900; padding:0; background:var(--primary); color:#000; border:none; border-radius:15px; cursor:pointer;" onclick="apriReport()"><i class="fas fa-file-alt" style="margin-right:5px;"></i><span data-translate="btn_monthly_summary">RIEPILOGO MESE</span></button>
-        <button style="height:44px; font-size:11px; font-weight:900; padding:0; background:var(--accent); color:#fff; border:none; border-radius:15px; cursor:pointer;" onclick="apriResaView()"><i class="fas fa-chart-line" style="margin-right:5px;"></i><span data-translate="btn_yield_chart">RESA €/ORA</span></button>
+        <button style="height:44px; font-size:11px; font-weight:900; padding:0; background:var(--orange); color:#000; border:none; border-radius:15px; cursor:pointer;" onclick="apriResaView()"><i class="fas fa-chart-line" style="margin-right:5px;"></i><span data-translate="btn_yield_chart">RESA €/ORA</span></button>
     </div>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; grid-column:1 / -1; margin-top:2px;">
         <button style="height:36px; font-size:10px; font-weight:700; padding:0; background:#222; border:1px solid #444; color:var(--primary); border-radius:15px; cursor:pointer;" onclick="salvaBackup()"><i class="fas fa-download" style="margin-right:4px;"></i><span data-translate="export_backup">ESPORTA</span></button>
@@ -1284,27 +1374,20 @@
         </div>
     </div>
     <script>
-if (
-  !window.matchMedia('(display-mode: standalone)').matches &&
-  !window.navigator.standalone
-) {
-  window.location.replace('./index.html');
-}
+// standalone redirect rimosso per compatibilità Capacitor
 const translations = {
     it: { 
     extra_distance: "Distanza Extra",
 ph_extra_distance: "Distanza extra",
 ph_avg_consumption: "Consumo medio",
 ph_description_optional: "Descrizione (opzionale)",
-        access_msg: 'Per accedere all\'applicazione è necessario richiedere la password nella pagina Facebook:',
-        access_btn: 'ACCEDI',
-        password_error: 'Password non corretta',
         gross_earned: 'LORDO GUADAGNATO',
         net_earned: 'NETTO GUADAGNATO',
         hours_tot: 'ORE TOT LAVORO:',
         consumption: 'Q.TÀ CONSUMO',
         avg_consumption: 'MEDIA CONSUMI',
         fuel_cost: 'SPESA CARBURANTE:',
+        fuel_cost_short: 'CARB.',
         net_target: 'OBIETTIVO NETTO',
         ph_inserisci: 'INSERISCI',
         taxation: 'TASSAZIONE',
@@ -1404,7 +1487,7 @@ vehicle_scooter: 'Scooter',
         ph_desc: 'Descrizione (opzionale)',
         ph_hours: 'Ore lavorate',
         ph_km: 'KM percorsi',
-        ph_miles_driven: 'Miglia percorse',
+        ph_miles_driven: 'Miglia (mi)',
         ph_spent: 'Speso',
         ph_gross_earned: 'Lordo guadagnato',
         ph_cons_l: 'Cons (L/100km)',
@@ -1435,7 +1518,7 @@ vehicle_scooter: 'Scooter',
         btn_reset_time: 'AZZERA',
         btn_back_to_shift: 'TORNA AL TURNO',
         ph_lordo_short: 'Lordo €',
-        ph_ore_short: 'Ore lavorate',
+        ph_ore_short: 'Ore lav.',
         ph_km_short: 'KM',
         ph_cons_short: 'Cons',
         detail_shifts: 'DETTAGLIO TURNI',
@@ -1478,21 +1561,23 @@ vehicle_scooter: 'Scooter',
         cat_lavaggio: 'Lavaggio veicolo',
         cat_elettronica: 'Elettronica',
         cat_altro: 'Altro (specificare)',
+        cancel_gps_title: 'Annulla sessione GPS',
+        cancel_gps_msg: 'Sei sicuro di voler annullare? La sessione GPS verrà interrotta e i dati non salvati andranno persi.',
+        cancel_gps_ok: 'SÌ, ANNULLA',
+        cancel_gps_back: 'CONTINUA',
     },
     en: { 
     extra_distance: "Extra Distance",
 ph_extra_distance: "Extra distance",
 ph_avg_consumption: "Average consumption",
 ph_description_optional: "Description (optional)",
-        access_msg: 'To access the application you need to request the password on the Facebook page:',
-        access_btn: 'ACCESS',
-        password_error: 'Incorrect password',
-        gross_earned: 'GROSS EARNED',
+                gross_earned: 'GROSS EARNED',
         net_earned: 'NET EARNED',
         hours_tot: 'HOURS WORKED:',
         consumption: 'FUEL QTY',
         avg_consumption: 'AVG CONSUMPTION',
         fuel_cost: 'FUEL COST:',
+        fuel_cost_short: 'FUEL',
         net_target: 'NET TARGET',
         ph_inserisci: 'ENTER',
         taxation: 'TAXATION',
@@ -1591,7 +1676,7 @@ chart_eur_km: '/KM',
         ph_desc: 'Description (optional)',
         ph_hours: 'Hours',
         ph_spent: 'Spent',
-        ph_cons_l: 'Consumption (L/100km)',
+        ph_cons_l: 'Cons (L/100km)',
         ph_cons_kg: 'kg/100km',
         ph_cons_gge: 'GGE/100mi',
         ph_km_start: 'Start KM',
@@ -1619,7 +1704,7 @@ chart_eur_km: '/KM',
         btn_reset_time: 'CLEAR',
         btn_back_to_shift: 'BACK TO SHIFT',
         ph_lordo_short: 'Gross €',
-        ph_ore_short: 'Hours worked',
+        ph_ore_short: 'Hours',
         ph_km_short: 'KM',
         ph_cons_short: 'Cons',
         ph_gross_earned: 'Gross earned',
@@ -1665,7 +1750,11 @@ chart_eur_km: '/KM',
         cat_lavaggio: 'Vehicle wash',
         cat_elettronica: 'Electronics',
         cat_altro: 'Other (specify)',
-        hour_short: 'H'
+        hour_short: 'H',
+        cancel_gps_title: 'Cancel GPS session',
+        cancel_gps_msg: 'Are you sure you want to cancel? The GPS session will be stopped and unsaved data will be lost.',
+        cancel_gps_ok: 'YES, CANCEL',
+        cancel_gps_back: 'CONTINUE',
     }
 };
 let currentLang = localStorage.getItem('app_language') || 'it';
@@ -1710,6 +1799,8 @@ function cambiaLingua(lang) {
     aggiornaLabelKmReport();
     calcola();
     aggiornaMeteo(false);
+    if (typeof aggiornaTestiSettings === 'function') aggiornaTestiSettings();
+    if (typeof aggiornaTestiTurnoModal === 'function') aggiornaTestiTurnoModal();
 }
 
 function aggiornaLabelKmReport() {
@@ -1724,7 +1815,6 @@ function aggiornaLabelKmReport() {
 
 function apriLanguageIT() {
     cambiaLingua('it');
-    document.getElementById('modalSettings').style.display = 'none';
 }
 
 function apriLanguageEN() {
@@ -1805,6 +1895,8 @@ if (bPInput) {
         inputKm.placeholder = userSettings.distance === 'miles'
             ? t('ph_miles_driven')
             : t('ph_km');
+        // Also update data-translate-placeholder so t() picks it up on lang change
+        inputKm.setAttribute('data-translate-placeholder', userSettings.distance === 'miles' ? 'ph_miles_driven' : 'ph_km');
     }
 
     const inputCons = document.getElementById('tC');
@@ -1950,7 +2042,7 @@ let userSettings = JSON.parse(localStorage.getItem('user_settings')) || {
     volume: 'liters',
     mass: 'kg',
     currency: 'EUR',
-    consumption: 'l_100km'
+    consumption: 'km_l'
 };
 
 function aggiornaLabelSettings(){
@@ -2138,6 +2230,11 @@ function formatConsumption(km, litri){
 
     return "0";
 }
+function formatConsumptionShort(km, litri){
+    var full = formatConsumption(km, litri);
+    if(full === '—') return '—';
+    return full.split(' ')[0];
+}
     let multiSnapshot = {
     consumo: null,
     efficienza: null
@@ -2178,13 +2275,7 @@ function resetSafe(){
 }
 
 function confermaReset() {
-    localStorage.removeItem('rider_db_final_v34');
-    localStorage.removeItem('rider_backup_counter');
-    localStorage.removeItem('ultimo_avviso_fine_mese');
-    localStorage.removeItem('meteo_cache');
-    localStorage.removeItem('meteo_ts');
-    localStorage.removeItem('km_partenza_tmp');
-    localStorage.removeItem('ora_inizio_tmp');
+    localStorage.clear();
     location.reload();
 }
 
@@ -2335,6 +2426,51 @@ document.getElementById('kml').innerText = roundConsumption(safeNumber(mediaCons
     }
     document.getElementById('perc').innerText = Math.round(p) + '%';
     document.getElementById('bar').style.width = p + '%';
+    _meterUpdate(p);
+}
+
+function _meterBuild() {
+    var container = document.getElementById('meterSegments');
+    if (!container || container.children.length > 0) return;
+    var nSeg = 40;
+    for (var i = 0; i < nSeg; i++) {
+        var seg = document.createElement('div');
+        seg.className = 'meter-seg';
+        var pct = (i + 1) / nSeg * 100;
+        if (pct > 90) seg.style.background = '#ff4d4d';
+        else if (pct > 65) seg.style.background = '#facc15';
+        else seg.style.background = '#00CCBC';
+        container.appendChild(seg);
+    }
+}
+
+function _meterUpdate(p) {
+    var container = document.getElementById('meterSegments');
+    if (!container) return;
+    var segs = container.children;
+    var nSeg = segs.length;
+    var attivi = Math.round(p / 100 * nSeg);
+    for (var i = 0; i < nSeg; i++) {
+        segs[i].classList.toggle('active', i < attivi);
+    }
+}
+
+function _meterAnimate(targetP) {
+    var container = document.getElementById('meterSegments');
+    if (!container) return;
+    var nSeg = container.children.length;
+    var targetSegs = Math.round(targetP / 100 * nSeg);
+    if (targetSegs <= 0) return;
+    var current = 0;
+    var intervalMs = Math.round(1000 / targetSegs);
+    var interval = setInterval(function() {
+        if (current >= targetSegs) { clearInterval(interval); return; }
+        current++;
+        var segs = container.children;
+        for (var i = 0; i < nSeg; i++) {
+            segs[i].classList.toggle('active', i < current);
+        }
+    }, intervalMs);
 }
 
 function isDataFutura(d, m, y) {
@@ -2368,8 +2504,9 @@ function apriM(id) {
         const ultimoMezzo = _vaAM ? (_vaAM.tipo || 'auto') : (localStorage.getItem('ultimo_mezzo_' + currentLang) || 'auto');
         document.getElementById('tMezzo').value = ultimoMezzo;
         document.getElementById('labelMezzo').innerText = _getMezzoLabel(ultimoMezzo);
-        var _noCons = ultimoMezzo === 'bici' || ultimoMezzo === 'escooter' || ultimoMezzo === 'scooter';
+        var _noCons = ultimoMezzo === 'bici' || ultimoMezzo === 'escooter';
         document.getElementById('tC').style.display = _noCons ? 'none' : '';
+        document.getElementById('tK').style.width = _noCons ? '100%' : '';
         document.getElementById('fakeSelectCarb').style.display = _noCons ? 'none' : '';
         const ultimoCarb = localStorage.getItem('ultimo_carburante_turno_' + currentLang) || 'benzina';
         document.getElementById('tCarburante').value = ultimoCarb;
@@ -2548,7 +2685,8 @@ function apriStorico() {
 
     let anniSorted = Object.keys(storicoPerAnni).sort((a, b) => b - a);
 
-    htmlFinale += `<div style="display:flex; align-items:center; gap:8px; padding:7px 10px; border:1px solid var(--primary); border-radius:10px; margin-top:12px; margin-bottom:10px; background:linear-gradient(135deg,#0d2e2b,#111);"><i class="fas fa-archive" style="color:var(--primary); font-size:12px;"></i><span style="font-size:11px; color:var(--primary); font-weight:900; letter-spacing:1px; text-transform:uppercase;">${t('archive_root')}</span></div>`;
+    // Archivio separato in div dedicato
+    let htmlArchivio = "";
 
     anniSorted.forEach(anno => {
         let mesi = storicoPerAnni[anno].sort((a, b) => {
@@ -2569,7 +2707,7 @@ function apriStorico() {
 
         let annoId = `anno_${anno}`;
 
-        htmlFinale += `
+        htmlArchivio += `
         <div class="month-group">
             <div class="month-header" onclick="toggleAnno('${annoId}')">
                 <div>
@@ -2594,7 +2732,7 @@ function apriStorico() {
             let dati = gruppiPassati[key];
             let meseId = `mese_${key.replace('/', '_')}`;
 
-            htmlFinale += `
+            htmlArchivio += `
             <div class="month-group" style="margin:5px; border-radius:10px;">
                 <div class="month-header" onclick="toggleMese('${meseId}')">
                     <div>
@@ -2622,18 +2760,26 @@ function apriStorico() {
             `;
         });
 
-        htmlFinale += `
+        htmlArchivio += `
             </div>
         </div>
         `;
     });
 
     document.getElementById('listaStorico').innerHTML = htmlFinale;
+    document.getElementById('archivioBody').innerHTML = htmlArchivio;
     var hv = document.getElementById('histView');
     hv.style.display = 'flex';
     hv.classList.remove('view-enter');
     void hv.offsetWidth;
     hv.classList.add('view-enter');
+}
+
+function toggleArchivio() {
+    var el = document.getElementById('archivioStorico');
+    var chev = document.getElementById('archivioChevron');
+    el.classList.toggle('collapsed');
+    chev.style.transform = el.classList.contains('collapsed') ? '' : 'rotate(180deg)';
 }
 
 function toggleAnno(id) {
@@ -2924,8 +3070,8 @@ periodi.forEach(p => {
     htmlEff += `<tr>
         <td>${p.periodo}</td>
         <td>${p.count}</td>
-        <td>${fromKm(p.km).toFixed(2)} ${userSettings.distance === 'miles' ? 'mi' : 'km'}</td>
-        <td>${formatConsumption(p.km, litriPeriodo)}</td>
+        <td>${fromKm(p.km).toFixed(2)}</td>
+        <td>${formatConsumptionShort(p.km, litriPeriodo)}</td>
         <td>${currencySymbol()}${fromEuro(p.costoB).toFixed(2)}</td>
         <td>${currencySymbol()}${fromEuro(p.netto).toFixed(2)}</td>
         <td>${currencySymbol()}${fromEuro(p.euroOra).toFixed(2)}</td>
@@ -2999,7 +3145,10 @@ const elRepKmTot = document.getElementById('repKmTot');
 if (elRepKmTot) elRepKmTot.innerText = fromKm(tK).toFixed(0) + ' ' + distUnit;
 
 const elRepCostoKm = document.getElementById('repCostoKm');
-if (elRepCostoKm) elRepCostoKm.innerText = currencySymbol() + (tK > 0 ? fromEuro(spesaBTotReale / tK).toFixed(3) : '0.000');
+if (elRepCostoKm) {
+    const tKDisplay = fromKm(tK);
+    elRepCostoKm.innerText = currencySymbol() + (tKDisplay > 0 ? fromEuro(spesaBTotReale / tK).toFixed(3) : '0.000');
+}
 
 const elRepTaxPerc = document.getElementById('repTaxPerc');
 if (elRepTaxPerc) elRepTaxPerc.innerText = db.tax || 0;
@@ -3012,6 +3161,16 @@ if (thDistanza) {
 const thEuroOra = document.getElementById('thEuroOra');
 if (thEuroOra) {
     thEuroOra.innerText = currencySymbol() + '/' + t('hour_short');
+}
+
+const thMediaEff = document.getElementById('thMediaEff');
+if (thMediaEff) {
+    var _mu = 'L/100';
+    if (userSettings.consumption === 'km_l') _mu = userSettings.distance === 'miles' ? 'mi/L' : 'km/L';
+    else if (userSettings.consumption === 'l_100km') _mu = (userSettings.volume === 'gallons_us' || userSettings.volume === 'gallons_uk') ? 'gal/100' : 'L/100';
+    else if (userSettings.consumption === 'mpg_us') _mu = 'MPG';
+    else if (userSettings.consumption === 'mpg_uk') _mu = 'MPG';
+    thMediaEff.innerText = _mu;
 }
 
 const thDistanzaTurni = document.getElementById('thDistanzaTurni');
@@ -3238,11 +3397,9 @@ function formattaPrezzo(input) {
 }
 
 function getUnitaCarburante(tipo) {
-    if (tipo === 'metano') return 'kg';
-
+    if (tipo === 'metano') return getMetanoUnit();
     if (userSettings.volume === 'gallons_us') return 'gal';
     if (userSettings.volume === 'gallons_uk') return 'gal(UK)';
-
     return 'L';
 }
 
@@ -3318,6 +3475,7 @@ function calcolaOreDaOrari() {
 var _pickerOraTarget = 'start';
 var _pickerOraH = -1;
 var _pickerOraM = -1;
+var _pickerOraValPrecedente = '';
 
 var _turnoTimerStart = null; // timestamp ms inizio turno manuale
 
@@ -3389,6 +3547,7 @@ function tornaAlTurno() {
 }
 
 function _resetCampiTurno() {
+    GPS.completed = false;
     ['tL','tO','tK','tC','tKStart','tKEnd'].forEach(function(id){
         var e=document.getElementById(id); if(e) e.value='';
     });
@@ -3413,10 +3572,43 @@ function _resetCampiTurno() {
 }
 
 function annullaTurno() {
-    if (typeof gpsAttivo !== 'undefined' && gpsAttivo) gpsTermina();
+    if (GPS.active || GPS.completed) {
+        // GPS attivo o completato ma non salvato: mostra conferma prima di annullare
+        var it = currentLang !== 'en';
+        document.getElementById('modalAnnullaGPSTitle').innerText = it ? 'Annulla sessione GPS' : 'Cancel GPS session';
+        document.getElementById('modalAnnullaGPSMsg').innerText = it
+            ? 'Sei sicuro di voler annullare? La sessione GPS verrà interrotta e i dati non salvati andranno persi.'
+            : 'Are you sure you want to cancel? The GPS session will be stopped and unsaved data will be lost.';
+        document.getElementById('modalAnnullaGPSBack').innerText = it ? 'CONTINUA' : 'CONTINUE';
+        document.getElementById('modalAnnullaGPSOk').innerText = it ? 'SÌ, ANNULLA' : 'YES, CANCEL';
+        document.getElementById('modalAnnullaGPS').style.display = 'flex';
+        return;
+    }
+    // Nessun GPS: annulla direttamente e torna in homepage
     editingId = null; editingCat = null;
     _resetCampiTurno();
     chiudiModali();
+}
+
+function annullaTurnoConfermato() {
+    document.getElementById('modalAnnullaGPS').style.display = 'none';
+    // Chiudi anche l'alert lordo se è ancora aperto
+    document.getElementById('modalAlertApp').style.display = 'none';
+    if (GPS.active) {
+        // GPS ancora in corso: fermalo
+        GPS.cancelMode = true;
+        gpsTermina();
+    }
+    GPS.completed = false;
+    GPS.cancelMode = false;
+    // Pulizia notifica e reset UI GPS
+    _gpsNotifClear();
+    gpsResetUI();
+    // Reset campi
+    editingId = null; editingCat = null;
+    _resetCampiTurno();
+    // Riapri il modale turno pulito
+    apriM('modalTurno');
 }
 
 function azzeraKmStart() {
@@ -3448,6 +3640,22 @@ function azzeraPickerOra() {
     _renderPickerOra();
 }
 
+function annullaPickerOra() {
+    if (_pickerOraTarget === 'start') {
+        document.getElementById('tOStart').value = '';
+        document.getElementById('labelOraStart').innerText = currentLang === 'en' ? 'Start time' : 'Ora inizio';
+        localStorage.removeItem('ora_inizio_tmp');
+    } else {
+        document.getElementById('tOEnd').value = '';
+        document.getElementById('labelOraEnd').innerText = currentLang === 'en' ? 'End time' : 'Ora fine';
+    }
+    document.getElementById('tO').value = '';
+    _pickerOraH = -1;
+    _pickerOraM = -1;
+    document.getElementById('modalPickerOra').style.display = 'none';
+    document.getElementById('modalTurno').style.display = 'flex';
+}
+
 function tornaAlTurnoSenzaSalvare() {
     document.getElementById('modalPickerOra').style.display = 'none';
     document.getElementById('modalTurno').style.display = 'flex';
@@ -3458,6 +3666,7 @@ function apriPickerOra(target) {
     var val = target === 'start'
         ? document.getElementById('tOStart').value
         : document.getElementById('tOEnd').value;
+    _pickerOraValPrecedente = val || '';
     _pickerOraH = val ? parseInt(val.split(':')[0]) : -1;
     _pickerOraM = val ? parseInt(val.split(':')[1]) : -1;
     var title = document.getElementById('modalPickerOraTitle');
@@ -3516,11 +3725,6 @@ function _applicaPickerOra() {
         document.getElementById('labelOraEnd').innerText = val;
     }
     calcolaOreDaOrari();
-    // Auto-chiude il picker e torna al turno dopo 150ms (feedback visivo selezione)
-    setTimeout(function() {
-        document.getElementById('modalPickerOra').style.display = 'none';
-        document.getElementById('modalTurno').style.display = 'flex';
-    }, 150);
 }
 function salvaKmPartenzaTmp() {
     var v = document.getElementById('tKStart').value;
@@ -3553,8 +3757,9 @@ function verificaKmOdometroBlur() {
 function selezionaMezzo(valore) {
     document.getElementById('tMezzo').value = valore;
     document.getElementById('labelMezzo').innerText = _getMezzoLabel(valore);
-    var noCons = valore === 'bici' || valore === 'escooter' || valore === 'scooter';
+    var noCons = valore === 'bici' || valore === 'escooter';
     document.getElementById('tC').style.display = noCons ? 'none' : '';
+    document.getElementById('tK').style.width = noCons ? '100%' : '';
     document.getElementById('fakeSelectCarb').style.display = noCons ? 'none' : '';
     if (noCons) {
         document.getElementById('tC').value = '';
@@ -3598,6 +3803,7 @@ function selezionaCarburanteTurno(tipo, testo) {
     })();
     localStorage.setItem('ultimo_carburante_turno_' + currentLang, tipo);
     document.getElementById('modalSelectCarburanteTurno').style.display = 'none';
+    document.getElementById('modalTurno').style.display = 'flex';
 }
 
 function mostraModalPrezzoIniziale(tipoCarburante) {
@@ -3709,7 +3915,7 @@ function salvaTurno() {
     }
 
     const _mezzoTurno = document.getElementById('tMezzo').value;
-    const _mezzoNoCons = _mezzoTurno === 'bici' || _mezzoTurno === 'escooter' || _mezzoTurno === 'scooter';
+    const _mezzoNoCons = _mezzoTurno === 'bici' || _mezzoTurno === 'escooter';
 
     if (_mezzoNoCons) {
         effettuaSalvataggioTurno(0, null);
@@ -4021,6 +4227,16 @@ function chiudiModali() {
     var mc = document.getElementById('mainContainer');
     if (mc) mc.scrollTop = 0;
     editingId = null; editingCat = null;
+    if (window._playIntroOnHome) {
+        window._playIntroOnHome = false;
+        setTimeout(function() {
+            try {
+                var audio = new Audio('https://ridertrackerpro.github.io/dev/intro.mp3');
+                audio.volume = 1.0;
+                audio.play().catch(function(){});
+            } catch(e) {}
+        }, 300);
+    }
 }
 
 function resetModaleElimina() {
@@ -4044,9 +4260,32 @@ function modificaVoce(categoria, id) {
         document.getElementById('tO').value = item.ore;
         document.getElementById('tK').value = fromKm(item.km).toFixed(1);
         document.getElementById('tC').value = consL100kmToDisplayValue(item.cons);
+        // Ripristina orari
+        if (item.oraStart) {
+            document.getElementById('tOStart').value = item.oraStart;
+            document.getElementById('labelOraStart').innerText = item.oraStart;
+        }
+        if (item.oraEnd) {
+            document.getElementById('tOEnd').value = item.oraEnd;
+            document.getElementById('labelOraEnd').innerText = item.oraEnd;
+        }
         if (item.mezzo) {
             document.getElementById('tMezzo').value = item.mezzo;
             document.getElementById('labelMezzo').innerText = _getMezzoLabel(item.mezzo);
+            // Apply noCons display state based on saved mezzo
+            var _editNoCons = item.mezzo === 'bici' || item.mezzo === 'escooter';
+            var _tCEl = document.getElementById('tC');
+            var _tKEl = document.getElementById('tK');
+            var _rowKmConsEl = document.getElementById('rowKmCons');
+            if (_editNoCons) {
+                if (_tCEl) { _tCEl.style.display = 'none'; _tCEl.value = ''; }
+                if (_tKEl) _tKEl.style.width = '100%';
+                if (_rowKmConsEl) _rowKmConsEl.style.display = 'none';
+            } else {
+                if (_tCEl) { _tCEl.style.display = ''; }
+                if (_tKEl) _tKEl.style.width = '';
+                if (_rowKmConsEl) _rowKmConsEl.style.display = 'flex';
+            }
         }
         if (item.tipoCarburante) {
             document.getElementById('tCarburante').value = item.tipoCarburante;
@@ -4150,13 +4389,42 @@ function salvaBackup() {
         ultimo_carburante_turno: localStorage.getItem('ultimo_carburante_turno_' + lang) || '',
         ultimo_carburante_benza: localStorage.getItem('ultimo_carburante_benza_' + lang) || '',
     };
-    const blob = new Blob([JSON.stringify(dataObj, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `ridertracker_backup_${new Date().toISOString().slice(0, 10)}_(${backupCount}).json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const jsonStr = JSON.stringify(dataObj, null, 2);
+    const fileName = `ridertracker_backup_${new Date().toISOString().slice(0, 10)}_(${backupCount}).json`;
+
+    // Capacitor Android: usa Filesystem plugin
+    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+        try {
+            const { Filesystem, Share } = window.Capacitor.Plugins;
+            Filesystem.writeFile({
+                path: fileName,
+                data: jsonStr,
+                directory: 'CACHE',
+                encoding: 'utf8'
+            }).then(function(result) {
+                Share.share({
+                    title: 'Backup RiderTracker',
+                    url: result.uri,
+                    dialogTitle: 'Salva o condividi il backup'
+                }).catch(function(e) {
+                    // Utente ha annullato la condivisione, non mostrare messaggio
+                });
+            }).catch(function(e) {
+                mostraAlertApp('Errore salvataggio backup: ' + e.message);
+            });
+        } catch(e) {
+            mostraAlertApp('Errore backup: ' + e.message);
+        }
+    } else {
+        // Browser fallback
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
 }
 function confermaRiporto() {
     document.getElementById('modalRiportoNegativo').style.display = 'none';
@@ -4296,24 +4564,30 @@ document.getElementById("fileBackup").addEventListener("change", function (e) {
 
 const OB_CONTENT = {
     it: [
-        { t: 'Benvenuto', s: '' },
-        { t: 'Dashboard', s: 'La schermata principale mostra in tempo reale i tuoi <strong>guadagni, km percorsi, carburante</strong> e molto altro. Tutto aggiornato ad ogni turno.' },
-        { t: 'Turno', s: 'Registra ogni turno con durata, km, guadagno e carburante. <strong>Semplice e veloce</strong>, pochi secondi per tenere tutto sotto controllo.' },
-        { t: 'Fuel', s: 'Tieni traccia di ogni <strong>rifornimento</strong>: importo, km e tipo di carburante. L\'app calcola automaticamente il costo per km.' },
-        { t: 'Spese Extra', s: 'Registra tutte le <strong>spese legate al lavoro</strong>: tagliando, pneumatici, assicurazione, attrezzatura e altro. L\'app le sottrae automaticamente dal netto per darti il <strong>guadagno reale</strong>.' },
-        { t: 'Storico', s: 'Consulta lo <strong>storico completo</strong> di tutti i tuoi turni, rifornimenti ed extra mese per mese. Elimina o correggi voci in qualsiasi momento.' },
-        { t: 'Report & Grafico', s: 'Genera <strong>report mensili dettagliati</strong> e visualizza l\'andamento dei guadagni con grafici chiari e immediati.' },
-        { t: 'Tutto pronto!', s: 'Rider Tracker Pro è <strong>100% offline</strong>. I tuoi dati restano sul dispositivo, al sicuro e sempre disponibili. Buon lavoro! 🚀' }
+        { t: 'Benvenuto 👋', s: '' },
+        { t: 'Dashboard', s: 'La schermata principale mostra in tempo reale i tuoi <strong>guadagni lordi e netti, ore lavorate, km percorsi e spesa carburante</strong>. Imposta il tuo obiettivo mensile e monitora l\'avanzamento.' },
+        { t: 'Turno 🛵', s: 'Registra ogni turno manualmente oppure usa il <strong>GPS integrato</strong> per tracciare automaticamente km, soste e percorso. Semplice e veloce.' },
+        { t: 'GPS 🛰️', s: 'Il tracking GPS registra il tuo turno in <strong>tempo reale</strong> anche con lo schermo spento. Visualizza velocità, km e soste direttamente nell\'app.' },
+        { t: 'Fuel ⛽', s: 'Tieni traccia di ogni <strong>rifornimento</strong>: importo, km e tipo di carburante. L\'app calcola automaticamente il costo per km e stima il serbatoio rimanente.' },
+        { t: 'Spese Extra 🔧', s: 'Registra tutte le <strong>spese legate al lavoro</strong>: tagliando, pneumatici, assicurazione, attrezzatura e altro. Vengono sottratte automaticamente dal netto per darti il <strong>guadagno reale</strong>.' },
+        { t: 'Resa €/ora 📈', s: 'Analizza la tua <strong>produttività oraria</strong> con grafici dettagliati. Scopri in quali fasce orarie guadagni di più e ottimizza i tuoi turni.' },
+        { t: 'Storico & Report 📋', s: 'Consulta lo <strong>storico completo</strong> mese per mese. Genera report mensili dettagliati e condividili o stampali quando vuoi.' },
+        { t: 'I Miei Veicoli 🚗', s: 'Gestisci <strong>più veicoli</strong> con carburante, cilindrata e targa. Passa da uno all\'altro in un tap — i dati restano separati per ogni mezzo.' },
+        { t: '⚠️ Permesso GPS', s: 'Per il tracking in background vai in <strong>Impostazioni → App → Rider Tracker Pro → Autorizzazioni → Posizione</strong> e seleziona <strong>"Consenti sempre"</strong>. Senza questo il GPS si ferma quando esci dall\'app.' },
+        { t: 'Tutto pronto! 🚀', s: 'Rider Tracker Pro è <strong>100% offline</strong>. I tuoi dati restano sul dispositivo, al sicuro e sempre disponibili. Buon lavoro!' }
     ],
     en: [
-        { t: 'Welcome', s: '' },
-        { t: 'Dashboard', s: 'The main screen shows your <strong>earnings, km, fuel</strong> and much more in real time. Updated after every shift.' },
-        { t: 'Shift', s: 'Log every shift with duration, km, earnings and fuel. <strong>Fast and simple</strong> — just a few seconds to stay on top of everything.' },
-        { t: 'Fuel', s: 'Track every <strong>refuel</strong>: amount, km and fuel type. The app automatically calculates your cost per km.' },
-        { t: 'Extra Expenses', s: 'Log all <strong>work-related costs</strong>: service, tyres, insurance, equipment and more. The app deducts them automatically from your net earnings to show your <strong>real income</strong>.' },
-        { t: 'History', s: 'Browse the <strong>full history</strong> of all your shifts, refuels and extras month by month. Edit or delete any entry at any time.' },
-        { t: 'Report & Chart', s: 'Generate <strong>detailed monthly reports</strong> and visualise your earnings trend with clear, easy-to-read charts.' },
-        { t: 'All set!', s: 'Rider Tracker Pro works <strong>100% offline</strong>. Your data stays on your device — private and always available. Let\'s ride! 🚀' }
+        { t: 'Welcome 👋', s: '' },
+        { t: 'Dashboard', s: 'The main screen shows your <strong>gross and net earnings, working hours, km and fuel costs</strong> in real time. Set your monthly target and track your progress.' },
+        { t: 'Shift 🛵', s: 'Log every shift manually or use the built-in <strong>GPS tracker</strong> to automatically record km, stops and route. Fast and easy.' },
+        { t: 'GPS 🛰️', s: 'GPS tracking records your shift in <strong>real time</strong> even with the screen off. See speed, km and stops directly in the app.' },
+        { t: 'Fuel ⛽', s: 'Track every <strong>refuel</strong>: amount, km and fuel type. The app calculates your cost per km and estimates remaining tank level.' },
+        { t: 'Extra Expenses 🔧', s: 'Log all <strong>work-related costs</strong>: service, tyres, insurance, equipment and more. They are automatically deducted from your net earnings to show your <strong>real income</strong>.' },
+        { t: 'Hourly Rate 📈', s: 'Analyse your <strong>hourly productivity</strong> with detailed charts. Find out when you earn the most and optimise your shifts.' },
+        { t: 'History & Report 📋', s: 'Browse the <strong>full history</strong> month by month. Generate detailed monthly reports and share or print them anytime.' },
+        { t: 'My Vehicles 🚗', s: 'Manage <strong>multiple vehicles</strong> with fuel type, engine size and plate. Switch between them in one tap — data stays separate for each vehicle.' },
+        { t: '⚠️ GPS Permission', s: 'For background tracking go to <strong>Settings → Apps → Rider Tracker Pro → Permissions → Location</strong> and select <strong>"Allow all the time"</strong>. Without this GPS stops when you leave the app.' },
+        { t: 'All set! 🚀', s: 'Rider Tracker Pro works <strong>100% offline</strong>. Your data stays on your device — private and always available. Let\'s ride!' }
     ]
 };
 
@@ -4371,6 +4645,7 @@ function obSkip() {
 function obFinish() {
     localStorage.setItem('onboarding_done', '1');
     document.getElementById('onboardingOverlay').style.display = 'none';
+    window._playIntroOnHome = true;
 }
 
 
@@ -4450,6 +4725,47 @@ function mostraMeteo(obj) {
 }
 
 window.onload = function() {
+
+    // Fix7+8: costruisce meter segments e lancia animazione sweep + suono intro
+    _meterBuild();
+    setTimeout(function() {
+        var percEl = document.getElementById('perc');
+        var targetP = percEl ? parseInt(percEl.innerText) || 0 : 0;
+
+        // Animazione sweep: 0→100→0 in ~1s, poi vai al valore reale
+        var container = document.getElementById('meterSegments');
+        var nSeg = container ? container.children.length : 40;
+        var segs = container ? container.children : [];
+        var sweepUp = 0;
+        var sweepInterval = setInterval(function() {
+            sweepUp++;
+            for (var i = 0; i < nSeg; i++) segs[i].classList.toggle('active', i < sweepUp);
+            if (sweepUp >= nSeg) {
+                clearInterval(sweepInterval);
+                // Sweep down
+                var sweepDown = nSeg;
+                var downInterval = setInterval(function() {
+                    sweepDown--;
+                    for (var i = 0; i < nSeg; i++) segs[i].classList.toggle('active', i < sweepDown);
+                    if (sweepDown <= 0) {
+                        clearInterval(downInterval);
+                        // Settle al valore reale
+                        if (targetP > 0) _meterAnimate(targetP);
+                        // Suono: solo se onboarding NON è visibile
+                        var ob = document.getElementById('onboardingOverlay');
+                        if (!ob || ob.style.display === 'none') {
+                            try {
+                                var audio = new Audio('https://ridertrackerpro.github.io/dev/intro.mp3');
+                                audio.volume = 1.0;
+                                audio.play().catch(function(){});
+                            } catch(e) {}
+                        }
+                    }
+                }, 12);
+            }
+        }, 12);
+
+    }, 300);
 
     // ── Ripristino sessione GPS interrotta da background ──
     (function() {
@@ -4625,16 +4941,174 @@ window.onload = function() {
 function stampaDirettaDaAlert() {
     chiudiModali();
     apriReport(window._alertMesePrecedente || null);
-    window.print();
+    setTimeout(function() { stampaPagina(); }, 300);
 }
 
 function stampaPagina() {
-    const rv = document.getElementById('reportView');
-    if (!rv.style.display || rv.style.display === 'none') {
+    var rv = document.getElementById('reportView');
+    if (!rv || rv.style.display === 'none') {
         apriReport(reportMeseKey || null);
     }
     rv.style.display = 'flex';
-    window.print();
+
+    var it = (typeof currentLang === 'undefined' || currentLang !== 'en');
+    var isNative = window.Capacitor && window.Capacitor.isNativePlatform();
+    var btnFooter = document.querySelector('.report-fixed-footer');
+    if (btnFooter) btnFooter.style.display = 'none';
+
+    var content = document.querySelector('#reportView .report-scroll-area');
+    content.scrollTop = 0;
+
+    setTimeout(function() {
+
+        // ── 1. CLONE LARGO per rendering PDF ──
+        var RENDER_W = 800; // px — simula larghezza desktop
+        var printBox = document.createElement('div');
+        printBox.id = '_printClone';
+        printBox.style.cssText = 'position:fixed;left:-9999px;top:0;width:' + RENDER_W + 'px;background:#fff;color:#000;font-family:sans-serif;padding:20px 24px;box-sizing:border-box;z-index:-1;';
+        printBox.innerHTML = content.innerHTML;
+        document.body.appendChild(printBox);
+
+        // Applica stili stampa al clone
+        var style = document.createElement('style');
+        style.textContent = '' +
+            '#_printClone * { color:#000!important; background:#fff!important; border-color:#000!important; box-shadow:none!important; text-shadow:none!important; }' +
+            '#_printClone table { width:100%; border-collapse:collapse; font-size:11px; margin-bottom:10px; table-layout:auto; }' +
+            '#_printClone th, #_printClone td { padding:5px 4px; border:1px solid #000; text-align:center; white-space:nowrap; }' +
+            '#_printClone th { background:#eee!important; font-weight:bold; }' +
+            '#_printClone .report-section { border:2px solid #000; padding:14px; margin-bottom:16px; }' +
+            '#_printClone .summary-box { border:3px solid #000; padding:18px; }' +
+            '#_printClone .summary-row { display:flex; justify-content:space-between; padding:4px 0; font-size:13px; }' +
+            '#_printClone .summary-row.total { font-weight:bold; font-size:16px; border-top:2px solid #000; margin-top:6px; padding-top:8px; }' +
+            '#_printClone h2, #_printClone h3 { text-align:center; color:#000!important; }' +
+            '#_printClone h2 { font-size:20px; margin-bottom:16px; }' +
+            '#_printClone h3 { font-size:15px; margin-bottom:8px; }' +
+            '#_printClone hr { border:none; border-top:2px solid #000; margin:8px 0; }' +
+            '#_printClone .no-print, #_printClone .report-fixed-footer { display:none!important; }';
+        printBox.appendChild(style);
+
+        // ── 2. MISURA SEZIONI nel clone ──
+        var allSections = printBox.querySelectorAll('.report-section, .summary-box');
+        var sectionsPx = [];
+        for (var si = 0; si < allSections.length; si++) {
+            var secRect = allSections[si].getBoundingClientRect();
+            var boxRect = printBox.getBoundingClientRect();
+            sectionsPx.push({
+                topPx: secRect.top - boxRect.top,
+                heightPx: secRect.height
+            });
+        }
+
+        // ── 3. RENDER html2canvas sul clone largo ──
+        var cloneScrollH = printBox.scrollHeight;
+        html2canvas(printBox, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            scrollY: 0,
+            windowWidth: RENDER_W,
+            width: RENDER_W,
+            height: cloneScrollH,
+            logging: false
+        }).then(function(canvas) {
+            // Pulizia immediata
+            document.body.removeChild(printBox);
+            if (btnFooter) btnFooter.style.display = '';
+
+            var pdf = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+            var pageW = pdf.internal.pageSize.getWidth();
+            var pageHFull = pdf.internal.pageSize.getHeight();
+            var TOP_MARGIN = 8;
+            var BOTTOM_MARGIN = 8;
+            var pageH = pageHFull - TOP_MARGIN - BOTTOM_MARGIN;
+            var imgW = pageW;
+            var imgH = (canvas.height * imgW) / canvas.width;
+
+            // ── 4. CONVERTI posizioni sezioni in mm PDF ──
+            var totalPx = cloneScrollH || (canvas.height / 2);
+            var sectionsMm = [];
+            for (var si = 0; si < sectionsPx.length; si++) {
+                var topMm = (sectionsPx[si].topPx / totalPx) * imgH;
+                var hMm = (sectionsPx[si].heightPx / totalPx) * imgH;
+                sectionsMm.push({ topMm: topMm, bottomMm: topMm + hMm, heightMm: hMm });
+            }
+
+            // ── 5. PAGINAZIONE INTELLIGENTE ──
+            var TOLERANCE_MM = 15;
+            var pages = [];
+            var y = 0;
+            while (y < imgH) {
+                var nextY = y + pageH;
+                if (nextY >= imgH) { pages.push(y); break; }
+                for (var si = 0; si < sectionsMm.length; si++) {
+                    var sec = sectionsMm[si];
+                    if (sec.heightMm <= pageH && nextY > sec.topMm && nextY < sec.bottomMm) {
+                        var overflow = sec.bottomMm - nextY;
+                        if (overflow > TOLERANCE_MM) {
+                            nextY = sec.topMm;
+                        }
+                        break;
+                    }
+                }
+                if (nextY <= y) nextY = y + pageH;
+                pages.push(y);
+                y = nextY;
+            }
+
+            // ── 6. GENERA PAGINE PDF ──
+            var imgData = canvas.toDataURL('image/png');
+            pages.forEach(function(pageY, i) {
+                if (i > 0) pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, TOP_MARGIN - pageY, imgW, imgH);
+                // Maschera bianca top (copre contenuto pagina precedente che sborda sopra)
+                pdf.setFillColor(255, 255, 255);
+                pdf.rect(0, 0, pageW, TOP_MARGIN, 'F');
+                // Maschera bianca bottom
+                var sliceEnd = (i < pages.length - 1) ? pages[i + 1] : imgH;
+                var visibleH = sliceEnd - pageY;
+                if (visibleH < pageH) {
+                    pdf.rect(0, TOP_MARGIN + visibleH, pageW, pageHFull - TOP_MARGIN - visibleH, 'F');
+                }
+            });
+
+            // ── 7. ESPORTA ──
+            var meseLabel = (document.getElementById('reportMeseLabel') || {}).innerText || 'report';
+            var fileName = 'RiderTracker_' + meseLabel.replace(/\s/g,'_') + '.pdf';
+
+            if (isNative) {
+                var pdfBase64 = pdf.output('datauristring').split(',')[1];
+                try {
+                    window.Capacitor.Plugins.Filesystem.writeFile({
+                        path: fileName,
+                        data: pdfBase64,
+                        directory: 'CACHE',
+                        recursive: true
+                    }).then(function(result) {
+                        window.Capacitor.Plugins.Share.share({
+                            title: it ? 'Riepilogo Rider Tracker' : 'Rider Tracker Report',
+                            text:  it ? 'Riepilogo mensile' : 'Monthly report',
+                            url:   result.uri,
+                            dialogTitle: it ? 'Condividi / Stampa PDF' : 'Share / Print PDF'
+                        }).catch(function(e) {
+                            mostraAlertApp(it ? 'Condivisione non disponibile.' : 'Share not available.');
+                        });
+                    }).catch(function(e) {
+                        mostraAlertApp(it ? 'Errore salvataggio PDF: ' + e.message : 'PDF save error: ' + e.message);
+                    });
+                } catch(e) {
+                    mostraAlertApp(it ? 'Plugin non disponibile.' : 'Plugin not available.');
+                }
+            } else {
+                var pdfBlob = pdf.output('blob');
+                var blobUrl = URL.createObjectURL(pdfBlob);
+                window.open(blobUrl, '_blank');
+            }
+        }).catch(function(e) {
+            if (printBox.parentNode) document.body.removeChild(printBox);
+            if (btnFooter) btnFooter.style.display = '';
+            mostraAlertApp(it ? 'Errore generazione PDF: ' + e.message : 'PDF generation error: ' + e.message);
+        });
+    }, 400);
 }
 </script>
 <div id="modalRating" class="modal no-print">
@@ -4678,7 +5152,7 @@ function stampaPagina() {
 </div>
 <div id="modalSettings" class="modal no-print">
     <!-- modal-content come flex-column: header fisso + veicoli scrollabili + footer fisso -->
-    <div class="modal-content" style="border-color:var(--primary); padding:16px 18px; max-height:92dvh; max-height:92vh; overflow:hidden; display:flex; flex-direction:column; gap:0;">
+    <div class="modal-content" style="border-color:var(--primary); padding:10px 14px; max-height:92dvh; max-height:92vh; overflow:hidden; display:flex; flex-direction:column; gap:0;">
 
         <!-- ── HEADER FISSO ── -->
         <div style="flex-shrink:0;">
@@ -4686,11 +5160,24 @@ function stampaPagina() {
                 <span id="settingsTitle">⚙️ Preferenze</span>
             </h3>
 
+            <!-- Selezione lingua -->
+            <div style="display:flex; align-items:center; justify-content:space-between; background:#1a1a1a; border-radius:12px; padding:6px 10px; border:1px solid #2a2a2a; margin-bottom:8px;">
+                <label style="color:#aaa; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; margin:0;">🌍 Lingua / Language</label>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <span id="flagIT" onclick="apriLanguageIT()"
+                          style="font-size:26px; cursor:pointer; transition:0.2s; opacity:1; line-height:1;"
+                          title="Italiano">🇮🇹</span>
+                    <span id="flagEN" onclick="apriLanguageEN()"
+                          style="font-size:26px; cursor:pointer; transition:0.2s; opacity:0.4; line-height:1;"
+                          title="English">🇺🇸</span>
+                </div>
+            </div>
+
             <!-- 5 righe: label a sinistra, select a destra — tutto leggibile -->
             <div style="display:flex; flex-direction:column; gap:8px;">
 
                 <!-- Distanza -->
-                <div style="display:flex; align-items:center; justify-content:space-between; background:#1a1a1a; border-radius:12px; padding:10px 14px; border:1px solid #2a2a2a;">
+                <div style="display:flex; align-items:center; justify-content:space-between; background:#1a1a1a; border-radius:12px; padding:6px 10px; border:1px solid #2a2a2a;">
                     <label id="lblSettingsDist" style="color:#aaa; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; margin:0;">📏 Distanza</label>
                     <select id="settingsDistance" style="background:#252525; color:#fff; border:1px solid #444; border-radius:8px; font-size:13px; font-weight:600; padding:6px 10px; outline:none; cursor:pointer; min-width:130px; text-align:right;">
                         <option value="km" id="optKm">Chilometri (km)</option>
@@ -4699,7 +5186,7 @@ function stampaPagina() {
                 </div>
 
                 <!-- Volume -->
-                <div style="display:flex; align-items:center; justify-content:space-between; background:#1a1a1a; border-radius:12px; padding:10px 14px; border:1px solid #2a2a2a;">
+                <div style="display:flex; align-items:center; justify-content:space-between; background:#1a1a1a; border-radius:12px; padding:6px 10px; border:1px solid #2a2a2a;">
                     <label id="lblSettingsVol" style="color:#aaa; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; margin:0;">🧪 Volume</label>
                     <select id="settingsVolume" style="background:#252525; color:#fff; border:1px solid #444; border-radius:8px; font-size:13px; font-weight:600; padding:6px 10px; outline:none; cursor:pointer; min-width:130px; text-align:right;">
                         <option value="liters" id="optLiters">Litri (L)</option>
@@ -4709,7 +5196,7 @@ function stampaPagina() {
                 </div>
 
                 <!-- Massa -->
-                <div style="display:flex; align-items:center; justify-content:space-between; background:#1a1a1a; border-radius:12px; padding:10px 14px; border:1px solid #2a2a2a;">
+                <div style="display:flex; align-items:center; justify-content:space-between; background:#1a1a1a; border-radius:12px; padding:6px 10px; border:1px solid #2a2a2a;">
                     <label id="lblSettingsMass" style="color:#aaa; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; margin:0;">⚖️ Massa</label>
                     <select id="settingsMass" style="background:#252525; color:#fff; border:1px solid #444; border-radius:8px; font-size:13px; font-weight:600; padding:6px 10px; outline:none; cursor:pointer; min-width:130px; text-align:right;">
                         <option value="kg" id="optKg">Chilogrammi (kg)</option>
@@ -4718,7 +5205,7 @@ function stampaPagina() {
                 </div>
 
                 <!-- Valuta -->
-                <div style="display:flex; align-items:center; justify-content:space-between; background:#1a1a1a; border-radius:12px; padding:10px 14px; border:1px solid #2a2a2a;">
+                <div style="display:flex; align-items:center; justify-content:space-between; background:#1a1a1a; border-radius:12px; padding:6px 10px; border:1px solid #2a2a2a;">
                     <label id="lblSettingsCurr" style="color:#aaa; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; margin:0;">💶 Valuta</label>
                     <select id="settingsCurrency" style="background:#252525; color:#fff; border:1px solid #444; border-radius:8px; font-size:13px; font-weight:600; padding:6px 10px; outline:none; cursor:pointer; min-width:130px; text-align:right;">
                         <option value="EUR">€ Euro</option>
@@ -4728,7 +5215,7 @@ function stampaPagina() {
                 </div>
 
                 <!-- Consumi -->
-                <div style="display:flex; align-items:center; justify-content:space-between; background:#1a1a1a; border-radius:12px; padding:10px 14px; border:1px solid #2a2a2a;">
+                <div style="display:flex; align-items:center; justify-content:space-between; background:#1a1a1a; border-radius:12px; padding:6px 10px; border:1px solid #2a2a2a;">
                     <label id="lblSettingsCons" style="color:#aaa; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; margin:0;">⛽ Consumi</label>
                     <select id="settingsConsumption" style="background:#252525; color:#fff; border:1px solid #444; border-radius:8px; font-size:13px; font-weight:600; padding:6px 10px; outline:none; cursor:pointer; min-width:130px; text-align:right;">
                         <option value="l_100km">L / 100km</option>
@@ -4748,20 +5235,22 @@ function stampaPagina() {
 
         <!-- ── ZONA SCROLLABILE: lista veicoli ── -->
         <div style="flex:1; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; min-height:0; margin:8px 0 0;">
-            <div id="vehList" style="margin-bottom:8px;"></div>
-            <button id="btnAddVehicle" onclick="apriFormVeicolo(null)" style="width:100%; padding:12px; border-radius:12px; border:1px dashed var(--orange); background:transparent; color:var(--orange); font-size:12px; font-weight:900; cursor:pointer; text-transform:uppercase; letter-spacing:.5px;">
-                + AGGIUNGI VEICOLO
-            </button>
+            <div id="vehList" style="margin-bottom:4px;"></div>
         </div>
 
         <!-- ── FOOTER FISSO ── -->
         <div style="flex-shrink:0; padding-top:8px; border-top:1px solid #222;">
-            <button id="btnSettingsSave" class="btn-modal btn-save" onclick="salvaSettingsEChiudi()" style="margin-top:0;">
-                ✔ SALVA &amp; APPLICA
+            <button id="btnAddVehicle" onclick="apriFormVeicolo(null)" style="width:100%; padding:10px; border-radius:12px; border:1px dashed var(--orange); background:transparent; color:var(--orange); font-size:12px; font-weight:900; cursor:pointer; text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px;">
+                + AGGIUNGI VEICOLO
             </button>
-            <button id="btnSettingsClose" class="btn-modal btn-close" onclick="chiudiModalSettings()" style="margin-top:6px;">
-                CHIUDI
-            </button>
+            <div style="display:flex; gap:8px; margin-top:0;">
+                <button id="btnSettingsClose" class="btn-modal btn-close" onclick="chiudiModalSettings()" style="margin-top:0; flex:1;">
+                    CHIUDI
+                </button>
+                <button id="btnSettingsSave" class="btn-modal btn-save" onclick="salvaSettingsEChiudi()" style="margin-top:0; flex:1;">
+                    ✔ SALVA
+                </button>
+            </div>
         </div>
 
     </div>
@@ -4814,6 +5303,16 @@ function controllaRating() {
 }
 function chiudiModalSettings() {
     document.getElementById('modalSettings').style.display = 'none';
+    if (window._playIntroOnHome) {
+        window._playIntroOnHome = false;
+        setTimeout(function() {
+            try {
+                var audio = new Audio('https://ridertrackerpro.github.io/dev/intro.mp3');
+                audio.volume = 1.0;
+                audio.play().catch(function(){});
+            } catch(e) {}
+        }, 300);
+    }
 }
 
 function salvaSettingsEChiudi() {
@@ -4838,6 +5337,10 @@ document.getElementById('modalSettings').addEventListener('click', function(e) {
         chiudiModalSettings();
     }
 });
+
+// Impedisce che il click sui bottoni si propaghi al backdrop
+var _msContent = document.querySelector('#modalSettings .modal-content');
+if (_msContent) _msContent.addEventListener('click', function(e) { e.stopPropagation(); });
 
 function apriLanguageSettings() {
     apriLanguageEN();
@@ -4894,7 +5397,7 @@ calcola();
                 newWorker.onstatechange = () => {
                     if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                         // Nuovo contenuto disponibile
-                        console.log("Nuova versione pronta.");
+                        // versione pronta;
                     }
                 };
             };
@@ -5212,7 +5715,8 @@ var GPS = {
     pts:[], soste:[], km:0, vmax:0,
     tStart:null, inSosta:false, sostaT:null,
     tempoTimer:null, checkpointTimer:null, swPingTimer:null,
-    STOP_KMH:3, STOP_MIN_S:25
+    STOP_KMH:1, STOP_MIN_S:60,
+    cancelMode:false, completed:false
 };
 
 /* ── WAKE LOCK: impedisce allo schermo di spegnersi durante GPS ── */
@@ -5235,7 +5739,28 @@ document.addEventListener('visibilitychange', function() {
 
 /* ── NOTIFICA PERSISTENTE: mantiene il browser "sveglio" su Android ── */
 var _gpsNotifId = null;
+var _GPS_NOTIF_CAP_ID = 1001; // ID fisso per LocalNotifications Capacitor
+
 function _gpsNotifShow() {
+    // Capacitor Android nativo: usa LocalNotifications
+    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+        try {
+            var it = (typeof currentLang === 'undefined' || currentLang !== 'en');
+            window.Capacitor.Plugins.LocalNotifications.schedule({
+                notifications: [{
+                    id: _GPS_NOTIF_CAP_ID,
+                    title: it ? '🛰️ Rider Tracker — GPS attivo' : '🛰️ Rider Tracker — GPS active',
+                    body:  it ? 'Registrazione turno in corso.' : 'Shift recording in progress.',
+                    ongoing: true,
+                    autoCancel: false,
+                    sound: null,
+                    smallIcon: 'ic_stat_notify'
+                }]
+            });
+        } catch(e) {}
+        return;
+    }
+    // Web/PWA: usa Web Notification API
     if (!('Notification' in window)) return;
     if (Notification.permission === 'granted') {
         _gpsNotifDo();
@@ -5246,9 +5771,10 @@ function _gpsNotifShow() {
     }
 }
 function _gpsNotifDo() {
+    var it = (typeof currentLang === 'undefined' || currentLang !== 'en');
     try {
-        var n = new Notification('🛰️ Rider Tracker — GPS attivo', {
-            body: 'Registrazione turno in corso. Tieni l\'app aperta.',
+        var n = new Notification(it ? '🛰️ Rider Tracker — GPS attivo' : '🛰️ Rider Tracker — GPS active', {
+            body: it ? 'Registrazione turno in corso. Tieni l\'app aperta.' : 'Shift recording in progress. Keep the app open.',
             icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><text y="26" font-size="28">🛰️</text></svg>',
             tag: 'gps-active',
             requireInteraction: true,
@@ -5258,6 +5784,15 @@ function _gpsNotifDo() {
     } catch(e) {}
 }
 function _gpsNotifClear() {
+    // Capacitor Android nativo: cancella con LocalNotifications
+    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+        try {
+            window.Capacitor.Plugins.LocalNotifications.cancel({
+                notifications: [{ id: _GPS_NOTIF_CAP_ID }]
+            });
+        } catch(e) {}
+    }
+    // Web/PWA: chiudi la Web Notification
     if (_gpsNotifId) { try { _gpsNotifId.close(); } catch(e){} _gpsNotifId = null; }
 }
 
@@ -5296,6 +5831,49 @@ function _hvs(la,lo,la2,lo2){
     var a=Math.sin(dLa/2)*Math.sin(dLa/2)+Math.cos(la*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLo/2)*Math.sin(dLo/2);
     return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
+
+/* ── FILTRO KALMAN GPS (stile Strava) ──
+   Riduce il rumore GPS smussando la posizione in base all'accuratezza del segnale.
+   Ogni nuovo punto viene "pesato" tra la previsione precedente e la misura reale:
+   più il segnale è preciso (acc bassa), più ci si fida della misura reale.
+   Variabili di stato: lat, lng, varianza dell'incertezza posizione.
+*/
+var _kalman = {
+    la: null, lo: null,
+    variance: -1,          // -1 = non inizializzato
+    ts: null
+    // Q calcolato dinamicamente in base alla velocità
+};
+function _kalmanReset(){
+    _kalman.la=null; _kalman.lo=null; _kalman.variance=-1; _kalman.ts=null;
+}
+// Q adattivo: smussamento forte a piedi, leggero ad alta velocità
+function _kalmanQ(spd){
+    if(spd < 6)  return 3;   // fermo/a piedi
+    if(spd < 30) return 9;   // bici/scooter
+    if(spd < 90) return 18;  // moto/auto
+    return 30;               // alta velocità
+}
+function _kalmanFilter(la, lo, acc, ts, spd){
+    if(_kalman.variance < 0){
+        _kalman.la = la;
+        _kalman.lo = lo;
+        _kalman.variance = acc * acc;
+        _kalman.ts = ts;
+        return {la: la, lo: lo};
+    }
+    var dt = (ts - _kalman.ts) / 1000;
+    if(dt <= 0) dt = 1;
+    _kalman.ts = ts;
+    var Q = _kalmanQ(spd);
+    _kalman.variance += dt * Q * Q;
+    var R = acc * acc;
+    var K = _kalman.variance / (_kalman.variance + R);
+    _kalman.la += K * (la - _kalman.la);
+    _kalman.lo += K * (lo - _kalman.lo);
+    _kalman.variance = (1 - K) * _kalman.variance;
+    return {la: _kalman.la, lo: _kalman.lo};
+}
 function _fmtDur(s){
     if (s < 60) return Math.round(s) + 's';
     var h=Math.floor(s/3600),m=Math.floor((s%3600)/60);
@@ -5320,6 +5898,8 @@ function gpsAvvia(){
     if(!navigator.geolocation){mostraAlertApp('GPS non disponibile su questo dispositivo.');return;}
     GPS.active=true; GPS.pts=[]; GPS.soste=[]; GPS.km=0; GPS.vmax=0;
     GPS.tStart=Date.now(); GPS.inSosta=false; GPS.sostaT=null;
+    GPS.completed=false; GPS.cancelMode=false;
+    _kalmanReset();
 
     // Persisti stato GPS su localStorage (sopravvive al background)
     localStorage.setItem('gps_session_active', '1');
@@ -5349,7 +5929,28 @@ function gpsAvvia(){
         if(el) el.innerText=_fmtDur((Date.now()-GPS.tStart)/1000);
     },5000);
 
-    GPS.watchId=navigator.geolocation.watchPosition(_gpsPos,_gpsErr,{enableHighAccuracy:true,timeout:15000,maximumAge:0});
+    // Usa BackgroundGeolocation se disponibile (Capacitor), altrimenti fallback browser
+    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+        try {
+            const { BackgroundGeolocation } = window.Capacitor.Plugins;
+            BackgroundGeolocation.addWatcher({
+                backgroundMessage: 'GPS turno in corso',
+                backgroundTitle: '🛰️ Rider Tracker',
+                requestPermissions: true,
+                stale: false,
+                distanceFilter: 5
+            }, function(pos, err) {
+                if (err) { _gpsErr(err); return; }
+                _gpsPos({ coords: pos, timestamp: pos.time || Date.now() });
+            }).then(function(id) { GPS.watchId = id; GPS.useBgGeo = true; });
+        } catch(e) {
+            GPS.watchId = navigator.geolocation.watchPosition(_gpsPos, _gpsErr, {enableHighAccuracy:true, timeout:60000, maximumAge:2000});
+            GPS.useBgGeo = false;
+        }
+    } else {
+        GPS.watchId = navigator.geolocation.watchPosition(_gpsPos, _gpsErr, {enableHighAccuracy:true, timeout:60000, maximumAge:2000});
+        GPS.useBgGeo = false;
+    }
 
     // Wake Lock: impedisce spegnimento schermo
     _wakeLockAcquire();
@@ -5372,14 +5973,41 @@ function _gpsPos(pos){
     var la=pos.coords.latitude,lo=pos.coords.longitude;
     var spd=pos.coords.speed ? pos.coords.speed*3.6 : 0;
     var acc=Math.round(pos.coords.accuracy),ts=pos.timestamp||Date.now();
-    if(acc>65){gpsLbl('⚠️ Segnale debole ±'+acc+'m');return;}
+    if(acc>100){gpsLbl('⚠️ Segnale debole ±'+acc+'m');return;}
     document.getElementById('gpsAcc').innerText='±'+acc+'m';
+
+    // Applica il filtro Kalman: corregge il rumore GPS smussando la posizione
+    var filtered = _kalmanFilter(la, lo, acc, ts, spd);
+    var fla = filtered.la, flo = filtered.lo;
+
     if(GPS.pts.length>0){
         var last=GPS.pts[GPS.pts.length-1];
-        var d=_hvs(last.la,last.lo,la,lo);
-        if(d<0.5 && d>0.000001) GPS.km+=d;
+        var d=_hvs(last.la,last.lo,fla,flo);
+        var dt=(ts-last.ts)/1000;
+        // Filtro spike: scarta spostamento >500m in meno di 3 secondi
+        if(d>0.5 && dt<3){return;}
+        // Filtro spike: scarta velocità GPS superiore a 250 km/h
+        if(spd>250){return;}
+        // Filtro spike: velocità chip incoerente con spostamento reale
+        // Se il chip dice >50 km/h ma lo spostamento reale dice <10 km/h, usa lo spostamento
+        if(dt>0.5){
+            var spdCalc=(d/dt)*3600;
+            if(spd>50 && spdCalc<10){
+                spd=spdCalc;
+            }
+        }
+        if(d>0.000001 && d<2) GPS.km+=d;
+        // Fallback: se il chip GPS non riporta velocità, calcolala dalla posizione
+        if(spd===0 && d>0.000001){
+            if(dt>0.5) spd=Math.min((d/dt)*3600, 200);
+        }
+    } else {
+        // Primo punto: il chip GPS spesso riporta speed spazzatura al primo fix
+        // Senza punto precedente non possiamo verificare, forza a 0
+        spd=0;
     }
-    GPS.pts.push({la:la,lo:lo,ts:ts,spd:spd,acc:acc});
+    // Salva la posizione filtrata (non quella grezza) per mappa e distanza
+    GPS.pts.push({la:fla,lo:flo,ts:ts,spd:spd,acc:acc});
     if(spd>GPS.vmax) GPS.vmax=spd;
     // soste
     if(spd<GPS.STOP_KMH){
@@ -5400,13 +6028,36 @@ function _gpsPos(pos){
     gpsDot('on'); gpsLbl('Registrazione attiva');
 }
 function _gpsErr(e){
-    var m={1:'🔒 Permesso GPS negato — vai nelle impostazioni del telefono',2:'📡 Segnale perso',3:'⏱ Timeout GPS'}[e.code]||'Errore GPS';
+    var it=(typeof currentLang==='undefined'||currentLang!=='en');
+    var m=it
+        ? {1:'🔒 Permesso GPS negato — vai nelle impostazioni del telefono',2:'📡 Segnale perso',3:'⏱ Timeout GPS — riprovo...'}[e.code]||'Errore GPS'
+        : {1:'🔒 GPS permission denied — go to phone settings',2:'📡 Signal lost',3:'⏱ GPS timeout — retrying...'}[e.code]||'GPS error';
     gpsDot('err'); gpsLbl(m);
+    // Su timeout (code 3) riavvia automaticamente il watch
+    if (e.code === 3 && GPS.active) {
+        if (GPS.watchId !== null) { navigator.geolocation.clearWatch(GPS.watchId); GPS.watchId = null; }
+        setTimeout(function() {
+            if (!GPS.active) return;
+            gpsDot('on'); gpsLbl('Acquisizione segnale...');
+            GPS.watchId = navigator.geolocation.watchPosition(_gpsPos, _gpsErr, {enableHighAccuracy:true, timeout:60000, maximumAge:2000});
+        }, 3000);
+    }
 }
 
 function gpsTermina(){
     if(!GPS.active)return;
-    if(GPS.watchId!==null){navigator.geolocation.clearWatch(GPS.watchId);GPS.watchId=null;}
+    if(GPS.watchId!==null){
+        if (GPS.useBgGeo && window.Capacitor && window.Capacitor.isNativePlatform()) {
+            try {
+                const { BackgroundGeolocation } = window.Capacitor.Plugins;
+                BackgroundGeolocation.removeWatcher({ id: GPS.watchId });
+            } catch(e) {}
+        } else {
+            navigator.geolocation.clearWatch(GPS.watchId);
+        }
+        GPS.watchId=null;
+        GPS.useBgGeo=false;
+    }
     if(GPS.tempoTimer){clearInterval(GPS.tempoTimer);GPS.tempoTimer=null;}
     if(GPS.checkpointTimer){clearInterval(GPS.checkpointTimer);GPS.checkpointTimer=null;}
     if(GPS.swPingTimer){clearInterval(GPS.swPingTimer);GPS.swPingTimer=null;}
@@ -5421,14 +6072,15 @@ function gpsTermina(){
     }
     GPS.active=false;
     // Calcola velocità media in movimento
-    var ptsInMov=GPS.pts.filter(function(p){return p.spd>=GPS.STOP_KMH;});
+    var ptsInMov=GPS.pts.filter(function(p){return p.spd>=GPS.STOP_KMH && p.spd<=250;});
     var vmedia=ptsInMov.length>0 ? ptsInMov.reduce(function(a,p){return a+p.spd;},0)/ptsInMov.length : 0;
+    var vmax=GPS.pts.filter(function(p){return p.spd<=250;}).reduce(function(a,p){return Math.max(a,p.spd);},0);
     // Salva rotta
     window._gpsRotta={
         coords:  GPS.pts.map(function(p){return{la:p.la,lo:p.lo,ts:p.ts,spd:p.spd};}),
         soste:   GPS.soste,
         km:      GPS.km,
-        vmax:    GPS.vmax,
+        vmax:    vmax,
         vmedia:  vmedia,
         tStart:  GPS.tStart,
         tEnd:    now
@@ -5448,10 +6100,14 @@ function gpsTermina(){
         if(diffMin<0)diffMin+=1440;
         document.getElementById('tO').value=(diffMin/60).toFixed(2);
     }
-    // Modale con istruzioni
-    mostraAlertApp(currentLang==='en'
-        ? '✅ GPS tracking complete!\n\nKM recorded: '+GPS.km.toFixed(2)+'\nStops: '+GPS.soste.length+'\n\nTo save the shift:\n• Fill in GROSS EARNED (required)\n• Fill in fuel consumption (optional)\n\nThen press SAVE SHIFT.'
-        : '✅ Rilevamento GPS completato!\n\nKM registrati: '+GPS.km.toFixed(2)+'\nSoste: '+GPS.soste.length+'\n\nPer salvare il turno:\n• Compila LORDO GUADAGNATO (obbligatorio)\n• Compila il consumo carburante (facoltativo)\n\nPoi premi SALVA TURNO.');
+    // Modale con istruzioni (Fix1: non mostrare se si sta annullando)
+    if (!GPS.cancelMode) {
+        GPS.completed = true;
+        mostraAlertApp(currentLang==='en'
+            ? '✅ GPS tracking complete!\n\nKM recorded: '+GPS.km.toFixed(2)+'\nStops: '+GPS.soste.length+'\n\nTo save the shift:\n• Fill in GROSS EARNED (required)\n• Fill in fuel consumption (optional)\n\nThen press SAVE SHIFT.'
+            : '✅ Rilevamento GPS completato!\n\nKM registrati: '+GPS.km.toFixed(2)+'\nSoste: '+GPS.soste.length+'\n\nPer salvare il turno:\n• Compila LORDO GUADAGNATO (obbligatorio)\n• Compila il consumo carburante (facoltativo)\n\nPoi premi SALVA TURNO.');
+    }
+    GPS.cancelMode = false;
     document.getElementById('gpsBtnGo').disabled=false;
     document.getElementById('gpsBtnStop').disabled=true;
     var _lblG=document.getElementById('lblGpsSection');if(_lblG)_lblG.style.display='';
@@ -5602,7 +6258,7 @@ function apriDettaglioTurno(turnoId){
             '<div class="det-kpi"><div class="det-kpi-l">Veicolo</div><div class="det-kpi-v" style="font-size:11px;">'+turno.veicoloNome+'</div></div>'+
             (va&&va.targa?'<div class="det-kpi"><div class="det-kpi-l">Targa</div><div class="det-kpi-v" style="font-size:11px;">'+va.targa+'</div></div>':'')+
             (consMedioReale?'<div class="det-kpi"><div class="det-kpi-l">Cons. reale</div><div class="det-kpi-v">'+consMedioReale.toFixed(1)+' L/100</div></div>':'')+
-            (va&&va.serbatoio&&turno.cons>0?'<div class="det-kpi"><div class="det-kpi-l">Serbatoio rimasto</div><div class="det-kpi-v orange">~'+(Math.max(0,va.serbatoio-q)).toFixed(1)+'L</div></div>':'');
+            '';
     } else { veicoloSection.style.display='none'; }
     var modal=document.getElementById('modalDettaglioTurno');
     modal.classList.add('aperto'); modal.style.display='flex';
@@ -5740,20 +6396,71 @@ function vehOnCarbChange() {
     var carb = document.getElementById('vehCarburante').value;
     var fuelSec = document.getElementById('vehFuelSection');
     var bifuelSec = document.getElementById('vehBifuelSection');
-    var cons2 = document.getElementById('vehConsMedio2');
+    var cons2Wrap = document.getElementById('vehConsMedio2Wrap');
+    var lblSer1 = document.getElementById('lblVehSerbatoio');
     var lblSer2 = document.getElementById('lblVehSerbatoio2');
     var noCons = _isNoCons(carb);
+    var isEN = (typeof currentLang !== 'undefined' && currentLang === 'en');
     if (fuelSec) fuelSec.style.display = noCons ? 'none' : 'block';
-    if (_isBifuel(carb)) {
-        if (bifuelSec) bifuelSec.style.display = 'block';
-        if (cons2) cons2.style.display = '';
-        if (lblSer2) {
-            var lbl2 = carb === 'bifuel_benzina_gpl' ? 'Capacità Bombola GPL (L) *' : 'Capacità Serbatoio Metano (m³ equiv.) *';
-            lblSer2.innerText = lbl2;
+
+    // Unità volume per label serbatoio
+    var volLabel = (userSettings.volume === 'gallons_us' || userSettings.volume === 'gallons_uk') ? 'gal' : 'L';
+
+    // Aggiorna label serbatoio 1 in base al carburante
+    if (lblSer1) {
+        if (carb === 'metano') {
+            var metUnit = getMetanoUnit();
+            lblSer1.innerText = isEN ? 'Tank Capacity (' + metUnit + ') *' : 'Capacità Serbatoio (' + metUnit + ') *';
+        } else if (carb === 'bifuel_benzina_gpl' || carb === 'bifuel_benzina_metano') {
+            lblSer1.innerText = isEN ? 'Gasoline Tank (' + volLabel + ') *' : 'Serbatoio Benzina (' + volLabel + ') *';
+        } else {
+            lblSer1.innerText = isEN ? 'Tank Capacity (' + volLabel + ') *' : 'Capacità Serbatoio (' + volLabel + ') *';
         }
+    }
+
+    // Unità consumo dalle preferenze
+    var consUnit = 'km/L';
+    if (userSettings.consumption === 'l_100km') consUnit = 'L/100km';
+    else if (userSettings.consumption === 'mpg_us') consUnit = 'MPG (US)';
+    else if (userSettings.consumption === 'mpg_uk') consUnit = 'MPG (UK)';
+    if (userSettings.distance === 'miles') {
+        if (userSettings.consumption === 'l_100km') consUnit = 'L/100mi';
+        else if (userSettings.consumption === 'km_l') consUnit = 'mi/L';
+    }
+
+    // Unità specifica metano (kg, lb o GGE)
+    var metanoUnit = getMetanoUnit();
+    var distLabel = userSettings.distance === 'miles' ? '100mi' : '100km';
+    var consUnitMetano = userSettings.consumption === 'l_100km'
+        ? metanoUnit + '/' + distLabel
+        : (userSettings.distance === 'miles' ? 'mi' : 'km') + '/' + metanoUnit;
+
+    var isBf = _isBifuel(carb);
+    if (isBf) {
+        if (bifuelSec) bifuelSec.style.display = 'block';
+        if (cons2Wrap) cons2Wrap.style.display = 'block';
+        if (lblSer2) {
+            if (carb === 'bifuel_benzina_gpl') {
+                lblSer2.innerText = isEN ? 'LPG Tank Capacity (' + volLabel + ') *' : 'Capacità Bombola GPL (' + volLabel + ') *';
+            } else {
+                var metUnit = getMetanoUnit();
+                lblSer2.innerText = isEN ? 'CNG Tank Capacity (' + metUnit + ') *' : 'Capacità Serbatoio Metano (' + metUnit + ') *';
+            }
+        }
+        // Placeholder bifuel: 1° benzina, 2° GPL/Metano
+        var lbl2Carb = carb === 'bifuel_benzina_gpl' ? 'GPL' : (isEN ? 'CNG' : 'Metano');
+        var cons2Unit = carb === 'bifuel_benzina_metano' ? consUnitMetano : consUnit;
+        var lblBenz = isEN ? 'Gasoline' : 'Benzina';
+        var c1 = document.getElementById('vehConsMedio');
+        var c2 = document.getElementById('vehConsMedio2');
+        if (c1) c1.placeholder = (isEN ? 'Consumption ' : 'Consumo ') + lblBenz + ' (' + consUnit + ')';
+        if (c2) c2.placeholder = (isEN ? 'Consumption ' : 'Consumo ') + lbl2Carb + ' (' + cons2Unit + ')';
     } else {
         if (bifuelSec) bifuelSec.style.display = 'none';
-        if (cons2) cons2.style.display = 'none';
+        if (cons2Wrap) cons2Wrap.style.display = 'none';
+        var c1 = document.getElementById('vehConsMedio');
+        var unitForThis = carb === 'metano' ? consUnitMetano : consUnit;
+        if (c1) c1.placeholder = (isEN ? 'Avg consumption' : 'Consumo medio') + ' (' + unitForThis + ')';
     }
 
     // Dim carburante select if noCons
@@ -5876,15 +6583,15 @@ _syncVeicoloAttivo = function() {
 
     if (noCons) {
         if (rowKmCons) rowKmCons.style.display = 'none';
-        if (rowOre)    rowOre.style.display = 'block';  // Sempre visibile: serve per ore lavorate
+        if (rowOre)    rowOre.style.display = 'flex';
         if (consHint)  consHint.style.minHeight = '0';
         if (consHint)  consHint.innerText = '';
         if (carbTurno) carbTurno.value = 'nessuno';
         if (fieldCons) { fieldCons.value = '0'; fieldCons.disabled = true; }
+        var tKEl = document.getElementById('tK');
+        if (tKEl) tKEl.style.width = '100%';
         var mezzoEl = document.getElementById('tMezzo');
         if (mezzoEl) mezzoEl.value = va.tipo || 'bici';
-        // Bici: nessun odometro → nascondi km inizio/fine
-        // E-Scooter/E-Bike: molti hanno display km → tieni visibile
         var rowKmOdo = document.getElementById('rowKmOdo');
         if (rowKmOdo) rowKmOdo.style.display = (va.tipo === 'bici') ? 'none' : 'flex';
         return;
@@ -5895,6 +6602,10 @@ _syncVeicoloAttivo = function() {
     if (fieldCons) fieldCons.disabled = false;
     var rowKmOdoEl = document.getElementById('rowKmOdo');
     if (rowKmOdoEl) rowKmOdoEl.style.display = 'flex';
+    var tKEl2 = document.getElementById('tK');
+    if (tKEl2) tKEl2.style.width = '';
+    var tCEl2 = document.getElementById('tC');
+    if (tCEl2) tCEl2.style.display = '';
     var consHintEl = document.getElementById('consHint');
     if (consHintEl) consHintEl.style.minHeight = '';
 
@@ -5929,11 +6640,24 @@ function _carbLabelShort(carb, it) {
 }
 
 function _aggiornaSelectorCarburante(carbs) {
+    var it = (typeof currentLang === 'undefined' || currentLang !== 'en');
     var container = document.getElementById('carbTurnoOptions');
     var pillContainer = document.getElementById('carbPillContainer');
     var selectWrap = document.getElementById('turnoCarburante_select');
-    var carbNames = { benzina:'⛽ Benzina', gpl:'🔵 GPL', metano:'💨 Metano', diesel:'🛢️ Gasolio', miscela:'🔀 Miscela' };
-    var carbShort  = { benzina:'⛽ Benz', gpl:'🔵 GPL', metano:'💨 Met', diesel:'🛢️ Die', miscela:'🔀 Mix' };
+    var carbNames = {
+        benzina: it ? '⛽ Benzina' : '⛽ Gasoline',
+        gpl:     it ? '🔵 GPL'     : '🔵 LPG',
+        metano:  it ? '💨 Metano'  : '💨 CNG',
+        diesel:  it ? '🛢️ Gasolio' : '🛢️ Diesel',
+        miscela: it ? '🔀 Miscela' : '🔀 Mix'
+    };
+    var carbShort = {
+        benzina: it ? '⛽ Benz' : '⛽ Gas',
+        gpl:     '🔵 GPL',
+        metano:  it ? '💨 Met'  : '💨 CNG',
+        diesel:  it ? '🛢️ Die'  : '🛢️ Die',
+        miscela: '🔀 Mix'
+    };
     if (container) {
         container.innerHTML = carbs.map(function(carb) {
             var lbl = carbNames[carb] || carb;
@@ -5975,9 +6699,9 @@ function aggiornaTestiTurnoModal() {
     var it = (typeof currentLang !== 'undefined') ? currentLang !== 'en' : true;
     var el = function(id){return document.getElementById(id);};
     var ls = el('lblGpsSection');
-    if (ls) ls.innerText = it ? '🛰️ Rilevazione GPS Turno' : '🛰️ GPS Shift Tracking';
+    if (ls) ls.textContent = it ? '🛰️ Rilevazione GPS Turno' : '🛰️ GPS Shift Tracking';
     var lm = el('lblManualSection');
-    if (lm) lm.innerText = it ? '✏️ Inserimento Manuale Turno' : '✏️ Manual Shift Entry';
+    if (lm) lm.textContent = it ? '✏️ Inserimento Manuale Turno' : '✏️ Manual Shift Entry';
     var gs = el('gpsLblSoste');
     if (gs) gs.innerText = it ? 'Soste' : 'Stops';
     var gt = el('gpsLblTempo');
@@ -5996,6 +6720,10 @@ function aggiornaTestiSettings() {
     var el = function(id) { return document.getElementById(id); };
     var s = el('settingsTitle');
     if (s) s.innerText = it ? '⚙️ Preferenze' : '⚙️ Preferences';
+    var lbs = el('lblBtnSettings');
+    if (lbs) lbs.innerText = it ? 'IMPOSTAZIONI' : 'SETTINGS';
+    var lbi = el('lblBtnInfo');
+    if (lbi) lbi.innerText = it ? 'INFO' : 'INFO';
     var lbls = {
         lblSettingsDist:  [it ? '📏 Distanza' : '📏 Distance'],
         lblSettingsVol:   [it ? '🧪 Volume' : '🧪 Volume'],
@@ -6023,7 +6751,7 @@ function aggiornaTestiSettings() {
     });
     // Buttons
     var bs = el('btnSettingsSave');
-    if (bs) bs.innerHTML = it ? '✔ SALVA &amp; APPLICA' : '✔ SAVE &amp; APPLY';
+    if (bs) bs.innerHTML = it ? '✔ SALVA' : '✔ SAVE &amp; APPLY';
     var bc = el('btnSettingsClose');
     if (bc) bc.innerText = it ? 'CHIUDI' : 'CLOSE';
     var ba = el('btnAddVehicle');
@@ -6048,7 +6776,7 @@ function aggiornaTestiSettings() {
     var lc = el('lblVehCarb');
     if (lc) lc.innerText = it ? 'Tipo Carburante *' : 'Fuel Type *';
     var ls = el('lblVehSerbatoio');
-    if (ls) ls.innerText = it ? 'Capacità Serbatoio (L) *' : 'Tank Capacity (L) *';
+    if (ls) { vehOnCarbChange(); }
     // Placeholders
     var pm = el('vehMarca');
     if (pm) pm.placeholder = it ? 'Marca *' : 'Brand *';
@@ -6079,13 +6807,52 @@ if (_origAggiornaLingua) {
    INIT
 ════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', function(){
+
+    // Richiedi permesso notifiche (solo Capacitor Android)
+    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+        try { window.Capacitor.Plugins.LocalNotifications.requestPermissions(); } catch(e) {}
+    }
+
+    // Fix tastiera virtuale Android con Capacitor Keyboard plugin
+    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+        try {
+            const { Keyboard } = window.Capacitor.Plugins;
+            Keyboard.addListener('keyboardWillShow', function() {
+                document.querySelectorAll('.modal').forEach(function(m) {
+                    if (m.style.display === 'flex') m.classList.add('keyboard-open');
+                });
+            });
+            Keyboard.addListener('keyboardWillHide', function() {
+                document.querySelectorAll('.modal').forEach(function(m) {
+                    m.classList.remove('keyboard-open');
+                });
+            });
+        } catch(e) {}
+    }
     _syncVeicoloAttivo();
     aggiornaTestiSettings();
     aggiornaTestiTurnoModal();
     checkPrimoAvvio();
+    _meterBuild();
 });
 
 
+</script>
+<script>
+// Blocca overscroll/bounce su Android WebView
+document.addEventListener('touchmove', function(e) {
+    var el = e.target;
+    // Permetti scroll solo negli elementi che devono scorrere
+    while (el && el !== document.body) {
+        var style = window.getComputedStyle(el);
+        var overflowY = style.overflowY;
+        if ((overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight) {
+            return; // lascia scorrere
+        }
+        el = el.parentElement;
+    }
+    e.preventDefault(); // blocca tutto il resto
+}, { passive: false });
 </script>
 </body>
 </html>
