@@ -4366,7 +4366,6 @@ function salvaBackup() {
     var lang = localStorage.getItem('app_language') || 'it';
     var backupCount = parseInt(localStorage.getItem('rider_backup_counter') || '0') + 1;
     localStorage.setItem('rider_backup_counter', backupCount);
-    // Salva last_carb per ogni veicolo registrato
     var _lastCarbMap = {};
     try {
         var _vv = JSON.parse(localStorage.getItem('rider_veicoli') || '[]');
@@ -4388,37 +4387,45 @@ function salvaBackup() {
         ultimo_carburante_turno: localStorage.getItem('ultimo_carburante_turno_' + lang) || '',
         ultimo_carburante_benza: localStorage.getItem('ultimo_carburante_benza_' + lang) || '',
     };
-    const jsonStr = JSON.stringify(dataObj, null, 2);
-    const fileName = `ridertracker_backup_${new Date().toISOString().slice(0, 10)}_(${backupCount}).json`;
+    var jsonStr = JSON.stringify(dataObj, null, 2);
+    var fileName = 'ridertracker_backup_' + new Date().toISOString().slice(0, 10) + '_(' + backupCount + ').json';
+    var it = (typeof currentLang === 'undefined' || currentLang !== 'en');
 
-    // Capacitor Android: usa Filesystem plugin
     if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-        try {
-            const { Filesystem, Share } = window.Capacitor.Plugins;
+        var Filesystem = window.Capacitor.Plugins.Filesystem;
+        var Share = window.Capacitor.Plugins.Share;
+        // Salva in CACHE e apri Share (l'utente sceglie dove salvare/inviare)
+        Filesystem.writeFile({
+            path: fileName,
+            data: jsonStr,
+            directory: 'CACHE',
+            encoding: 'utf8'
+        }).then(function(result) {
+            // Salva anche in Download silenziosamente
             Filesystem.writeFile({
-                path: fileName,
+                path: 'Download/' + fileName,
                 data: jsonStr,
-                directory: 'CACHE',
-                encoding: 'utf8'
-            }).then(function(result) {
-                Share.share({
-                    title: 'Backup RiderTracker',
-                    url: result.uri,
-                    dialogTitle: 'Salva o condividi il backup'
-                }).catch(function(e) {
-                    // Utente ha annullato la condivisione, non mostrare messaggio
-                });
-            }).catch(function(e) {
-                mostraAlertApp('Errore salvataggio backup: ' + e.message);
+                directory: 'EXTERNAL_STORAGE',
+                encoding: 'utf8',
+                recursive: true
+            }).catch(function() {});
+            // Apri Share per scegliere dove inviare
+            Share.share({
+                title: 'Backup RiderTracker',
+                url: result.uri,
+                dialogTitle: it ? 'Salva o condividi il backup' : 'Save or share backup'
+            }).then(function() {
+                mostraAlertApp(it ? '✅ Backup anche salvato in Download/' + fileName : '✅ Backup also saved to Download/' + fileName);
+            }).catch(function() {
+                mostraAlertApp(it ? '✅ Backup salvato in Download/' + fileName : '✅ Backup saved to Download/' + fileName);
             });
-        } catch(e) {
-            mostraAlertApp('Errore backup: ' + e.message);
-        }
+        }).catch(function(e) {
+            mostraAlertApp(it ? 'Errore backup: ' + e.message : 'Backup error: ' + e.message);
+        });
     } else {
-        // Browser fallback
-        const blob = new Blob([jsonStr], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
+        var blob = new Blob([jsonStr], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
         a.href = url;
         a.download = fileName;
         a.click();
