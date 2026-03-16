@@ -4392,36 +4392,34 @@ function salvaBackup() {
     var it = (typeof currentLang === 'undefined' || currentLang !== 'en');
 
     if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-        var Filesystem = window.Capacitor.Plugins.Filesystem;
-        var Share = window.Capacitor.Plugins.Share;
-        // Salva in CACHE e apri Share (l'utente sceglie dove salvare/inviare)
-        Filesystem.writeFile({
-            path: fileName,
-            data: jsonStr,
-            directory: 'CACHE',
-            encoding: 'utf8'
-        }).then(function(result) {
-            // Salva anche in Download silenziosamente
-            Filesystem.writeFile({
-                path: 'Download/' + fileName,
-                data: jsonStr,
-                directory: 'EXTERNAL_STORAGE',
-                encoding: 'utf8',
-                recursive: true
-            }).catch(function() {});
-            // Apri Share per scegliere dove inviare
-            Share.share({
-                title: 'Backup RiderTracker',
-                url: result.uri,
-                dialogTitle: it ? 'Salva o condividi il backup' : 'Save or share backup'
+        var SaveFile = window.Capacitor.Plugins.SaveFile;
+        if (SaveFile) {
+            SaveFile.save({
+                fileName: fileName,
+                content: jsonStr,
+                mimeType: 'application/json'
             }).then(function() {
-                mostraAlertApp(it ? '✅ Backup anche salvato in Download/' + fileName : '✅ Backup also saved to Download/' + fileName);
-            }).catch(function() {
-                mostraAlertApp(it ? '✅ Backup salvato in Download/' + fileName : '✅ Backup saved to Download/' + fileName);
+                mostraAlertApp(it ? '✅ Backup salvato con successo!' : '✅ Backup saved successfully!');
+            }).catch(function() {});
+        } else {
+            // Fallback Share se plugin non disponibile
+            var Filesystem = window.Capacitor.Plugins.Filesystem;
+            var Share = window.Capacitor.Plugins.Share;
+            Filesystem.writeFile({
+                path: fileName,
+                data: jsonStr,
+                directory: 'CACHE',
+                encoding: 'utf8'
+            }).then(function(result) {
+                Share.share({
+                    title: 'Backup RiderTracker',
+                    url: result.uri,
+                    dialogTitle: it ? 'Salva o condividi il backup' : 'Save or share backup'
+                }).catch(function() {});
+            }).catch(function(e) {
+                mostraAlertApp(it ? 'Errore backup: ' + e.message : 'Backup error: ' + e.message);
             });
-        }).catch(function(e) {
-            mostraAlertApp(it ? 'Errore backup: ' + e.message : 'Backup error: ' + e.message);
-        });
+        }
     } else {
         var blob = new Blob([jsonStr], { type: 'application/json' });
         var url = URL.createObjectURL(blob);
