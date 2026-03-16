@@ -2472,6 +2472,37 @@ function _meterAnimate(targetP) {
     }, intervalMs);
 }
 
+function _meterSweepIntro() {
+    var percEl = document.getElementById('perc');
+    var targetP = percEl ? parseInt(percEl.innerText) || 0 : 0;
+    var container = document.getElementById('meterSegments');
+    if (!container) return;
+    var nSeg = container.children.length;
+    var segs = container.children;
+    var sweepUp = 0;
+    var sweepInterval = setInterval(function() {
+        sweepUp++;
+        for (var i = 0; i < nSeg; i++) segs[i].classList.toggle('active', i < sweepUp);
+        if (sweepUp >= nSeg) {
+            clearInterval(sweepInterval);
+            var sweepDown = nSeg;
+            var downInterval = setInterval(function() {
+                sweepDown--;
+                for (var i = 0; i < nSeg; i++) segs[i].classList.toggle('active', i < sweepDown);
+                if (sweepDown <= 0) {
+                    clearInterval(downInterval);
+                    if (targetP > 0) _meterAnimate(targetP);
+                    try {
+                        var audio = new Audio('https://ridertrackerpro.github.io/dev/intro.mp3');
+                        audio.volume = 1.0;
+                        audio.play().catch(function(){});
+                    } catch(e) {}
+                }
+            }, 12);
+        }
+    }, 12);
+}
+
 function isDataFutura(d, m, y) {
     const oggi = new Date();
     oggi.setHours(23,59,59,999);
@@ -4228,13 +4259,7 @@ function chiudiModali() {
     editingId = null; editingCat = null;
     if (window._playIntroOnHome) {
         window._playIntroOnHome = false;
-        setTimeout(function() {
-            try {
-                var audio = new Audio('https://ridertrackerpro.github.io/dev/intro.mp3');
-                audio.volume = 1.0;
-                audio.play().catch(function(){});
-            } catch(e) {}
-        }, 300);
+        setTimeout(function() { _meterSweepIntro(); }, 300);
     }
 }
 
@@ -5113,7 +5138,7 @@ function stampaPagina() {
                             url:   result.uri,
                             dialogTitle: it ? 'Condividi / Stampa PDF' : 'Share / Print PDF'
                         }).catch(function(e) {
-                            mostraAlertApp(it ? 'Condivisione non disponibile.' : 'Share not available.');
+                            // Utente ha premuto indietro o annullato, non mostrare nulla
                         });
                     }).catch(function(e) {
                         mostraAlertApp(it ? 'Errore salvataggio PDF: ' + e.message : 'PDF save error: ' + e.message);
@@ -5328,13 +5353,7 @@ function chiudiModalSettings() {
     document.getElementById('modalSettings').style.display = 'none';
     if (window._playIntroOnHome) {
         window._playIntroOnHome = false;
-        setTimeout(function() {
-            try {
-                var audio = new Audio('https://ridertrackerpro.github.io/dev/intro.mp3');
-                audio.volume = 1.0;
-                audio.play().catch(function(){});
-            } catch(e) {}
-        }, 300);
+        setTimeout(function() { _meterSweepIntro(); }, 300);
     }
 }
 
