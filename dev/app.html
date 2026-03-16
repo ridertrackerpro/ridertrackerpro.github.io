@@ -4994,7 +4994,8 @@ function stampaPagina() {
             var boxRect = printBox.getBoundingClientRect();
             sectionsPx.push({
                 topPx: secRect.top - boxRect.top,
-                heightPx: secRect.height
+                heightPx: secRect.height,
+                isSummary: allSections[si].classList.contains('summary-box')
             });
         }
 
@@ -5029,24 +5030,35 @@ function stampaPagina() {
             for (var si = 0; si < sectionsPx.length; si++) {
                 var topMm = (sectionsPx[si].topPx / totalPx) * imgH;
                 var hMm = (sectionsPx[si].heightPx / totalPx) * imgH;
-                sectionsMm.push({ topMm: topMm, bottomMm: topMm + hMm, heightMm: hMm });
+                sectionsMm.push({ topMm: topMm, bottomMm: topMm + hMm, heightMm: hMm, isSummary: sectionsPx[si].isSummary });
             }
 
             // ── 5. PAGINAZIONE INTELLIGENTE ──
             var TOLERANCE_MM = 15;
+            // Trova il summary-box per forzare pagina dedicata
+            var summaryMm = null;
+            for (var si = 0; si < sectionsMm.length; si++) {
+                if (sectionsMm[si].isSummary) { summaryMm = sectionsMm[si]; break; }
+            }
             var pages = [];
             var y = 0;
             while (y < imgH) {
                 var nextY = y + pageH;
                 if (nextY >= imgH) { pages.push(y); break; }
-                for (var si = 0; si < sectionsMm.length; si++) {
-                    var sec = sectionsMm[si];
-                    if (sec.heightMm <= pageH && nextY > sec.topMm && nextY < sec.bottomMm) {
-                        var overflow = sec.bottomMm - nextY;
-                        if (overflow > TOLERANCE_MM) {
-                            nextY = sec.topMm;
+                // Forza page break prima del summary: sempre su pagina dedicata
+                if (summaryMm && y < summaryMm.topMm && nextY > summaryMm.topMm) {
+                    nextY = summaryMm.topMm;
+                } else {
+                    for (var si = 0; si < sectionsMm.length; si++) {
+                        var sec = sectionsMm[si];
+                        if (sec.isSummary) continue; // summary gestito sopra
+                        if (sec.heightMm <= pageH && nextY > sec.topMm && nextY < sec.bottomMm) {
+                            var overflow = sec.bottomMm - nextY;
+                            if (overflow > TOLERANCE_MM) {
+                                nextY = sec.topMm;
+                            }
+                            break;
                         }
-                        break;
                     }
                 }
                 if (nextY <= y) nextY = y + pageH;
