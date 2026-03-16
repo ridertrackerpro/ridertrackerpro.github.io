@@ -5007,7 +5007,7 @@ function stampaPagina() {
         // ── 3. RENDER html2canvas sul clone largo ──
         var cloneScrollH = printBox.scrollHeight;
         html2canvas(printBox, {
-            scale: 2,
+            scale: 1.5,
             useCORS: true,
             backgroundColor: '#ffffff',
             scrollY: 0,
@@ -5074,10 +5074,10 @@ function stampaPagina() {
             }
 
             // ── 6. GENERA PAGINE PDF ──
-            var imgData = canvas.toDataURL('image/png');
+            var imgData = canvas.toDataURL('image/jpeg', 0.92);
             pages.forEach(function(pageY, i) {
                 if (i > 0) pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, TOP_MARGIN - pageY, imgW, imgH);
+                pdf.addImage(imgData, 'JPEG', 0, TOP_MARGIN - pageY, imgW, imgH);
                 var sliceEnd = (i < pages.length - 1) ? pages[i + 1] : imgH;
                 var visibleH = sliceEnd - pageY;
                 // Maschera bianca top: copre tutto sopra l'area contenuto
@@ -5087,6 +5087,12 @@ function stampaPagina() {
                 var bottomMaskY = TOP_MARGIN + visibleH - 0.5;
                 pdf.rect(0, bottomMaskY, pageW, pageHFull - bottomMaskY + 1, 'F');
             });
+
+            // Libera memoria canvas
+            imgData = null;
+            canvas.width = 0;
+            canvas.height = 0;
+            canvas = null;
 
             // ── 7. ESPORTA ──
             var meseLabel = (document.getElementById('reportMeseLabel') || {}).innerText || 'report';
