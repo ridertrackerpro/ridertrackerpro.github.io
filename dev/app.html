@@ -4980,8 +4980,8 @@ function stampaPagina() {
             '#_printClone table { width:100%; border-collapse:collapse; font-size:11px; margin-bottom:10px; table-layout:auto; }' +
             '#_printClone th, #_printClone td { padding:5px 4px; border:1px solid #000; text-align:center; white-space:nowrap; }' +
             '#_printClone th { background:#eee!important; font-weight:bold; }' +
-            '#_printClone .report-section { border:2px solid #000; padding:14px; margin-bottom:16px; }' +
-            '#_printClone .summary-box { border:3px solid #000; padding:18px; }' +
+            '#_printClone .report-section { border:2px solid #000; padding:14px; margin-bottom:40px; }' +
+            '#_printClone .summary-box { border:3px solid #000; padding:18px; margin-top:40px; }' +
             '#_printClone .summary-row { display:flex; justify-content:space-between; padding:4px 0; font-size:13px; }' +
             '#_printClone .summary-row.total { font-weight:bold; font-size:16px; border-top:2px solid #000; margin-top:6px; padding-top:8px; }' +
             '#_printClone h2, #_printClone h3 { text-align:center; color:#000!important; }' +
@@ -5023,8 +5023,8 @@ function stampaPagina() {
             var pdf = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
             var pageW = pdf.internal.pageSize.getWidth();
             var pageHFull = pdf.internal.pageSize.getHeight();
-            var TOP_MARGIN = 8;
-            var BOTTOM_MARGIN = 8;
+            var TOP_MARGIN = 30;
+            var BOTTOM_MARGIN = 30;
             var pageH = pageHFull - TOP_MARGIN - BOTTOM_MARGIN;
             var imgW = pageW;
             var imgH = (canvas.height * imgW) / canvas.width;
