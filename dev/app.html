@@ -5057,12 +5057,14 @@ function stampaPagina() {
                         var sec = sectionsMm[si];
                         if (sec.isSummary) continue;
                         if (sec.heightMm <= pageH && nextY > sec.topMm && nextY < sec.bottomMm) {
-                            var overflow = sec.bottomMm - nextY;
-                            if (overflow > 10) {
-                                nextY = sec.topMm;
-                            }
-                            break;
-                        }
+    var overflow = sec.bottomMm - nextY;
+
+    if (overflow > 5 || (nextY - y) < (pageH - 5)) {
+        nextY = sec.topMm;
+    }
+
+    break;
+}
                     }
                 }
                 if (nextY <= y) nextY = y + pageH;
