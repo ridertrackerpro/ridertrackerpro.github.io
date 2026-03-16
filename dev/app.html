@@ -162,7 +162,8 @@ html, body { touch-action: pan-x pan-y; }
 }
 .report-table td, .report-table th { 
     padding: 3px 2px;
-    white-space: nowrap;
+    white-space: normal;
+    word-break: break-word;
     border: 1px solid #000;
     text-align: center;
 }
@@ -4933,13 +4934,8 @@ function stampaPagina() {
     }
     rv.style.display = 'flex';
 
-    // Fallback browser
-    if (!window.Capacitor || !window.Capacitor.isNativePlatform()) {
-        window.print();
-        return;
-    }
-
     var it = (typeof currentLang === 'undefined' || currentLang !== 'en');
+    var isNative = window.Capacitor && window.Capacitor.isNativePlatform();
     var btnFooter = document.querySelector('.report-fixed-footer');
     if (btnFooter) btnFooter.style.display = 'none';
 
@@ -5023,29 +5019,38 @@ function stampaPagina() {
                 }
             });
 
-            var pdfBase64 = pdf.output('datauristring').split(',')[1];
             var meseLabel = (document.getElementById('reportMeseLabel') || {}).innerText || 'report';
             var fileName = 'RiderTracker_' + meseLabel.replace(/\s/g,'_') + '.pdf';
-            try {
-                window.Capacitor.Plugins.Filesystem.writeFile({
-                    path: fileName,
-                    data: pdfBase64,
-                    directory: 'CACHE',
-                    recursive: true
-                }).then(function(result) {
-                    window.Capacitor.Plugins.Share.share({
-                        title: it ? 'Riepilogo Rider Tracker' : 'Rider Tracker Report',
-                        text:  it ? 'Riepilogo mensile' : 'Monthly report',
-                        url:   result.uri,
-                        dialogTitle: it ? 'Condividi / Stampa PDF' : 'Share / Print PDF'
+
+            if (isNative) {
+                // Percorso Capacitor Android/iOS
+                var pdfBase64 = pdf.output('datauristring').split(',')[1];
+                try {
+                    window.Capacitor.Plugins.Filesystem.writeFile({
+                        path: fileName,
+                        data: pdfBase64,
+                        directory: 'CACHE',
+                        recursive: true
+                    }).then(function(result) {
+                        window.Capacitor.Plugins.Share.share({
+                            title: it ? 'Riepilogo Rider Tracker' : 'Rider Tracker Report',
+                            text:  it ? 'Riepilogo mensile' : 'Monthly report',
+                            url:   result.uri,
+                            dialogTitle: it ? 'Condividi / Stampa PDF' : 'Share / Print PDF'
+                        }).catch(function(e) {
+                            mostraAlertApp(it ? 'Condivisione non disponibile.' : 'Share not available.');
+                        });
                     }).catch(function(e) {
-                        mostraAlertApp(it ? 'Condivisione non disponibile.' : 'Share not available.');
+                        mostraAlertApp(it ? 'Errore salvataggio PDF: ' + e.message : 'PDF save error: ' + e.message);
                     });
-                }).catch(function(e) {
-                    mostraAlertApp(it ? 'Errore salvataggio PDF: ' + e.message : 'PDF save error: ' + e.message);
-                });
-            } catch(e) {
-                mostraAlertApp(it ? 'Plugin non disponibile.' : 'Plugin not available.');
+                } catch(e) {
+                    mostraAlertApp(it ? 'Plugin non disponibile.' : 'Plugin not available.');
+                }
+            } else {
+                // Percorso browser: apri PDF in nuova tab per stampa/download
+                var pdfBlob = pdf.output('blob');
+                var blobUrl = URL.createObjectURL(pdfBlob);
+                window.open(blobUrl, '_blank');
             }
         }).catch(function(e) {
             if (btnFooter) btnFooter.style.display = '';
