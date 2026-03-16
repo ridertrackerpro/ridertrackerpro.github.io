@@ -1105,19 +1105,6 @@ body {
 </div>
 
 <div id="modalPrezzoBenzaMancante" class="modal no-print" style="z-index:10002;">
-
-<div id="modalBackupChoice" class="modal no-print" style="z-index:10012;">
-    <div class="modal-content" style="border-color: var(--primary);">
-        <h3 style="color:var(--primary); font-size:15px; margin-bottom:14px;">💾 <span data-translate="backup_choice_title">ESPORTA BACKUP</span></h3>
-        <button class="btn-modal btn-save" onclick="_backupSalvaLocale()" style="margin-bottom:8px;">
-            <i class="fas fa-folder" style="margin-right:6px;"></i><span data-translate="backup_save_local">SALVA NEL TELEFONO</span>
-        </button>
-        <button class="btn-modal btn-save" onclick="_backupCondividi()" style="background:var(--orange); margin-bottom:8px;">
-            <i class="fas fa-share-alt" style="margin-right:6px;"></i><span data-translate="backup_share">CONDIVIDI / INVIA</span>
-        </button>
-        <button class="btn-modal btn-close" onclick="document.getElementById('modalBackupChoice').style.display='none'" data-translate="cancel">ANNULLA</button>
-    </div>
-</div>
     <div class="modal-content" style="border-color: var(--orange);">
         <h3 style="color:var(--orange);" data-translate="initial_price">PREZZO INIZIALE</h3>
         <p style="font-size:12px; color:var(--dim); margin-bottom:12px;" data-translate="insert_last_price">Inserisci il prezzo dell'ultimo rifornimento</p>
@@ -1542,9 +1529,6 @@ vehicle_scooter: 'Scooter',
         total_km: 'TOTALE KM:',
         avg_cost_km: 'COSTO MEDIO/KM:',
         export_backup: 'ESPORTA BACKUP',
-        backup_choice_title: 'ESPORTA BACKUP',
-        backup_save_local: 'SALVA NEL TELEFONO',
-        backup_share: 'CONDIVIDI / INVIA',
         import_backup: 'IMPORTA BACKUP',
         backup_error: 'Errore nel file di backup',
         ph_mix_pct: '% Miscela',
@@ -1734,9 +1718,6 @@ chart_eur_km: '/KM',
         total_km: 'TOTAL KM:',
         avg_cost_km: 'AVG COST/KM:',
         export_backup: 'EXPORT BACKUP',
-        backup_choice_title: 'EXPORT BACKUP',
-        backup_save_local: 'SAVE TO PHONE',
-        backup_share: 'SHARE / SEND',
         import_backup: 'IMPORT BACKUP',
         backup_error: 'Backup file error',
         ph_mix_pct: '% Mix',
@@ -4383,7 +4364,6 @@ function eseguiEliminazioneAnno() {
 
 function salvaBackup() {
     var lang = localStorage.getItem('app_language') || 'it';
-    var it = (typeof currentLang === 'undefined' || currentLang !== 'en');
     var backupCount = parseInt(localStorage.getItem('rider_backup_counter') || '0') + 1;
     localStorage.setItem('rider_backup_counter', backupCount);
     // Salva last_carb per ogni veicolo registrato
@@ -4411,14 +4391,30 @@ function salvaBackup() {
     const jsonStr = JSON.stringify(dataObj, null, 2);
     const fileName = `ridertracker_backup_${new Date().toISOString().slice(0, 10)}_(${backupCount}).json`;
 
-    // Capacitor Android: mostra scelta salva/condividi
-    try {
-        var el = document.getElementById('modalBackupChoice');
-        if (!el) { alert('DEBUG: modalBackupChoice non trovato nel DOM'); return; }
-        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-            window._backupData = { jsonStr: jsonStr, fileName: fileName };
-            el.style.display = 'flex';
-        } else {
+    // Capacitor Android: usa Filesystem plugin
+    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+        try {
+            const { Filesystem, Share } = window.Capacitor.Plugins;
+            Filesystem.writeFile({
+                path: fileName,
+                data: jsonStr,
+                directory: 'CACHE',
+                encoding: 'utf8'
+            }).then(function(result) {
+                Share.share({
+                    title: 'Backup RiderTracker',
+                    url: result.uri,
+                    dialogTitle: 'Salva o condividi il backup'
+                }).catch(function(e) {
+                    // Utente ha annullato la condivisione, non mostrare messaggio
+                });
+            }).catch(function(e) {
+                mostraAlertApp('Errore salvataggio backup: ' + e.message);
+            });
+        } catch(e) {
+            mostraAlertApp('Errore backup: ' + e.message);
+        }
+    } else {
         // Browser fallback
         const blob = new Blob([jsonStr], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -4428,58 +4424,6 @@ function salvaBackup() {
         a.click();
         URL.revokeObjectURL(url);
     }
-    } catch(e) { alert('DEBUG salvaBackup: ' + e.message); }
-}
-function _backupSalvaLocale() {
-    document.getElementById('modalBackupChoice').style.display = 'none';
-    var d = window._backupData;
-    if (!d) return;
-    var it = (typeof currentLang === 'undefined' || currentLang !== 'en');
-    var Filesystem = window.Capacitor.Plugins.Filesystem;
-    Filesystem.writeFile({
-        path: 'Download/' + d.fileName,
-        data: d.jsonStr,
-        directory: 'EXTERNAL_STORAGE',
-        encoding: 'utf8',
-        recursive: true
-    }).then(function() {
-        mostraAlertApp(it ? '✅ Backup salvato in Download/' + d.fileName : '✅ Backup saved to Download/' + d.fileName);
-    }).catch(function(e) {
-        // Fallback: prova DOCUMENTS
-        Filesystem.writeFile({
-            path: d.fileName,
-            data: d.jsonStr,
-            directory: 'DOCUMENTS',
-            encoding: 'utf8',
-            recursive: true
-        }).then(function() {
-            mostraAlertApp(it ? '✅ Backup salvato in Documenti/' + d.fileName : '✅ Backup saved to Documents/' + d.fileName);
-        }).catch(function(e2) {
-            mostraAlertApp(it ? '❌ Errore salvataggio: ' + e2.message : '❌ Save error: ' + e2.message);
-        });
-    });
-}
-function _backupCondividi() {
-    document.getElementById('modalBackupChoice').style.display = 'none';
-    var d = window._backupData;
-    if (!d) return;
-    var it = (typeof currentLang === 'undefined' || currentLang !== 'en');
-    var Filesystem = window.Capacitor.Plugins.Filesystem;
-    var Share = window.Capacitor.Plugins.Share;
-    Filesystem.writeFile({
-        path: d.fileName,
-        data: d.jsonStr,
-        directory: 'CACHE',
-        encoding: 'utf8'
-    }).then(function(result) {
-        Share.share({
-            title: 'Backup RiderTracker',
-            url: result.uri,
-            dialogTitle: it ? 'Condividi backup' : 'Share backup'
-        }).catch(function() {});
-    }).catch(function(e) {
-        mostraAlertApp(it ? '❌ Errore: ' + e.message : '❌ Error: ' + e.message);
-    });
 }
 function confermaRiporto() {
     document.getElementById('modalRiportoNegativo').style.display = 'none';
