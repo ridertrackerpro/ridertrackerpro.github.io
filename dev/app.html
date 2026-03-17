@@ -6038,6 +6038,18 @@ function gpsAvvia(){
     }, 20000);
 }
 
+// Media mobile velocità ultimi N punti GPS per filtro adattivo
+function _gpsAvgSpeed() {
+    var pts = GPS.pts;
+    var n = Math.min(pts.length, 10);
+    if (n === 0) return 0;
+    var sum = 0;
+    for (var i = pts.length - n; i < pts.length; i++) {
+        sum += pts[i].spd;
+    }
+    return sum / n;
+}
+
 function _gpsPos(pos){
     var la=pos.coords.latitude,lo=pos.coords.longitude;
     var spd=pos.coords.speed ? pos.coords.speed*3.6 : 0;
@@ -6057,18 +6069,28 @@ function _gpsPos(pos){
         if(d>0.5 && dt<3){return;}
         // Filtro spike: scarta velocità GPS superiore a 250 km/h
         if(spd>250){return;}
-        // Filtro spike: velocità chip incoerente con spostamento reale
-        // Se il chip dice >50 km/h ma lo spostamento reale dice <10 km/h, usa lo spostamento
-        if(dt>0.5){
-            var spdCalc=(d/dt)*3600;
-            if(spd>50 && spdCalc<10){
-                spd=spdCalc;
-            }
+
+        // Velocità calcolata dallo spostamento reale
+        var spdCalc = (dt > 0.5) ? (d / dt) * 3600 : spd;
+
+        // Filtro adattivo: soglia spike basata sulla media mobile ultimi 10 punti
+        var avgSpd = _gpsAvgSpeed();
+        var spikeThresh;
+        if (avgSpd < 10) { spikeThresh = 15; }       // pedone
+        else if (avgSpd < 30) { spikeThresh = 40; }   // transizione
+        else { spikeThresh = 80; }                     // veicolo
+
+        // Se il chip dice più della soglia adattiva ma lo spostamento reale è molto inferiore, usa spostamento
+        if (dt > 0.5 && spd > spikeThresh && spdCalc < avgSpd + 5) {
+            spd = spdCalc;
         }
+        // Se la velocità calcolata supera la soglia e il chip concorda, è uno spike GPS
+        if (spdCalc > spikeThresh * 2 && spd > spikeThresh * 2) { return; }
+
         if(d>0.000001 && d<2) GPS.km+=d;
         // Fallback: se il chip GPS non riporta velocità, calcolala dalla posizione
         if(spd===0 && d>0.000001){
-            if(dt>0.5) spd=Math.min((d/dt)*3600, 200);
+            if(dt>0.5) spd=Math.min(spdCalc, 200);
         }
     } else {
         // Primo punto: il chip GPS spesso riporta speed spazzatura al primo fix
