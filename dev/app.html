@@ -633,6 +633,7 @@ body {
 
 /* FIX 4: Storico - bottone CHIUDI visibile sopra nav bar */
 #histView {
+    padding-top: max(15px, calc(15px + env(safe-area-inset-top, 40px))) !important;
     padding-bottom: max(15px, calc(15px + env(safe-area-inset-bottom, 48px))) !important;
     box-sizing: border-box !important;
 }
@@ -644,6 +645,7 @@ body {
 
 /* FIX 6: Resa view - bottone CHIUDI visibile */
 #resaView > div {
+    padding-top: max(15px, calc(15px + env(safe-area-inset-top, 40px))) !important;
     padding-bottom: max(10px, calc(10px + env(safe-area-inset-bottom, 48px))) !important;
     box-sizing: border-box !important;
 }
@@ -2075,6 +2077,7 @@ function setCurrency(val){
     salvaUserSettings();
 }
 
+const APP_VERSION = 3.0;
 const KM_PER_MILE = 1.609344;
 const L_PER_GALLON_US = 3.785411784;
 const L_PER_GALLON_UK = 4.54609;
@@ -6454,6 +6457,25 @@ effettuaSalvataggioTurno = function(prezzo, rif) {
 };
 
 /* ════════════════════════════════════════════════════
+   CONTROLLO AGGIORNAMENTI
+════════════════════════════════════════════════════ */
+async function checkAggiornamento() {
+    try {
+        const res = await fetch('https://ridertrackerpro.github.io/dev/version.json?t=' + Date.now());
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.version > APP_VERSION) {
+            const msg = currentLang === 'en'
+                ? `New version ${data.version} available!\nCurrent: ${APP_VERSION}\n\nDownload now?`
+                : `Nuova versione ${data.version} disponibile!\nInstallata: ${APP_VERSION}\n\nScarica ora?`;
+            if (confirm(msg)) {
+                window.open(data.url, '_blank');
+            }
+        }
+    } catch(e) {}
+}
+
+/* ════════════════════════════════════════════════════
    PRIMO AVVIO — check veicolo + tax + target
 ════════════════════════════════════════════════════ */
 function checkPrimoAvvio() {
@@ -6925,6 +6947,7 @@ document.addEventListener('DOMContentLoaded', function(){
     aggiornaTestiTurnoModal();
     checkPrimoAvvio();
     _meterBuild();
+    checkAggiornamento();
 });
 
 
