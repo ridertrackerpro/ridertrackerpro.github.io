@@ -5514,7 +5514,7 @@ calcola();
         <div class="det-leg-item"><div class="det-leg-dot" style="background:#ff4d4d"></div>&gt;90 km/h</div>
         <div class="det-leg-item"><div class="det-leg-dot" style="background:#4ade80;border:1.5px solid #fff;width:9px;height:9px"></div>Start</div>
         <div class="det-leg-item"><div class="det-leg-dot" style="background:#ff4d4d;border:1.5px solid #fff;width:9px;height:9px"></div>Fine</div>
-        <div class="det-leg-item"><div class="det-leg-dot" style="background:#ffa500;border:1.5px solid #fff;width:7px;height:7px"></div>Sosta</div>
+        <div class="det-leg-item"><div class="det-leg-dot" style="background:#a855f7;border:1.5px solid #fff;width:7px;height:7px"></div>Sosta</div>
       </div>
       <!-- KPI principali -->
       <div class="det-section">
@@ -5787,7 +5787,7 @@ var GPS = {
     pts:[], soste:[], km:0, vmax:0,
     tStart:null, inSosta:false, sostaT:null,
     tempoTimer:null, checkpointTimer:null, swPingTimer:null,
-    STOP_KMH:1, STOP_MIN_S:60,
+    STOP_KMH:1, STOP_MIN_S:20,
     cancelMode:false, completed:false
 };
 
@@ -6275,7 +6275,7 @@ function _buildLeafletMap(rotta) {
     bounds.push([pts[pts.length-1].la, pts[pts.length-1].lo]);
     (rotta.soste || []).forEach(function(s, idx) {
         var icon = L.divIcon({
-            html: '<div style="background:#ffa500;border:2px solid #fff;border-radius:50%;width:12px;height:12px;"></div>',
+            html: '<div style="background:#a855f7;border:2px solid #fff;border-radius:50%;width:12px;height:12px;"></div>',
             className: '', iconSize: [12,12], iconAnchor: [6,6]
         });
         L.marker([s.la, s.lo], {icon:icon}).addTo(map)
