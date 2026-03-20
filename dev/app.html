@@ -6464,10 +6464,13 @@ async function checkAggiornamento() {
         const res = await fetch('https://ridertrackerpro.github.io/dev/version.json?t=' + Date.now());
         if (!res.ok) return;
         const data = await res.json();
-        if (parseFloat(data.version) > parseFloat(APP_VERSION)) {
+        const remoteVersion = String(data.version);
+        const alreadyNotified = localStorage.getItem('update_notified_version');
+        if (parseFloat(remoteVersion) > parseFloat(APP_VERSION) && alreadyNotified !== remoteVersion) {
             const msg = currentLang === 'en'
-                ? `New version ${data.version} available!\nCurrent: ${APP_VERSION}\n\nDownload now?`
-                : `Nuova versione ${data.version} disponibile!\nInstallata: ${APP_VERSION}\n\nScarica ora?`;
+                ? `New version ${remoteVersion} available!\nCurrent: ${APP_VERSION}\n\nDownload now?`
+                : `Nuova versione ${remoteVersion} disponibile!\nInstallata: ${APP_VERSION}\n\nScarica ora?`;
+            localStorage.setItem('update_notified_version', remoteVersion);
             if (confirm(msg)) {
                 try {
                     const { Browser } = window.Capacitor.Plugins;
