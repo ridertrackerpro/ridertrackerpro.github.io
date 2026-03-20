@@ -6469,7 +6469,12 @@ async function checkAggiornamento() {
                 ? `New version ${data.version} available!\nCurrent: ${APP_VERSION}\n\nDownload now?`
                 : `Nuova versione ${data.version} disponibile!\nInstallata: ${APP_VERSION}\n\nScarica ora?`;
             if (confirm(msg)) {
-                window.open(data.url, '_system');
+                try {
+                    const { Browser } = window.Capacitor.Plugins;
+                    await Browser.open({ url: data.url });
+                } catch(e) {
+                    window.open(data.url, '_system');
+                }
             }
         }
     } catch(e) {}
