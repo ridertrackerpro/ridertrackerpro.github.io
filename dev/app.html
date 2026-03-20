@@ -5513,7 +5513,7 @@ calcola();
         <div class="det-leg-item"><div class="det-leg-dot" style="background:#3b82f6"></div>60-90</div>
         <div class="det-leg-item"><div class="det-leg-dot" style="background:#ffa500"></div>&gt;90 km/h</div>
         <div class="det-leg-item"><div class="det-leg-dot" style="background:#4ade80;border:1.5px solid #fff;width:9px;height:9px"></div>Start</div>
-        <div class="det-leg-item"><div class="det-leg-dot" style="background:#ff4d4d;border:1.5px solid #fff;width:9px;height:9px"></div>Fine</div>
+        <div class="det-leg-item"><div class="det-leg-dot" style="background:#ffffff;border:1.5px solid #fff;width:9px;height:9px"></div>Fine</div>
         <div class="det-leg-item"><div class="det-leg-dot" style="background:#a855f7;border:1.5px solid #fff;width:7px;height:7px"></div>Sosta</div>
       </div>
       <!-- KPI principali -->
@@ -6282,7 +6282,7 @@ function _buildLeafletMap(rotta) {
          .bindPopup('<b>⏸ Sosta ' + (idx+1) + '</b><br>' + _ts2hm(s.tStart) + ' → ' + _ts2hm(s.tEnd) + '<br>Durata: ' + _fmtDur(s.dur));
     });
     var sIcon = L.divIcon({ html: '<div style="background:#4ade80;border:2px solid #fff;border-radius:50%;width:14px;height:14px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:900;color:#000;">S</div>', className:'', iconSize:[14,14], iconAnchor:[7,7] });
-    var eIcon = L.divIcon({ html: '<div style="background:#ff4d4d;border:2px solid #fff;border-radius:50%;width:14px;height:14px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:900;color:#fff;">F</div>', className:'', iconSize:[14,14], iconAnchor:[7,7] });
+    var eIcon = L.divIcon({ html: '<div style="background:#ffffff;border:2px solid #fff;border-radius:50%;width:14px;height:14px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:900;color:#000;">F</div>', className:'', iconSize:[14,14], iconAnchor:[7,7] });
     L.marker([pts[0].la, pts[0].lo], {icon:sIcon}).addTo(map).bindPopup('<b>🟢 Inizio</b><br>' + _ts2hm(rotta.tStart));
     var lp = pts[pts.length-1];
     L.marker([lp.la, lp.lo], {icon:eIcon}).addTo(map).bindPopup('<b>🔴 Fine</b><br>' + _ts2hm(rotta.tEnd));
