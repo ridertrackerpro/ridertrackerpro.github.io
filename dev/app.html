@@ -694,7 +694,7 @@ body {
                 text-transform: uppercase;
                 font-size: 9px;
                 letter-spacing: 1px;">
-        <span style="color: var(--dim);">VERSION 3.2</span>
+        <span style="color: var(--dim);">VERSION 3.3</span>
         <span style="color: #444;">|</span>
         <span style="color: var(--dim);">
             © 2026 by
@@ -1033,6 +1033,13 @@ body {
         <input type="number" id="extraImportoInput" style="text-align:center; margin-bottom:14px;" data-translate-placeholder="ph_extra_amount" step="0.01" inputmode="decimal" autocomplete="off">
         <div id="extraAltroWrap" style="display:none;">
             <input type="text" id="extraDescInput" style="text-align:center; margin-bottom:14px;" data-translate-placeholder="ph_extra_reason" autocomplete="off">
+        </div>
+        <div id="extraScadenzaWrap" style="display:none; margin-bottom:14px;">
+            <p style="font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Scadenza</p>
+            <div class="date-row" id="dateScadenza"></div>
+        </div>
+        <div id="extraTagliandoWrap" style="display:none; margin-bottom:14px;">
+            <input type="number" id="extraTagliandoKm" style="text-align:center;" placeholder="Prossimo tagliando (km)" inputmode="numeric" autocomplete="off">
         </div>
         <button class="btn-modal btn-save" onclick="salvaExtraKm()" data-translate="save" style="padding:14px; margin-top:4px;">SALVA</button>
         <button class="btn-modal btn-close" onclick="chiudiModali()" data-translate="cancel" style="padding:14px; margin-top:8px;">ANNULLA</button>
@@ -2077,7 +2084,7 @@ function setCurrency(val){
     salvaUserSettings();
 }
 
-const APP_VERSION = '3.2';
+const APP_VERSION = '3.3';
 const KM_PER_MILE = 1.609344;
 const L_PER_GALLON_US = 3.785411784;
 const L_PER_GALLON_UK = 4.54609;
@@ -4183,16 +4190,134 @@ function completaSalvaBenzaConPrezzo() {
     pendingBenzaEuro = 0;
     salvaBenza();
 }
+function _buildDateScadenza() {
+    const wrap = document.getElementById('dateScadenza');
+    if (wrap.querySelector('select')) return;
+    const oggi = new Date();
+    let hD = '<select id="scadD" style="flex:1;background:var(--input-bg);border:1px solid #444;border-radius:10px;color:#fff;padding:8px 4px;font-size:13px;text-align:center;">';
+    for (let d = 1; d <= 31; d++) hD += `<option value="${d}"${d === oggi.getDate() ? ' selected' : ''}>${d}</option>`;
+    hD += '</select>';
+    const mesi = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+    let hM = '<select id="scadM" style="flex:1;background:var(--input-bg);border:1px solid #444;border-radius:10px;color:#fff;padding:8px 4px;font-size:13px;text-align:center;">';
+    mesi.forEach((m, i) => hM += `<option value="${i+1}"${i === oggi.getMonth() ? ' selected' : ''}>${m}</option>`);
+    hM += '</select>';
+    let hY = '<select id="scadY" style="flex:1;background:var(--input-bg);border:1px solid #444;border-radius:10px;color:#fff;padding:8px 4px;font-size:13px;text-align:center;">';
+    for (let y = oggi.getFullYear(); y <= oggi.getFullYear() + 5; y++) hY += `<option value="${y}">${y}</option>`;
+    hY += '</select>';
+    wrap.style.display = 'flex';
+    wrap.style.gap = '6px';
+    wrap.innerHTML = hD + hM + hY;
+}
+
+function checkScadenze() {
+    const oggi = new Date();
+    oggi.setHours(0,0,0,0);
+    const avvisi = [];
+    let scadenze = JSON.parse(localStorage.getItem('scadenze_veicolo') || '[]');
+    let scadenzeModificate = false;
+
+    // Pianifica notifiche push (solo Capacitor)
+    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+        try {
+            const { LocalNotifications } = window.Capacitor.Plugins;
+            const notifications = [];
+            scadenze.forEach(function(s, i) {
+                const parti = s.data.split('/');
+                const scad = new Date(parseInt(parti[2]), parseInt(parti[1])-1, parseInt(parti[0]));
+                const avviso = new Date(scad);
+                avviso.setDate(avviso.getDate() - 5);
+                avviso.setHours(9, 0, 0, 0);
+                if (avviso > new Date()) {
+                    notifications.push({
+                        id: 1000 + i,
+                        title: '⏰ Scadenza imminente',
+                        body: s.tipo + ' scade il ' + s.data + '. Hai 5 giorni per inserire la nuova scadenza, altrimenti non riceverai più avvisi.',
+                        schedule: { at: avviso },
+                        channelId: 'default'
+                    });
+                }
+            });
+            if (notifications.length > 0) {
+                LocalNotifications.cancel({ notifications: notifications.map(n => ({ id: n.id })) })
+                    .then(() => LocalNotifications.schedule({ notifications }))
+                    .catch(() => {});
+            }
+        } catch(e) {}
+    }
+
+    // Controlla scadenze
+    scadenze = scadenze.filter(function(s) {
+        const parti = s.data.split('/');
+        const scad = new Date(parseInt(parti[2]), parseInt(parti[1])-1, parseInt(parti[0]));
+        const diff = Math.round((scad - oggi) / 86400000);
+        const alertKey = 'scad_notificata_' + s.tipo + '_' + s.data;
+
+        if (diff < 0) {
+            // Scaduta e non aggiornata → azzera
+            localStorage.removeItem(alertKey);
+            scadenzeModificate = true;
+            return false;
+        }
+        if (diff <= 5 && !localStorage.getItem(alertKey)) {
+            localStorage.setItem(alertKey, '1');
+            avvisi.push('⚠️ ' + s.tipo + ': scadenza il ' + s.data + ' (tra ' + diff + ' giorni).\nHai 5 giorni per inserire la nuova scadenza, altrimenti non riceverai più avvisi.');
+        }
+        return true;
+    });
+
+    if (scadenzeModificate) {
+        localStorage.setItem('scadenze_veicolo', JSON.stringify(scadenze));
+    }
+
+    // Tagliando
+    const tagliandoKm = parseInt(localStorage.getItem('tagliando_prossimo_km') || '0');
+    if (tagliandoKm > 0) {
+        const kmTotali = (db.turni || []).reduce(function(a, t) { return a + (parseFloat(t.km) || 0); }, 0);
+        const diff = tagliandoKm - kmTotali;
+        const alertKey = 'scad_notificata_tagliando_' + tagliandoKm;
+        if (diff < 0) {
+            // Superato e non aggiornato → azzera
+            localStorage.removeItem(alertKey);
+            localStorage.removeItem('tagliando_prossimo_km');
+        } else if (diff <= 100 && !localStorage.getItem(alertKey)) {
+            localStorage.setItem(alertKey, '1');
+            avvisi.push('🔧 Tagliando: mancano ' + Math.round(diff) + ' km.\nHai 5 giorni per inserire il nuovo km di tagliando, altrimenti non riceverai più avvisi.');
+        }
+    }
+
+    if (avvisi.length > 0) {
+        const titolo = document.getElementById('multiTitle');
+        const corpo = document.getElementById('multiBody');
+        if (titolo) titolo.innerText = '⏰ SCADENZE VEICOLO';
+        if (corpo) corpo.innerHTML = avvisi.join('<br><br>').replace(/\n/g, '<br>');
+        document.getElementById('modalMulti').style.display = 'flex';
+    }
+}
+
 function selezionaCategoriaExtra(chiave, icona) {
     document.getElementById('extraCategoriaKey').value = chiave;
     document.getElementById('labelCategoriaExtra').innerText = icona + ' ' + t(chiave);
     const altroWrap = document.getElementById('extraAltroWrap');
+    const scadenzaWrap = document.getElementById('extraScadenzaWrap');
+    const tagliandoWrap = document.getElementById('extraTagliandoWrap');
     if (chiave === 'cat_altro') {
         altroWrap.style.display = 'block';
     } else {
         altroWrap.style.display = 'none';
         const descInput = document.getElementById('extraDescInput');
         if (descInput) descInput.value = '';
+    }
+    if (['cat_bollo','cat_assicurazione','cat_revisione'].includes(chiave)) {
+        scadenzaWrap.style.display = 'block';
+        _buildDateScadenza();
+    } else {
+        scadenzaWrap.style.display = 'none';
+    }
+    if (chiave === 'cat_tagliando') {
+        tagliandoWrap.style.display = 'block';
+    } else {
+        tagliandoWrap.style.display = 'none';
+        document.getElementById('extraTagliandoKm').value = '';
     }
     document.getElementById('modalSelectCategoriaExtra').style.display = 'none';
 }
@@ -4238,6 +4363,25 @@ function salvaExtraKm() {
         db.extraKm.push({ id: Date.now(), data: extraData, importo: toEuro(importoInput), desc: descFinal });
     }
     salvaDB();
+    // Salva scadenza per bollo/assicurazione/revisione
+    if (['cat_bollo','cat_assicurazione','cat_revisione'].includes(catKey)) {
+        const scadD = document.getElementById('scadD');
+        const scadM = document.getElementById('scadM');
+        const scadY = document.getElementById('scadY');
+        if (scadD && scadM && scadY) {
+            const dataScad = scadD.value.padStart(2,'0') + '/' + scadM.value.padStart(2,'0') + '/' + scadY.value;
+            const scadenze = JSON.parse(localStorage.getItem('scadenze_veicolo') || '[]');
+            const idx = scadenze.findIndex(s => s.tipo === descFinal);
+            if (idx !== -1) scadenze[idx].data = dataScad;
+            else scadenze.push({ tipo: descFinal, data: dataScad });
+            localStorage.setItem('scadenze_veicolo', JSON.stringify(scadenze));
+        }
+    }
+    // Salva km prossimo tagliando
+    if (catKey === 'cat_tagliando') {
+        const kmVal = parseInt(document.getElementById('extraTagliandoKm').value) || 0;
+        if (kmVal > 0) localStorage.setItem('tagliando_prossimo_km', kmVal);
+    }
     document.getElementById('extraImportoInput').value = '';
     document.getElementById('extraCategoriaKey').value = '';
     document.getElementById('extraDescInput').value = '';
@@ -6956,6 +7100,7 @@ document.addEventListener('DOMContentLoaded', function(){
     checkPrimoAvvio();
     _meterBuild();
     checkAggiornamento();
+    checkScadenze();
 });
 
 
