@@ -694,7 +694,7 @@ body {
                 text-transform: uppercase;
                 font-size: 9px;
                 letter-spacing: 1px;">
-        <span style="color: var(--dim);">VERSION 3.3</span>
+        <span style="color: var(--dim);">VERSION 3.0.1</span>
         <span style="color: #444;">|</span>
         <span style="color: var(--dim);">
             © 2026 by
@@ -2084,7 +2084,7 @@ function setCurrency(val){
     salvaUserSettings();
 }
 
-const APP_VERSION = '3.3';
+const APP_VERSION = '3.0.1';
 const KM_PER_MILE = 1.609344;
 const L_PER_GALLON_US = 3.785411784;
 const L_PER_GALLON_UK = 4.54609;
@@ -6616,14 +6616,28 @@ async function checkAggiornamento() {
         if (parseFloat(remoteVersion) > parseFloat(APP_VERSION)) {
             window._updateDialogShown = true;
             const msg = currentLang === 'en'
-                ? `New version ${remoteVersion} available!\nCurrent: ${APP_VERSION}\n\nDownload now?`
-                : `Nuova versione ${remoteVersion} disponibile!\nInstallata: ${APP_VERSION}\n\nScarica ora?`;
+                ? `New version ${remoteVersion} available!\nCurrent: ${APP_VERSION}\n\nInstall now?`
+                : `Nuova versione ${remoteVersion} disponibile!\nInstallata: ${APP_VERSION}\n\nInstalla ora?`;
             if (confirm(msg)) {
                 try {
-                    const { Browser } = window.Capacitor.Plugins;
-                    await Browser.open({ url: data.url });
+                    const { LiveUpdate } = window.Capacitor.Plugins;
+                    const bundleId = remoteVersion;
+                    // Controlla se il bundle è già scaricato
+                    const { bundleIds } = await LiveUpdate.getBundles();
+                    if (!bundleIds.includes(bundleId)) {
+                        await LiveUpdate.downloadBundle({
+                            url: data.bundle_url,
+                            bundleId: bundleId
+                        });
+                    }
+                    await LiveUpdate.setBundle({ bundleId: bundleId });
+                    await LiveUpdate.reload();
                 } catch(e) {
-                    window.open(data.url, '_system');
+                    // Fallback: apri browser se LiveUpdate fallisce
+                    try {
+                        const { Browser } = window.Capacitor.Plugins;
+                        await Browser.open({ url: data.url });
+                    } catch(e2) {}
                 }
             }
         }
