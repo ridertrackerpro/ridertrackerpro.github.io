@@ -6604,17 +6604,17 @@ effettuaSalvataggioTurno = function(prezzo, rif) {
    CONTROLLO AGGIORNAMENTI
 ════════════════════════════════════════════════════ */
 async function checkAggiornamento() {
+    if (window._updateDialogShown) return;
     try {
         const res = await fetch('https://ridertrackerpro.github.io/dev/version.json?t=' + Date.now());
         if (!res.ok) return;
         const data = await res.json();
         const remoteVersion = String(data.version);
-        const alreadyNotified = localStorage.getItem('update_notified_version');
-        if (parseFloat(remoteVersion) > parseFloat(APP_VERSION) && alreadyNotified !== remoteVersion) {
+        if (parseFloat(remoteVersion) > parseFloat(APP_VERSION)) {
+            window._updateDialogShown = true;
             const msg = currentLang === 'en'
                 ? `New version ${remoteVersion} available!\nCurrent: ${APP_VERSION}\n\nDownload now?`
                 : `Nuova versione ${remoteVersion} disponibile!\nInstallata: ${APP_VERSION}\n\nScarica ora?`;
-            localStorage.setItem('update_notified_version', remoteVersion);
             if (confirm(msg)) {
                 try {
                     const { Browser } = window.Capacitor.Plugins;
