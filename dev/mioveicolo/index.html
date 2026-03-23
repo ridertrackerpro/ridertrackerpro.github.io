@@ -8,6 +8,8 @@
     <meta name="theme-color" content="#0f0f0f">
     <title>MioVeicolo</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root {
             --bg:#0f0f0f; --card:#1a1a1a; --primary:#00CCBC; --accent:#ff4d4d;
@@ -55,27 +57,7 @@
         .vb-health-txt { font-size:10px; font-weight:900; }
         .vb-empty { display:flex; align-items:center; justify-content:center; gap:8px; color:var(--dim); font-size:12px; }
         .vb-empty i { color:var(--primary); font-size:18px; }
-        @media print {
-            body > * { display:none !important; }
-            #printView { display:block !important; position:static !important; background:#fff !important; color:#111 !important; padding:20px !important; }
-            #printView .no-print { display:none !important; }
-            .rep-card { border:1px solid #ddd !important; background:#fff !important; color:#111 !important; }
-            .rep-title { color:#888 !important; }
-            .rep-row { color:#111 !important; border-bottom:1px solid #eee !important; }
-            .rep-tot { color:#00CCBC !important; }
-        }
-        #printView {
-            display:none; position:fixed; inset:0; z-index:20000; background:#fff; color:#111;
-            flex-direction:column; padding:20px; overflow-y:auto;
-        }
-        #printView h1 { font-size:22px; font-weight:900; margin:0 0 4px 0; color:#111; }
-        #printView h1 span { color:#00CCBC; }
-        #printView .print-sub { font-size:12px; color:#888; margin-bottom:20px; }
-        #printView .rep-card { border:1px solid #ddd; background:#fff; color:#111; border-radius:10px; padding:14px; margin-bottom:14px; }
-        #printView .rep-title { color:#888; font-size:11px; }
-        #printView .rep-row { color:#111; border-bottom:1px solid #eee; }
-        #printView .rep-row span { color:#111 !important; }
-        #printView .rep-tot { color:#00CCBC; }
+        @keyframes fadeSlideUp {
             from { opacity:0; transform:translateY(18px); }
             to { opacity:1; transform:translateY(0); }
         }
@@ -537,13 +519,6 @@
     </div>
 </div>
 
-<!-- ══════════ PRINT VIEW ══════════ -->
-<div id="printView">
-    <h1>Mio<span>Veicolo</span></h1>
-    <div class="print-sub" id="printVeicolo"></div>
-    <div id="printBody"></div>
-    <button class="no-print" onclick="document.getElementById('printView').style.display='none'" style="margin-top:20px; padding:14px; background:#333; color:#fff; border:none; border-radius:12px; font-weight:900; font-size:13px; width:100%; cursor:pointer;">✕ CHIUDI</button>
-</div>
 
 <script>
 const APP_VERSION = '1.0.0';
@@ -1184,14 +1159,69 @@ function apriInfo(){
     mostraAlert('🚗 MioVeicolo\nVersion '+APP_VERSION+'\n\nApp per la gestione delle scadenze del tuo veicolo.\n\n© 2026 MioVeicolo');
 }
 
-// ══════ STAMPA ══════
+// ══════ STAMPA PDF ══════
 function stampaRiepilogo() {
-    const v = db.veicolo;
-    const contenuto = document.getElementById('riepilogoContent').innerHTML;
-    document.getElementById('printVeicolo').innerText = (v.marca||'Veicolo non impostato') + (v.targa?' · '+v.targa:'') + ' · Stampato il ' + new Date().toLocaleDateString('it-IT');
-    document.getElementById('printBody').innerHTML = contenuto;
-    document.getElementById('printView').style.display='flex';
-    setTimeout(function(){ window.print(); }, 300);
+    var v = db.veicolo;
+    var isNative = window.Capacitor && window.Capacitor.isNativePlatform();
+    var contenuto = document.getElementById('riepilogoContent');
+    var RENDER_W = 800;
+    var printBox = document.createElement('div');
+    printBox.id = '_mvPrintClone';
+    printBox.style.cssText = 'position:fixed;left:-9999px;top:0;width:'+RENDER_W+'px;background:#fff;color:#000;font-family:sans-serif;padding:20px 24px;box-sizing:border-box;z-index:-1;';
+    var header = '<h2 style="font-size:20px;font-weight:900;margin:0 0 4px 0;color:#111;">Mio<span style="color:#00CCBC;">Veicolo</span></h2>';
+    header += '<p style="font-size:12px;color:#888;margin:0 0 16px 0;">'+(v.marca||'Veicolo non impostato')+(v.targa?' · '+v.targa:'')+' · Stampato il '+new Date().toLocaleDateString('it-IT')+'</p>';
+    printBox.innerHTML = header + contenuto.innerHTML;
+    var style = document.createElement('style');
+    style.textContent =
+        '#_mvPrintClone * { color:#000!important; background:#fff!important; border-color:#ddd!important; box-shadow:none!important; }' +
+        '#_mvPrintClone .rep-card { border:1px solid #ddd!important; border-radius:8px; padding:12px; margin-bottom:12px; }' +
+        '#_mvPrintClone .rep-title { color:#888!important; font-size:11px; text-transform:uppercase; font-weight:bold; margin-bottom:8px; }' +
+        '#_mvPrintClone .rep-row { display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #eee!important; font-size:13px; }' +
+        '#_mvPrintClone .rep-tot { font-weight:900; font-size:15px; color:#00CCBC!important; margin-top:8px; }';
+    printBox.appendChild(style);
+    document.body.appendChild(printBox);
+    setTimeout(function() {
+        html2canvas(printBox, {
+            scale:1.5, useCORS:true, backgroundColor:'#ffffff',
+            scrollY:0, windowWidth:RENDER_W, width:RENDER_W,
+            height:printBox.scrollHeight, logging:false
+        }).then(function(canvas) {
+            document.body.removeChild(printBox);
+            var pdf = new window.jspdf.jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+            var pageW = pdf.internal.pageSize.getWidth();
+            var pageH = pdf.internal.pageSize.getHeight() - 10;
+            var imgW = pageW;
+            var imgH = (canvas.height * imgW) / canvas.width;
+            var imgData = canvas.toDataURL('image/jpeg', 0.92);
+            var y = 0;
+            while (y < imgH) {
+                if (y > 0) pdf.addPage();
+                pdf.addImage(imgData, 'JPEG', 0, 5-y, imgW, imgH);
+                pdf.setFillColor(255,255,255);
+                pdf.rect(0, 0, pageW, 5, 'F');
+                var nextY = Math.min(y+pageH, imgH);
+                pdf.rect(0, 5+(nextY-y), pageW, pageH-(nextY-y)+10, 'F');
+                y = nextY;
+            }
+            imgData = null; canvas.width = 0; canvas.height = 0;
+            var fileName = 'MioVeicolo_'+new Date().toISOString().slice(0,10)+'.pdf';
+            if (isNative) {
+                var pdfBase64 = pdf.output('datauristring').split(',')[1];
+                window.Capacitor.Plugins.Filesystem.writeFile({
+                    path:fileName, data:pdfBase64, directory:'CACHE', recursive:true
+                }).then(function(result) {
+                    window.Capacitor.Plugins.Share.share({
+                        title:'Riepilogo MioVeicolo', text:'Riepilogo spese veicolo',
+                        url:result.uri, dialogTitle:'Condividi / Stampa PDF'
+                    }).catch(function(){});
+                }).catch(function(e){ mostraAlert('Errore PDF: '+e.message); });
+            } else {
+                var blob = pdf.output('blob');
+                var url = URL.createObjectURL(blob);
+                window.open(url, '_blank');
+            }
+        });
+    }, 100);
 }
 
 // ══════ INIT ══════
