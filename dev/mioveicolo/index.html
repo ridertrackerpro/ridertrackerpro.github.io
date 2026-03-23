@@ -1049,15 +1049,21 @@ function pianificaNotifiche() {
             if (!s.data) return;
             const scad=dataToObj(s.data);
             if (!scad) return;
-            const avviso=new Date(scad); avviso.setDate(avviso.getDate()-5); avviso.setHours(9,0,0,0);
-            if (avviso > new Date()) {
-                notifications.push({ id:2000+i, title:'⏰ '+s.tipo+' in scadenza', body:s.tipo+' scade il '+s.data+'. Hai 5 giorni per rinnovare!', schedule:{at:avviso, allowWhileIdle:true, exact:true}, channelId:'default' });
+            // Notifica 5 giorni prima alle 9:00
+            const avviso5=new Date(scad); avviso5.setDate(avviso5.getDate()-5); avviso5.setHours(9,0,0,0);
+            if (avviso5 > new Date()) {
+                notifications.push({ id:2000+i, title:'⏰ '+s.tipo+' in scadenza tra 5 giorni', body:s.tipo+' scade il '+s.data+'. Rinnovalo prima che scada!', schedule:{at:avviso5, allowWhileIdle:true, exact:true}, channelId:'default' });
+            }
+            // Notifica il giorno della scadenza alle 9:00
+            const avviso0=new Date(scad); avviso0.setHours(9,0,0,0);
+            if (avviso0 > new Date()) {
+                notifications.push({ id:3000+i, title:'🔴 '+s.tipo+' SCADE OGGI', body:s.tipo+' scade oggi '+s.data+'. Rinnovalo subito!', schedule:{at:avviso0, allowWhileIdle:true, exact:true}, channelId:'default' });
             }
         });
-        if (notifications.length>0) {
-            LocalNotifications.cancel({notifications:notifications.map(n=>({id:n.id}))})
-                .then(()=>LocalNotifications.schedule({notifications})).catch(()=>{});
-        }
+        const ids = notifications.map(n=>({id:n.id}));
+        LocalNotifications.cancel({notifications:ids})
+            .then(()=>{ if(notifications.length>0) LocalNotifications.schedule({notifications}).catch(()=>{}); })
+            .catch(()=>{});
     } catch(e){}
 }
 
