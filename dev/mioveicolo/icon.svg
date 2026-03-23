@@ -1,0 +1,54 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Sfondo -->
+  <rect width="512" height="512" rx="100" fill="#0f0f0f"/>
+  <!-- Bordo esterno -->
+  <rect x="8" y="8" width="496" height="496" rx="96" stroke="#00CCBC" stroke-width="6" stroke-opacity="0.4"/>
+  <!-- Glow sfondo centrale -->
+  <ellipse cx="256" cy="280" rx="180" ry="120" fill="#00CCBC" fill-opacity="0.06"/>
+
+  <!-- CARROZZERIA AUTO -->
+  <!-- Tetto -->
+  <path d="M160 240 C170 200 200 175 256 170 C312 175 342 200 352 240" stroke="#00CCBC" stroke-width="10" fill="none" stroke-linecap="round"/>
+  <!-- Corpo -->
+  <rect x="100" y="240" width="312" height="80" rx="20" fill="#1a1a1a" stroke="#00CCBC" stroke-width="8"/>
+  <!-- Paraurti anteriore -->
+  <rect x="90" y="300" width="20" height="30" rx="6" fill="#00CCBC" fill-opacity="0.6"/>
+  <!-- Paraurti posteriore -->
+  <rect x="402" y="300" width="20" height="30" rx="6" fill="#00CCBC" fill-opacity="0.6"/>
+  <!-- Fanalini anteriori -->
+  <ellipse cx="108" cy="270" rx="14" ry="10" fill="#00CCBC" fill-opacity="0.9"/>
+  <ellipse cx="108" cy="270" rx="8" ry="6" fill="#ffffff" fill-opacity="0.8"/>
+  <!-- Fanalini posteriori -->
+  <ellipse cx="404" cy="270" rx="14" ry="10" fill="#ff4d4d" fill-opacity="0.9"/>
+  <ellipse cx="404" cy="270" rx="8" ry="6" fill="#ffffff" fill-opacity="0.5"/>
+
+  <!-- RUOTE -->
+  <!-- Ruota sinistra -->
+  <circle cx="170" cy="330" r="42" fill="#111" stroke="#00CCBC" stroke-width="8"/>
+  <circle cx="170" cy="330" r="22" fill="#1a1a1a" stroke="#00CCBC" stroke-width="5"/>
+  <circle cx="170" cy="330" r="8" fill="#00CCBC"/>
+  <!-- Raggi ruota sinistra -->
+  <line x1="170" y1="308" x2="170" y2="320" stroke="#00CCBC" stroke-width="4" stroke-linecap="round"/>
+  <line x1="170" y1="340" x2="170" y2="352" stroke="#00CCBC" stroke-width="4" stroke-linecap="round"/>
+  <line x1="148" y1="330" x2="160" y2="330" stroke="#00CCBC" stroke-width="4" stroke-linecap="round"/>
+  <line x1="180" y1="330" x2="192" y2="330" stroke="#00CCBC" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- Ruota destra -->
+  <circle cx="342" cy="330" r="42" fill="#111" stroke="#00CCBC" stroke-width="8"/>
+  <circle cx="342" cy="330" r="22" fill="#1a1a1a" stroke="#00CCBC" stroke-width="5"/>
+  <circle cx="342" cy="330" r="8" fill="#00CCBC"/>
+  <!-- Raggi ruota destra -->
+  <line x1="342" y1="308" x2="342" y2="320" stroke="#00CCBC" stroke-width="4" stroke-linecap="round"/>
+  <line x1="342" y1="340" x2="342" y2="352" stroke="#00CCBC" stroke-width="4" stroke-linecap="round"/>
+  <line x1="320" y1="330" x2="332" y2="330" stroke="#00CCBC" stroke-width="4" stroke-linecap="round"/>
+  <line x1="352" y1="330" x2="364" y2="330" stroke="#00CCBC" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- Finestrini -->
+  <path d="M168 242 C176 210 200 185 256 182 C312 185 336 210 344 242 Z" fill="#00CCBC" fill-opacity="0.12" stroke="#00CCBC" stroke-width="4"/>
+  <!-- Divisore finestrino -->
+  <line x1="256" y1="182" x2="256" y2="242" stroke="#00CCBC" stroke-width="4" stroke-opacity="0.5"/>
+
+  <!-- TESTO MV sotto -->
+  <text x="256" y="430" text-anchor="middle" font-family="sans-serif" font-weight="900" font-size="72" fill="#ffffff" letter-spacing="4">Mio</text>
+  <text x="256" y="490" text-anchor="middle" font-family="sans-serif" font-weight="900" font-size="52" fill="#00CCBC" letter-spacing="6">VEICOLO</text>
+</svg>
