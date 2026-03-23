@@ -1252,9 +1252,12 @@ document.addEventListener('DOMContentLoaded', function(){
                     visibility: 1,
                     vibration: true
                 }).catch(function(){});
-                // Richiedi permesso exact alarm Android 12+
+                // Richiedi permesso exact alarm Android 12+ solo una volta
                 try { LN.checkExactNotificationSetting().then(function(r){
-                    if (r.result !== 'granted') { LN.changeExactNotificationSetting().catch(function(){}); }
+                    if (r.result !== 'granted' && !localStorage.getItem('exact_alarm_asked')) {
+                        localStorage.setItem('exact_alarm_asked', '1');
+                        LN.changeExactNotificationSetting().catch(function(){});
+                    }
                 }).catch(function(){}); } catch(e){}
             }).catch(function(){});
         } catch(e) {}
