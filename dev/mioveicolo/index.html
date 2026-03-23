@@ -1051,7 +1051,7 @@ function pianificaNotifiche() {
             if (!scad) return;
             const avviso=new Date(scad); avviso.setDate(avviso.getDate()-5); avviso.setHours(9,0,0,0);
             if (avviso > new Date()) {
-                notifications.push({ id:2000+i, title:'⏰ '+s.tipo+' in scadenza', body:s.tipo+' scade il '+s.data+'. Hai 5 giorni per rinnovare!', schedule:{at:avviso}, channelId:'default' });
+                notifications.push({ id:2000+i, title:'⏰ '+s.tipo+' in scadenza', body:s.tipo+' scade il '+s.data+'. Hai 5 giorni per rinnovare!', schedule:{at:avviso, allowWhileIdle:true, exact:true}, channelId:'default' });
             }
         });
         if (notifications.length>0) {
@@ -1231,7 +1231,23 @@ function stampaRiepilogo() {
 // ══════ INIT ══════
 document.addEventListener('DOMContentLoaded', function(){
     if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-        try { window.Capacitor.Plugins.LocalNotifications.requestPermissions(); } catch(e){}
+        try {
+            const LN = window.Capacitor.Plugins.LocalNotifications;
+            LN.requestPermissions().then(function() {
+                // Crea canale notifiche Android
+                LN.createChannel({
+                    id: 'default',
+                    name: 'Scadenze AutoCris',
+                    importance: 5,
+                    visibility: 1,
+                    vibration: true
+                }).catch(function(){});
+                // Richiedi permesso exact alarm Android 12+
+                try { LN.checkExactNotificationSetting().then(function(r){
+                    if (r.result !== 'granted') { LN.changeExactNotificationSetting().catch(function(){}); }
+                }).catch(function(){}); } catch(e){}
+            }).catch(function(){});
+        } catch(e) {}
     }
     meterBuild();
     aggDashboard();
