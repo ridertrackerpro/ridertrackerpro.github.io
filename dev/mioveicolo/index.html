@@ -6,15 +6,15 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#0f0f0f">
-    <title>MioVeicolo</title>
+    <title>AutoCris</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root {
-            --bg:#0f0f0f; --card:#1a1a1a; --primary:#00CCBC; --accent:#ff4d4d;
+            --bg:#0f0f0f; --card:#1a1a1a; --primary:#e879a0; --accent:#ff4d4d;
             --text:#e0e0e0; --dim:#888; --input-bg:#252525; --orange:#ffa500;
-            --green:#4ade80; --primary-dark:#00A89A;
+            --green:#4ade80; --primary-dark:#c0527a;
         }
         * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
         html, body { touch-action:pan-x pan-y; }
@@ -33,14 +33,15 @@
         /* VEICOLO CARD ESPANSA */
         #veicoloBar {
             background: linear-gradient(135deg, #1a1a1a 0%, #1e1e2e 100%);
-            border: 1px solid #333; border-radius:12px; padding:10px 12px;
+            border: 1px solid #e879a0; border-radius:12px; padding:6px 12px;
             margin-bottom:8px; display:flex; flex-direction:column;
-            justify-content:center; gap:0; cursor:pointer; flex:1; min-height:46px;
+            justify-content:center; gap:0; cursor:pointer;
             position:relative; overflow:hidden;
+            height:76px; flex-shrink:0;
         }
         #veicoloBar::before {
             content:''; position:absolute; inset:0; border-radius:12px;
-            background: linear-gradient(135deg, rgba(0,204,188,0.08) 0%, transparent 60%);
+            background: linear-gradient(135deg, rgba(232,121,160,0.08) 0%, transparent 60%);
             pointer-events:none;
         }
         .vb-top { display:flex; align-items:center; justify-content:space-between; }
@@ -66,19 +67,15 @@
         .app-subtitle { font-size:11px; color:var(--dim); margin-bottom:10px; letter-spacing:1px; text-transform:uppercase; }
         .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:8px; }
         .grid-2 { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:8px; }
-        .card { background:var(--card); height:75px; display:flex; flex-direction:column; justify-content:center; align-items:center; border-radius:12px; border:1px solid #333; }
+        .card { background:var(--card); height:75px; display:flex; flex-direction:column; justify-content:center; align-items:center; border-radius:12px; border:1px solid #e879a0; }
         .card.urgent { border-color:var(--accent); }
         .card.warning { border-color:var(--orange); }
-        .card.ok { border-color:#333; }
+        .card.ok { border-color:#e879a0; }
         .label { font-size:8px; color:var(--dim); text-transform:uppercase; margin-bottom:4px; font-weight:bold; }
         .val { font-size:13px; font-weight:bold; color:var(--primary); }
         .val.red { color:var(--accent); }
         .val.orange { color:var(--orange); }
         .val.green { color:var(--green); }
-        /* VEICOLO BAR */
-        #veicoloBar { background:var(--card); border:1px solid #333; border-radius:10px; padding:7px 12px; margin-bottom:8px; display:flex; align-items:center; justify-content:center; gap:8px; font-size:12px; color:var(--dim); cursor:pointer; }
-        #veicoloBar .vb-nome { font-size:14px; font-weight:900; color:var(--primary); }
-        #veicoloBar .vb-targa { font-size:11px; color:#555; }
         /* METER */
         .progress-container { background:var(--card); padding:6px 12px; border-radius:12px; margin-bottom:8px; border:1px solid #333; display:flex; flex-direction:column; gap:4px; }
         .progress-header { display:flex; justify-content:center; font-weight:bold; color:var(--primary); font-size:12px; text-transform:uppercase; letter-spacing:1px; }
@@ -91,12 +88,11 @@
         #prossScad { font-weight:bold; color:var(--primary); font-size:12px; }
         /* FOOTER */
         .sticky-footer {
-            position:relative; margin-top:0; background:#161616;
+            position:relative; margin-top:auto; background:#161616;
             padding:12px 15px 12px 15px; display:grid;
             grid-template-columns:repeat(4,1fr); gap:8px;
             border-radius:25px 25px 0 0; border:1px solid #333; border-bottom:none;
-            z-index:1000; margin-bottom:0;
-            padding-bottom:max(20px, calc(20px + env(safe-area-inset-bottom, 0px)));
+            z-index:1000; margin-bottom:0; margin-left:-4px; margin-right:-4px;
         }
         .safe-box { grid-column:span 4; height:52px; border-radius:12px; background:linear-gradient(180deg,#2e2e2e,#161616); border:1px solid #444; box-shadow:inset 0 1px 2px rgba(255,255,255,.12),inset 0 -2px 4px rgba(0,0,0,.7),0 4px 6px rgba(0,0,0,.6); display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; cursor:pointer; user-select:none; }
         .safe-door { position:absolute; inset:6px; background:#222; border-radius:10px; transform-origin:left center; transition:transform .6s cubic-bezier(.4,0,.2,1); }
@@ -186,21 +182,20 @@
 
     <!-- TITOLO -->
     <div style="margin:10px 0 4px; user-select:none; display:flex; align-items:center; justify-content:center;">
-        <!-- padding destra uguale alla larghezza icona per bilanciare -->
         <div style="width:40px;"></div>
         <span style="font-size:30px; font-weight:800; text-transform:uppercase; letter-spacing:1px; line-height:1;">
-            <span style="color:#ffffff;">Mio</span><span style="color:#00CCBC;">Veicolo</span>
+            <span style="color:#ffffff;">Auto</span><span style="color:#e879a0;">Cris</span>
         </span>
         <div style="width:40px; display:flex; align-items:center; justify-content:flex-start; padding-left:8px;">
             <svg width="30" height="30" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect width="38" height="38" rx="10" fill="#00CCBC" fill-opacity="0.15"/>
-                <rect x="1" y="1" width="36" height="36" rx="9" stroke="#00CCBC" stroke-width="1.5" stroke-opacity="0.4"/>
-                <path d="M8 24v-2l2-7h18l2 7v2" stroke="#00CCBC" stroke-width="2" stroke-linejoin="round"/>
-                <path d="M10 22h18" stroke="#00CCBC" stroke-width="1.5"/>
-                <circle cx="13" cy="26" r="2.5" fill="#00CCBC"/>
-                <circle cx="25" cy="26" r="2.5" fill="#00CCBC"/>
-                <path d="M12 17l2-5h10l2 5" stroke="#00CCBC" stroke-width="1.5" stroke-linejoin="round"/>
-                <rect x="14" y="13" width="10" height="4" rx="1" fill="#00CCBC" fill-opacity="0.3"/>
+                <rect width="38" height="38" rx="10" fill="#e879a0" fill-opacity="0.15"/>
+                <rect x="1" y="1" width="36" height="36" rx="9" stroke="#e879a0" stroke-width="1.5" stroke-opacity="0.4"/>
+                <path d="M8 24v-2l2-7h18l2 7v2" stroke="#e879a0" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M10 22h18" stroke="#e879a0" stroke-width="1.5"/>
+                <circle cx="13" cy="26" r="2.5" fill="#e879a0"/>
+                <circle cx="25" cy="26" r="2.5" fill="#e879a0"/>
+                <path d="M12 17l2-5h10l2 5" stroke="#e879a0" stroke-width="1.5" stroke-linejoin="round"/>
+                <rect x="14" y="13" width="10" height="4" rx="1" fill="#e879a0" fill-opacity="0.3"/>
             </svg>
         </div>
     </div>
@@ -210,7 +205,7 @@
     <div class="ver-row" style="justify-content:center;">
         <span style="color:var(--dim);">VERSION 1.0.0</span>
         <span style="color:#444;">|</span>
-        <span style="color:var(--dim);">© 2026 MioVeicolo</span>
+        <span style="color:var(--dim);">© 2026 Marco Carbone</span>
     </div>
 
     <!-- VEICOLO BAR -->
@@ -293,7 +288,7 @@
     </div>
 
     <!-- FOOTER identico a RiderTracker -->
-    <div class="sticky-footer" style="margin-top:auto;">
+    <div class="sticky-footer">
         <div class="foot-btn" style="color:var(--primary)" onclick="apriModalIntervento()">
             <i class="fas fa-plus-circle" style="color:var(--primary)"></i>INTERVENTO
         </div>
@@ -1156,7 +1151,7 @@ function salvaNote(){
 
 // ══════ INFO ══════
 function apriInfo(){
-    mostraAlert('🚗 MioVeicolo\nVersion '+APP_VERSION+'\n\nApp per la gestione delle scadenze del tuo veicolo.\n\n© 2026 MioVeicolo');
+    mostraAlert('🚗 AutoCris\nVersion '+APP_VERSION+'\n\nApp per la gestione delle scadenze del tuo veicolo.\n\n© 2026 Marco Carbone');
 }
 
 // ══════ STAMPA PDF ══════
