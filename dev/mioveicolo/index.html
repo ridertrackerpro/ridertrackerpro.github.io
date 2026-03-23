@@ -24,14 +24,14 @@
         }
         #mainContainer {
             width:100%; max-width:100%; height:100dvh; margin:0;
-            padding:max(15px, calc(15px + env(safe-area-inset-top, 0px))) 4px max(12px, calc(12px + env(safe-area-inset-bottom, 0px))) 4px;
+            padding:max(15px, calc(15px + env(safe-area-inset-top, 0px))) 4px 0 4px;
             box-sizing:border-box; display:flex; flex-direction:column;
             overflow:hidden; overscroll-behavior:none;
         }
         /* VEICOLO CARD ESPANSA */
         #veicoloBar {
             background: linear-gradient(135deg, #1a1a1a 0%, #1e1e2e 100%);
-            border: 1px solid #333; border-radius:12px; padding:12px;
+            border: 1px solid #333; border-radius:12px; padding:10px 12px;
             margin-bottom:8px; display:flex; flex-direction:column;
             justify-content:center; gap:0; cursor:pointer; flex:1; min-height:46px;
             position:relative; overflow:hidden;
@@ -112,8 +112,9 @@
             position:relative; margin-top:0; background:#161616;
             padding:12px 15px 12px 15px; display:grid;
             grid-template-columns:repeat(4,1fr); gap:8px;
-            border-radius:25px; border:1px solid #333; z-index:1000; margin-bottom:0;
-            padding-bottom:max(12px, calc(12px + env(safe-area-inset-bottom, 0px)));
+            border-radius:25px 25px 0 0; border:1px solid #333; border-bottom:none;
+            z-index:1000; margin-bottom:0;
+            padding-bottom:max(20px, calc(20px + env(safe-area-inset-bottom, 0px)));
         }
         .safe-box { grid-column:span 4; height:52px; border-radius:12px; background:linear-gradient(180deg,#2e2e2e,#161616); border:1px solid #444; box-shadow:inset 0 1px 2px rgba(255,255,255,.12),inset 0 -2px 4px rgba(0,0,0,.7),0 4px 6px rgba(0,0,0,.6); display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; cursor:pointer; user-select:none; }
         .safe-door { position:absolute; inset:6px; background:#222; border-radius:10px; transform-origin:left center; transition:transform .6s cubic-bezier(.4,0,.2,1); }
@@ -1019,18 +1020,23 @@ async function esportaBackup() {
     const nome=`miovehicolo_backup_${oggi.getFullYear()}-${String(oggi.getMonth()+1).padStart(2,'0')}-${String(oggi.getDate()).padStart(2,'0')}.json`;
     const contenuto = JSON.stringify(db, null, 2);
     if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-        try {
+        const SaveFile = window.Capacitor.Plugins.SaveFile;
+        if (SaveFile) {
+            SaveFile.save({ fileName: nome, content: contenuto, mimeType: 'application/json' })
+                .then(function(){ mostraAlert('✅ Backup salvato con successo!'); })
+                .catch(function(){});
+        } else {
             const { Filesystem, Share } = window.Capacitor.Plugins;
-            await Filesystem.writeFile({ path: nome, data: btoa(unescape(encodeURIComponent(contenuto))), directory: 'CACHE', encoding: 'base64' });
-            const { uri } = await Filesystem.getUri({ path: nome, directory: 'CACHE' });
-            await Share.share({ title: 'Backup MioVeicolo', url: uri });
-            return;
-        } catch(e) {}
+            Filesystem.writeFile({ path: nome, data: contenuto, directory: 'CACHE', encoding: 'utf8' })
+                .then(function(r){ Share.share({ title: 'Backup MioVeicolo', url: r.uri, dialogTitle: 'Salva o condividi il backup' }).catch(function(){}); })
+                .catch(function(e){ mostraAlert('Errore backup: ' + e.message); });
+        }
+    } else {
+        const blob=new Blob([contenuto],{type:'application/json'});
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement('a'); a.href=url; a.download=nome;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
     }
-    const blob=new Blob([contenuto],{type:'application/json'});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a'); a.href=url; a.download=nome;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
 function importaBackup(input) {
