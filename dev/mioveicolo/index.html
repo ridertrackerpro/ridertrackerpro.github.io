@@ -1,1 +1,1086 @@
+<!DOCTYPE html>
+<html lang="it" id="htmlRoot">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#0f0f0f">
+    <title>MioVeicolo</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --bg:#0f0f0f; --card:#1a1a1a; --primary:#00CCBC; --accent:#ff4d4d;
+            --text:#e0e0e0; --dim:#888; --input-bg:#252525; --orange:#ffa500;
+            --green:#4ade80; --primary-dark:#00A89A;
+        }
+        * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+        html, body { touch-action:pan-x pan-y; }
+        html { background:var(--bg); overflow:hidden; overscroll-behavior:none; }
+        body { font-family:sans-serif; background:var(--bg); color:var(--text); margin:0; padding:0; text-align:center; height:100dvh; width:100%; display:flex; align-items:flex-start; justify-content:center; overflow:hidden; overscroll-behavior:none; }
+        @media all and (display-mode:standalone) {
+            body { align-items:center; justify-content:center; margin-top:0; }
+            #mainContainer { max-height:100dvh; max-width:480px; width:100%; }
+        }
+        #mainContainer {
+            width:100%; max-width:100%; height:100dvh; margin:0;
+            padding:max(15px, calc(15px + env(safe-area-inset-top, 0px))) 4px 12px 4px;
+            box-sizing:border-box; display:flex; flex-direction:column;
+            overflow:hidden; overscroll-behavior:none;
+        }
+        @keyframes fadeSlideUp {
+            from { opacity:0; transform:translateY(18px); }
+            to { opacity:1; transform:translateY(0); }
+        }
+        .modal-content { animation:fadeSlideUp 0.22s cubic-bezier(0.22,1,0.36,1) both; }
+        .app-title { margin:10px 0 4px; font-size:30px; font-weight:800; color:var(--primary); text-transform:uppercase; user-select:none; }
+        .app-subtitle { font-size:11px; color:var(--dim); margin-bottom:10px; letter-spacing:1px; text-transform:uppercase; }
+        .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:8px; }
+        .grid-2 { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:8px; }
+        .card { background:var(--card); height:75px; display:flex; flex-direction:column; justify-content:center; align-items:center; border-radius:12px; border:1px solid #333; }
+        .card.urgent { border-color:var(--accent); }
+        .card.warning { border-color:var(--orange); }
+        .card.ok { border-color:#333; }
+        .label { font-size:8px; color:var(--dim); text-transform:uppercase; margin-bottom:4px; font-weight:bold; }
+        .val { font-size:13px; font-weight:bold; color:var(--primary); }
+        .val.red { color:var(--accent); }
+        .val.orange { color:var(--orange); }
+        .val.green { color:var(--green); }
+        /* VEICOLO BAR */
+        #veicoloBar { background:var(--card); border:1px solid #333; border-radius:10px; padding:7px 12px; margin-bottom:8px; display:flex; align-items:center; justify-content:center; gap:8px; font-size:12px; color:var(--dim); cursor:pointer; }
+        #veicoloBar .vb-nome { font-size:14px; font-weight:900; color:var(--primary); }
+        #veicoloBar .vb-targa { font-size:11px; color:#555; }
+        /* METER */
+        .progress-container { background:var(--card); padding:6px 12px; border-radius:12px; margin-bottom:8px; border:1px solid #333; display:flex; flex-direction:column; gap:4px; }
+        .progress-header { display:flex; justify-content:center; font-weight:bold; color:var(--primary); font-size:12px; text-transform:uppercase; letter-spacing:1px; }
+        .progress-bar { background:#111; height:14px; border-radius:0; overflow:hidden; border:1px solid #333; display:flex; gap:1px; padding:1px; }
+        .meter-segments { display:flex; gap:1px; height:100%; width:100%; align-items:stretch; }
+        .meter-seg { flex:1; border-radius:0; transition:opacity 0.1s; opacity:0.15; }
+        .meter-seg.active { opacity:1; }
+        .dash-info { display:flex; justify-content:space-between; align-items:center; padding:0 5px; margin-top:5px; }
+        #liveClock { font-weight:bold; color:var(--dim); font-size:11px; text-transform:uppercase; }
+        #prossScad { font-weight:bold; color:var(--primary); font-size:12px; }
+        /* FOOTER */
+        .sticky-footer {
+            position:relative; margin-top:0; background:#161616;
+            padding:12px 15px 12px 15px; display:grid;
+            grid-template-columns:repeat(4,1fr); gap:8px;
+            border-radius:25px; border:1px solid #333; z-index:1000; margin-bottom:0;
+            padding-bottom:max(12px, calc(12px + env(safe-area-inset-bottom, 0px)));
+        }
+        .safe-box { grid-column:span 4; height:52px; border-radius:12px; background:linear-gradient(180deg,#2e2e2e,#161616); border:1px solid #444; box-shadow:inset 0 1px 2px rgba(255,255,255,.12),inset 0 -2px 4px rgba(0,0,0,.7),0 4px 6px rgba(0,0,0,.6); display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; cursor:pointer; user-select:none; }
+        .safe-door { position:absolute; inset:6px; background:#222; border-radius:10px; transform-origin:left center; transition:transform .6s cubic-bezier(.4,0,.2,1); }
+        .safe-door.open { transform:rotateY(-65deg); }
+        .safe-glass { position:absolute; inset:0; background:linear-gradient(135deg,rgba(255,255,255,.18),rgba(255,255,255,.02)); backdrop-filter:blur(1px); border-radius:10px; }
+        .safe-lock { position:absolute; right:10px; top:50%; transform:translateY(-50%); font-size:20px; color:var(--accent); z-index:1; }
+        @keyframes unlockAnim { 0%{transform:rotate(0)} 25%{transform:rotate(-20deg)} 50%{transform:rotate(20deg)} 75%{transform:rotate(-10deg)} 100%{transform:rotate(0)} }
+        .safe-lock.unlock i { animation:unlockAnim .4s ease; }
+        .safe-label { position:relative; z-index:1; font-size:10px; font-weight:900; letter-spacing:1px; color:#ff4d4d; text-shadow:0 0 6px rgba(255,77,77,.6); }
+        .foot-btn { background:#222; border:1px solid #444; color:#fff; padding:12px 5px; border-radius:15px; display:flex; flex-direction:column; align-items:center; font-size:10px; font-weight:bold; cursor:pointer; -webkit-user-select:none; user-select:none; }
+        .foot-btn i { font-size:20px; margin-bottom:5px; }
+        .foot-btn:active { transform:scale(0.95); transition:0.1s; }
+        /* MODAL */
+        .modal { display:none; position:fixed; inset:0; z-index:9000; background:rgba(0,0,0,0.75); align-items:center; justify-content:center; padding:20px; }
+        .modal-content {
+            background:var(--card); border:2px solid var(--primary); border-radius:20px;
+            padding:20px; width:100%; max-width:400px; max-height:85vh; overflow-y:auto;
+            padding-top:max(20px, calc(20px + env(safe-area-inset-top, 0px)));
+        }
+        .modal-content h3 { color:var(--primary); font-size:16px; margin:0 0 14px 0; text-transform:uppercase; letter-spacing:1px; }
+        .btn-modal { width:100%; padding:14px; border-radius:12px; border:none; font-weight:900; font-size:13px; text-transform:uppercase; cursor:pointer; margin-top:8px; }
+        .btn-save { background:var(--primary); color:#000; }
+        .btn-close { background:#333; color:#fff; border:1px solid #444; }
+        .btn-danger { background:var(--accent); color:#fff; }
+        input, select, textarea {
+            width:100%; background:var(--input-bg); border:1px solid #444; border-radius:10px;
+            color:#fff; padding:12px; font-size:14px; outline:none; margin-bottom:10px;
+            -webkit-appearance:none;
+        }
+        textarea { min-height:70px; resize:none; font-family:sans-serif; }
+        select option { background:var(--input-bg); }
+        .form-label { font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; text-align:left; display:block; }
+        .date-row { display:flex; gap:6px; margin-bottom:10px; }
+        .date-row select { margin-bottom:0; flex:1; }
+        /* VIEWS */
+        #storicoView, #riepilogoView {
+            display:none; position:fixed; inset:0; z-index:8000; background:var(--bg);
+            flex-direction:column; padding:max(15px, calc(15px + env(safe-area-inset-top,0px))) 15px 15px;
+            overflow-y:auto;
+        }
+        .view-header { display:flex; align-items:center; justify-content:center; padding:6px 0; border-bottom:1px solid #333; margin-bottom:10px; }
+        .view-title { color:var(--primary); font-size:15px; font-weight:900; letter-spacing:2px; text-transform:uppercase; }
+        .btn-full { background:var(--primary); color:#000; padding:16px; border-radius:15px; font-weight:900; border:none; font-size:13px; text-transform:uppercase; cursor:pointer; width:100%; margin-top:8px; }
+        .btn-full:active { transform:scale(0.95); transition:0.1s; }
+        /* STORICO ITEM */
+        .storico-item { background:var(--card); border:1px solid #333; border-radius:14px; padding:12px; margin-bottom:8px; text-align:left; cursor:pointer; }
+        .storico-item:active { transform:scale(0.98); }
+        .si-tipo { font-size:10px; color:var(--dim); text-transform:uppercase; font-weight:bold; margin-bottom:4px; }
+        .si-desc { font-size:14px; font-weight:700; color:var(--text); }
+        .si-row { display:flex; justify-content:space-between; align-items:center; margin-top:6px; }
+        .si-data { font-size:11px; color:var(--dim); }
+        .si-costo { font-size:14px; font-weight:900; color:var(--primary); }
+        .si-note { font-size:11px; color:#666; margin-top:4px; font-style:italic; }
+        /* RIEPILOGO */
+        .rep-card { background:var(--card); border:1px solid #333; border-radius:12px; padding:12px; margin-bottom:8px; }
+        .rep-title { font-size:11px; color:var(--dim); text-transform:uppercase; font-weight:bold; margin-bottom:8px; }
+        .rep-row { display:flex; justify-content:space-between; align-items:center; padding:4px 0; border-bottom:1px solid #222; font-size:13px; }
+        .rep-row:last-child { border-bottom:none; }
+        .rep-tot { font-weight:900; color:var(--primary); font-size:16px; margin-top:8px; }
+        /* IMPOSTAZIONI */
+        #settingsView {
+            display:none; position:fixed; inset:0; z-index:8000; background:var(--bg);
+            flex-direction:column; padding:max(15px, calc(15px + env(safe-area-inset-top,0px))) 15px 15px;
+            overflow-y:auto;
+        }
+        .settings-section { background:var(--card); border:1px solid #333; border-radius:14px; padding:14px; margin-bottom:10px; text-align:left; }
+        .settings-section h4 { color:var(--primary); font-size:12px; text-transform:uppercase; letter-spacing:1px; margin:0 0 12px 0; }
+        /* CONFIRM */
+        .confirm-buttons { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
+        .btn-confirm-cancel { background:#333; color:#fff; border:1px solid #444; border-radius:10px; padding:12px; font-weight:900; font-size:12px; cursor:pointer; }
+        .btn-confirm-ok { background:var(--primary); color:#000; border:none; border-radius:10px; padding:12px; font-weight:900; font-size:12px; cursor:pointer; }
+        /* ALERT */
+        #modalAlertApp .modal-content { border-color:var(--accent); }
+        /* FAKE SELECT */
+        .fake-select { background:var(--input-bg); border:1px solid #444; border-radius:10px; color:#fff; padding:12px; font-size:14px; display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; cursor:pointer; }
+        .select-overlay { display:none; position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,0.8); align-items:flex-end; justify-content:center; padding:20px; }
+        .select-list { background:var(--card); border:2px solid var(--primary); border-radius:20px; padding:15px; width:100%; max-width:400px; max-height:70vh; overflow-y:auto; }
+        .select-list h4 { color:var(--primary); font-size:14px; text-transform:uppercase; margin:0 0 10px 0; }
+        .btn-option { width:100%; padding:14px; background:var(--input-bg); border:1px solid #444; border-radius:10px; color:#fff; font-size:14px; text-align:left; margin-bottom:6px; cursor:pointer; }
+        .btn-option:active { background:#333; }
+        /* VERSION */
+        .ver-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; font-weight:bold; text-transform:uppercase; font-size:9px; letter-spacing:1px; }
+    </style>
+</head>
+<body>
+<div id="mainContainer">
 
+    <!-- TITOLO -->
+    <div style="margin:10px 0 4px; user-select:none; display:flex; align-items:center; justify-content:center;">
+        <!-- padding destra uguale alla larghezza icona per bilanciare -->
+        <div style="width:40px;"></div>
+        <span style="font-size:30px; font-weight:800; text-transform:uppercase; letter-spacing:1px; line-height:1;">
+            <span style="color:#ffffff;">Mio</span><span style="color:#00CCBC;">Veicolo</span>
+        </span>
+        <div style="width:40px; display:flex; align-items:center; justify-content:flex-start; padding-left:8px;">
+            <svg width="30" height="30" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="38" height="38" rx="10" fill="#00CCBC" fill-opacity="0.15"/>
+                <rect x="1" y="1" width="36" height="36" rx="9" stroke="#00CCBC" stroke-width="1.5" stroke-opacity="0.4"/>
+                <path d="M8 24v-2l2-7h18l2 7v2" stroke="#00CCBC" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M10 22h18" stroke="#00CCBC" stroke-width="1.5"/>
+                <circle cx="13" cy="26" r="2.5" fill="#00CCBC"/>
+                <circle cx="25" cy="26" r="2.5" fill="#00CCBC"/>
+                <path d="M12 17l2-5h10l2 5" stroke="#00CCBC" stroke-width="1.5" stroke-linejoin="round"/>
+                <rect x="14" y="13" width="10" height="4" rx="1" fill="#00CCBC" fill-opacity="0.3"/>
+            </svg>
+        </div>
+    </div>
+    <div class="app-subtitle">Il tuo garage digitale</div>
+
+    <!-- VERSION -->
+    <div class="ver-row" style="justify-content:center;">
+        <span style="color:var(--dim);">VERSION 1.0.0</span>
+        <span style="color:#444;">|</span>
+        <span style="color:var(--dim);">© 2026 MioVeicolo</span>
+    </div>
+
+    <!-- VEICOLO BAR -->
+    <div id="veicoloBar" onclick="apriSettings()">
+        <i class="fas fa-car" style="color:var(--primary); font-size:16px;"></i>
+        <span class="vb-nome" id="vbNome">Nessun veicolo</span>
+        <span class="vb-targa" id="vbTarga"></span>
+    </div>
+
+    <!-- CARD SCADENZE -->
+    <div class="grid">
+        <div class="card" id="cardAssic">
+            <div class="label">Assicuraz.</div>
+            <div class="val" id="valAssic">—</div>
+            <div style="font-size:9px; color:var(--dim);" id="subAssic">Non impostata</div>
+        </div>
+        <div class="card" id="cardBollo">
+            <div class="label">Bollo</div>
+            <div class="val" id="valBollo">—</div>
+            <div style="font-size:9px; color:var(--dim);" id="subBollo">Non impostato</div>
+        </div>
+        <div class="card" id="cardRevisione">
+            <div class="label">Revisione</div>
+            <div class="val" id="valRevisione">—</div>
+            <div style="font-size:9px; color:var(--dim);" id="subRevisione">Non impostata</div>
+        </div>
+    </div>
+    <div class="grid">
+        <div class="card" id="cardPatente">
+            <div class="label">Patente</div>
+            <div class="val" id="valPatente">—</div>
+            <div style="font-size:9px; color:var(--dim);" id="subPatente">Non impostata</div>
+        </div>
+        <div class="card" id="cardTagliando">
+            <div class="label">Tagliando</div>
+            <div class="val" id="valTagliando">—</div>
+            <div style="font-size:9px; color:var(--dim);" id="subTagliando">Non impostato</div>
+        </div>
+        <div class="card">
+            <div class="label">Spesa Mese</div>
+            <div class="val" id="valSpesaMese">€0.00</div>
+            <div style="font-size:9px; color:var(--dim);">corrente</div>
+        </div>
+    </div>
+
+    <!-- METER prossima scadenza -->
+    <div class="progress-container">
+        <div class="progress-header" id="meterLabel">PROSSIMA SCADENZA</div>
+        <div class="progress-bar"><div class="meter-segments" id="meterSegments"></div></div>
+        <div class="dash-info">
+            <span id="liveClock"></span>
+            <span id="prossScad">—</span>
+        </div>
+    </div>
+
+    <!-- FOOTER identico a RiderTracker -->
+    <div class="sticky-footer" style="margin-top:auto;">
+        <div class="foot-btn" style="color:var(--primary)" onclick="apriModalIntervento()">
+            <i class="fas fa-plus-circle" style="color:var(--primary)"></i>INTERVENTO
+        </div>
+        <div class="foot-btn" style="color:#fff" onclick="apriStorico()">
+            <i class="fas fa-history" style="color:#fff"></i>STORICO
+        </div>
+        <div class="foot-btn" style="color:var(--orange)" onclick="apriRiepilogo()">
+            <i class="fas fa-file-alt" style="color:var(--orange)"></i>RIEPILOGO
+        </div>
+        <div class="foot-btn" style="color:#aaa" onclick="apriNote()">
+            <i class="fas fa-sticky-note" style="color:#aaa"></i>NOTE
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; grid-column:1 / -1; margin-top:2px;">
+            <button style="height:44px; font-size:11px; font-weight:900; padding:0; background:var(--primary); color:#000; border:none; border-radius:15px; cursor:pointer;" onclick="esportaBackup()"><i class="fas fa-download" style="margin-right:5px;"></i>ESPORTA BACKUP</button>
+            <button style="height:44px; font-size:11px; font-weight:900; padding:0; background:var(--orange); color:#000; border:none; border-radius:15px; cursor:pointer;" onclick="document.getElementById('fileBackupInput').click()"><i class="fas fa-upload" style="margin-right:5px;"></i>IMPORTA BACKUP</button>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; grid-column:1 / -1; margin-top:2px;">
+            <button style="height:36px; font-size:10px; font-weight:700; padding:0; background:#222; border:1px solid #444; color:var(--primary); border-radius:15px; cursor:pointer;" onclick="apriSettings()"><i class="fas fa-cog" style="margin-right:4px;"></i>IMPOSTAZIONI</button>
+            <button style="height:36px; font-size:10px; font-weight:700; padding:0; background:#222; border:1px solid #444; color:var(--primary); border-radius:15px; cursor:pointer;" onclick="apriInfo()"><i class="fas fa-info-circle" style="margin-right:4px;"></i>INFO</button>
+        </div>
+        <div id="resetSafe" class="safe-box" onclick="safeClick()">
+            <div class="safe-door">
+                <div class="safe-glass"></div>
+                <div class="safe-lock"><i class="fas fa-lock" id="safeLockIcon"></i></div>
+            </div>
+            <div class="safe-label">RESET DB</div>
+        </div>
+    </div>
+    <input type="file" id="fileBackupInput" accept=".json" hidden onchange="importaBackup(this)">
+</div>
+
+<!-- ══════════ MODAL INTERVENTO ══════════ -->
+<div id="modalIntervento" class="modal">
+    <div class="modal-content">
+        <h3 id="titoloModalIntervento">Nuovo Intervento</h3>
+        <span class="form-label">Data intervento</span>
+        <div class="date-row">
+            <select id="intG"></select>
+            <select id="intM"></select>
+            <select id="intY"></select>
+        </div>
+        <div class="fake-select" onclick="document.getElementById('overlayTipoInt').style.display='flex'">
+            <span id="labelTipoInt">Seleziona tipo...</span>
+            <i class="fas fa-chevron-down"></i>
+        </div>
+        <input type="hidden" id="tipoIntKey">
+        <input type="number" id="intCosto" placeholder="Costo (€)" step="0.01" inputmode="decimal">
+        <input type="number" id="intKm" placeholder="Chilometraggio attuale (km)" inputmode="numeric">
+        <textarea id="intNote" placeholder="Note (opzionale)"></textarea>
+        <button class="btn-modal btn-save" onclick="salvaIntervento()">SALVA</button>
+        <button class="btn-modal btn-close" onclick="chiudiModal('modalIntervento')">ANNULLA</button>
+    </div>
+</div>
+
+<!-- OVERLAY TIPO INTERVENTO -->
+<div id="overlayTipoInt" class="select-overlay" onclick="if(event.target===this)this.style.display='none'">
+    <div class="select-list">
+        <h4>Tipo intervento</h4>
+        <button class="btn-option" onclick="selTipo('tagliando','🔧 Tagliando')">🔧 Tagliando</button>
+        <button class="btn-option" onclick="selTipo('assicurazione','🛡️ Assicurazione')">🛡️ Assicurazione</button>
+        <button class="btn-option" onclick="selTipo('bollo','📄 Bollo')">📄 Bollo</button>
+        <button class="btn-option" onclick="selTipo('revisione','🔍 Revisione')">🔍 Revisione</button>
+        <button class="btn-option" onclick="selTipo('patente','🪪 Patente')">🪪 Patente</button>
+        <button class="btn-option" onclick="selTipo('gomme','🔄 Gomme')">🔄 Gomme</button>
+        <button class="btn-option" onclick="selTipo('freni','🛑 Freni')">🛑 Freni</button>
+        <button class="btn-option" onclick="selTipo('multa','📸 Multa')">📸 Multa</button>
+        <button class="btn-option" onclick="selTipo('carburante','⛽ Carburante')">⛽ Carburante</button>
+        <button class="btn-option" onclick="selTipo('riparazione','🔩 Riparazione')">🔩 Riparazione</button>
+        <button class="btn-option" onclick="selTipo('altro','📦 Altro')">📦 Altro</button>
+        <button class="btn-modal btn-close" onclick="document.getElementById('overlayTipoInt').style.display='none'" style="margin-top:4px;">ANNULLA</button>
+    </div>
+</div>
+
+<!-- ══════════ STORICO VIEW ══════════ -->
+<div id="storicoView">
+    <div class="view-header"><span class="view-title">📋 Storico</span></div>
+    <div id="listaStorico"></div>
+    <button class="btn-full" onclick="document.getElementById('storicoView').style.display='none'" style="margin-bottom:25px;">✕ CHIUDI</button>
+</div>
+
+<!-- ══════════ RIEPILOGO VIEW ══════════ -->
+<div id="riepilogoView">
+    <div class="view-header"><span class="view-title">📊 Riepilogo</span></div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
+        <button onclick="setRiepilogoMode('mese')" id="btnMese" style="padding:10px; border-radius:12px; border:none; font-weight:900; font-size:12px; cursor:pointer; background:var(--primary); color:#000;">MENSILE</button>
+        <button onclick="setRiepilogoMode('anno')" id="btnAnno" style="padding:10px; border-radius:12px; border:2px solid #444; font-weight:900; font-size:12px; cursor:pointer; background:#222; color:#fff;">ANNUALE</button>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;" id="riepilogoNav">
+        <button onclick="cambiaperiodo(-1)" style="padding:8px; border-radius:10px; border:1px solid #444; background:#222; color:#fff; font-weight:900; cursor:pointer;">◀ PREC</button>
+        <button onclick="cambiaperiodo(1)" style="padding:8px; border-radius:10px; border:1px solid #444; background:#222; color:#fff; font-weight:900; cursor:pointer;">SUCC ▶</button>
+    </div>
+    <div id="riepilogoContent"></div>
+    <button class="btn-full" onclick="stampaRiepilogo()" style="background:var(--orange); color:#000; margin-bottom:8px;">🖨️ STAMPA</button>
+    <button class="btn-full" onclick="document.getElementById('riepilogoView').style.display='none'" style="margin-bottom:25px;">✕ CHIUDI</button>
+</div>
+
+<!-- ══════════ SETTINGS VIEW ══════════ -->
+<div id="settingsView">
+    <div class="view-header"><span class="view-title">⚙️ Impostazioni</span></div>
+
+    <!-- VEICOLO -->
+    <div class="settings-section">
+        <h4>🚗 Veicolo</h4>
+        <span class="form-label">Marca e Modello</span>
+        <input type="text" id="setMarca" placeholder="Es. Fiat Panda">
+        <span class="form-label">Targa</span>
+        <input type="text" id="setTarga" placeholder="Es. AB123CD" style="text-transform:uppercase;">
+        <span class="form-label">Anno immatricolazione</span>
+        <input type="number" id="setAnno" placeholder="Es. 2018" inputmode="numeric">
+        <span class="form-label">Chilometraggio attuale (km)</span>
+        <input type="number" id="setKmAttuali" placeholder="Es. 45000" inputmode="numeric">
+    </div>
+
+    <!-- ASSICURAZIONE -->
+    <div class="settings-section">
+        <h4>🛡️ Assicurazione</h4>
+        <span class="form-label">Data inizio</span>
+        <div class="date-row">
+            <select id="assicInizioG"></select>
+            <select id="assicInizioM"></select>
+            <select id="assicInizioY"></select>
+        </div>
+        <span class="form-label">Data scadenza</span>
+        <div class="date-row">
+            <select id="assicScadG"></select>
+            <select id="assicScadM"></select>
+            <select id="assicScadY"></select>
+        </div>
+        <span class="form-label">Costo (€)</span>
+        <input type="number" id="assicCosto" placeholder="Es. 650.00" step="0.01" inputmode="decimal">
+    </div>
+
+    <!-- BOLLO -->
+    <div class="settings-section">
+        <h4>📄 Bollo</h4>
+        <span class="form-label">Data pagamento</span>
+        <div class="date-row">
+            <select id="bolloDataG"></select>
+            <select id="bolloDataM"></select>
+            <select id="bolloDataY"></select>
+        </div>
+        <span class="form-label">Data scadenza</span>
+        <div class="date-row">
+            <select id="bolloScadG"></select>
+            <select id="bolloScadM"></select>
+            <select id="bolloScadY"></select>
+        </div>
+        <span class="form-label">Costo (€)</span>
+        <input type="number" id="bolloCosto" placeholder="Es. 180.00" step="0.01" inputmode="decimal">
+    </div>
+
+    <!-- REVISIONE -->
+    <div class="settings-section">
+        <h4>🔍 Revisione</h4>
+        <span class="form-label">Data scadenza</span>
+        <div class="date-row">
+            <select id="revScadG"></select>
+            <select id="revScadM"></select>
+            <select id="revScadY"></select>
+        </div>
+        <span class="form-label">Costo ultimo pagamento (€)</span>
+        <input type="number" id="revCosto" placeholder="Es. 75.00" step="0.01" inputmode="decimal">
+    </div>
+
+    <!-- PATENTE -->
+    <div class="settings-section">
+        <h4>🪪 Patente</h4>
+        <span class="form-label">Data scadenza</span>
+        <div class="date-row">
+            <select id="patScadG"></select>
+            <select id="patScadM"></select>
+            <select id="patScadY"></select>
+        </div>
+    </div>
+
+    <!-- TAGLIANDO -->
+    <div class="settings-section">
+        <h4>🔧 Tagliando</h4>
+        <span class="form-label">Intervallo km</span>
+        <input type="number" id="tagliandoIntKm" placeholder="Es. 15000" inputmode="numeric">
+        <span class="form-label">Km ultimo tagliando</span>
+        <input type="number" id="tagliandoUltimoKm" placeholder="Es. 30000" inputmode="numeric">
+        <span class="form-label">Data ultimo tagliando</span>
+        <div class="date-row">
+            <select id="tagliandoDataG"></select>
+            <select id="tagliandoDataM"></select>
+            <select id="tagliandoDataY"></select>
+        </div>
+    </div>
+
+    <button class="btn-full" onclick="salvaSettings()" style="background:var(--primary); color:#000; margin-bottom:8px;">💾 SALVA IMPOSTAZIONI</button>
+    <button class="btn-full" onclick="document.getElementById('settingsView').style.display='none'" style="background:#333; color:#fff; border:1px solid #444; margin-bottom:25px;">✕ CHIUDI</button>
+</div>
+
+<!-- ══════════ MODAL ALERT ══════════ -->
+<div id="modalAlertApp" class="modal">
+    <div class="modal-content">
+        <p id="modalAlertAppMsg" style="font-size:14px; color:var(--text); margin:10px 0;"></p>
+        <button class="btn-modal btn-close" onclick="chiudiModal('modalAlertApp')">OK</button>
+    </div>
+</div>
+
+<!-- ══════════ MODAL CONFERMA ELIMINA ══════════ -->
+<div id="modalElimina" class="modal">
+    <div class="modal-content" style="border-color:var(--accent);">
+        <h3 style="color:var(--accent);">Elimina intervento</h3>
+        <p style="font-size:13px; color:var(--text); margin:10px 0;">Sei sicuro di voler eliminare questo intervento?</p>
+        <div class="confirm-buttons">
+            <button class="btn-confirm-cancel" onclick="chiudiModal('modalElimina')">ANNULLA</button>
+            <button class="btn-confirm-ok" style="background:var(--accent); color:#fff;" onclick="confermaElimina()">ELIMINA</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════ MODAL NOTE ══════════ -->
+<div id="modalNote" class="modal">
+    <div class="modal-content" style="border-color:#aaa;">
+        <h3 style="color:#aaa;">📝 Note</h3>
+        <textarea id="noteText" placeholder="Scrivi le tue note qui..."></textarea>
+        <button class="btn-modal btn-save" onclick="salvaNote()">SALVA</button>
+        <button class="btn-modal btn-close" onclick="chiudiModal('modalNote')">CHIUDI</button>
+    </div>
+</div>
+
+<script>
+const APP_VERSION = '1.0.0';
+const MESI = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+const MESI_FULL = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+
+function fmtKm(n) {
+    if (!n) return '0';
+    return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+function fmtEuro(n) {
+    if (!n) return '€0';
+    return '€' + Math.ceil(parseFloat(n)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+let db = JSON.parse(localStorage.getItem('miovehicolo_db') || 'null') || {
+    veicolo: { marca:'', targa:'', anno:'', km:0 },
+    assicurazione: { inizioG:'', inizioM:'', inizioY:'', scadG:'', scadM:'', scadY:'', costo:0 },
+    bollo: { dataG:'', dataM:'', dataY:'', scadG:'', scadM:'', scadY:'', costo:0 },
+    revisione: { scadG:'', scadM:'', scadY:'', costo:0 },
+    patente: { scadG:'', scadM:'', scadY:'' },
+    tagliando: { intKm:0, ultimoKm:0, dataG:'', dataM:'', dataY:'' },
+    interventi: []
+};
+
+let idElimina = null;
+let editingId = null;
+let riepilogoMode = 'mese';
+let riepilogoPeriodo = 0; // offset mesi/anni
+
+function salvaDB() { localStorage.setItem('miovehicolo_db', JSON.stringify(db)); }
+
+// ══════ DATE UTILS ══════
+function buildDateSelect(idG, idM, idY, selG, selM, selY, futuro) {
+    const oggi = new Date();
+    const g = document.getElementById(idG);
+    const m = document.getElementById(idM);
+    const y = document.getElementById(idY);
+    if (!g || !m || !y) return;
+    g.innerHTML = '';
+    m.innerHTML = '';
+    y.innerHTML = '';
+    for (let d=1; d<=31; d++) g.innerHTML += `<option value="${d}"${d==selG?' selected':''}>${d}</option>`;
+    MESI.forEach((mn,i) => m.innerHTML += `<option value="${i+1}"${(i+1)==selM?' selected':''}>${mn}</option>`);
+    const startY = futuro ? oggi.getFullYear() : oggi.getFullYear()-20;
+    const endY = futuro ? oggi.getFullYear()+10 : oggi.getFullYear()+10;
+    for (let yr=startY; yr<=endY; yr++) y.innerHTML += `<option value="${yr}"${yr==selY?' selected':''}>${yr}</option>`;
+    if (selY) { g.value=selG; m.value=selM; y.value=selY; }
+}
+
+function getDateStr(idG, idM, idY) {
+    const g=document.getElementById(idG), m=document.getElementById(idM), y=document.getElementById(idY);
+    if (!g||!m||!y||!y.value) return '';
+    return `${String(g.value).padStart(2,'0')}/${String(m.value).padStart(2,'0')}/${y.value}`;
+}
+
+function dataToObj(str) {
+    if (!str) return null;
+    const p = str.split('/');
+    return new Date(parseInt(p[2]), parseInt(p[1])-1, parseInt(p[0]));
+}
+
+function giorniAlla(str) {
+    if (!str) return null;
+    const oggi = new Date(); oggi.setHours(0,0,0,0);
+    const scad = dataToObj(str); scad.setHours(0,0,0,0);
+    return Math.round((scad-oggi)/86400000);
+}
+
+function formatData(str) {
+    if (!str) return '—';
+    return str;
+}
+
+// ══════ BUILD DATE SELECTS ══════
+function buildAllDates() {
+    const oggi = new Date();
+    const g=oggi.getDate(), m=oggi.getMonth()+1, y=oggi.getFullYear();
+    // Intervento
+    buildDateSelect('intG','intM','intY',g,m,y,false);
+    // Settings
+    const as=db.assicurazione, bo=db.bollo, re=db.revisione, pa=db.patente, ta=db.tagliando;
+    buildDateSelect('assicInizioG','assicInizioM','assicInizioY', as.inizioG||g, as.inizioM||m, as.inizioY||y, false);
+    buildDateSelect('assicScadG','assicScadM','assicScadY', as.scadG||g, as.scadM||m, as.scadY||(y+1), true);
+    buildDateSelect('bolloDataG','bolloDataM','bolloDataY', bo.dataG||g, bo.dataM||m, bo.dataY||y, false);
+    buildDateSelect('bolloScadG','bolloScadM','bolloScadY', bo.scadG||g, bo.scadM||m, bo.scadY||(y+1), true);
+    buildDateSelect('revScadG','revScadM','revScadY', re.scadG||g, re.scadM||m, re.scadY||(y+2), true);
+    buildDateSelect('patScadG','patScadM','patScadY', pa.scadG||g, pa.scadM||m, pa.scadY||(y+5), true);
+    buildDateSelect('tagliandoDataG','tagliandoDataM','tagliandoDataY', ta.dataG||g, ta.dataM||m, ta.dataY||y, false);
+}
+
+// ══════ CLOCK ══════
+function aggClock() {
+    const el = document.getElementById('liveClock');
+    if (!el) return;
+    const n=new Date();
+    el.innerText = `${String(n.getDate()).padStart(2,'0')}/${String(n.getMonth()+1).padStart(2,'0')}/${n.getFullYear()} ${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;
+}
+setInterval(aggClock, 1000);
+aggClock();
+
+// ══════ MODAL ══════
+function chiudiModal(id) { document.getElementById(id).style.display='none'; }
+function mostraAlert(msg) {
+    document.getElementById('modalAlertAppMsg').innerText = msg;
+    document.getElementById('modalAlertApp').style.display = 'flex';
+}
+
+// ══════ METER ══════
+function meterBuild() {
+    const c = document.getElementById('meterSegments');
+    c.innerHTML = '';
+    for (let i=0; i<30; i++) {
+        const s = document.createElement('div');
+        s.className = 'meter-seg';
+        const pct = i/29;
+        s.style.background = pct < 0.7 ? '#4ade80' : pct < 0.9 ? '#ffa500' : '#ff4d4d';
+        c.appendChild(s);
+    }
+}
+
+function meterUpdate(giorni, totGiorni) {
+    const c = document.getElementById('meterSegments');
+    const segs = c.querySelectorAll('.meter-seg');
+    if (!totGiorni || totGiorni <= 0) { segs.forEach(s=>s.classList.remove('active')); return; }
+    const pct = Math.max(0, Math.min(1, giorni/totGiorni));
+    const attivi = Math.round(pct*30);
+    segs.forEach((s,i) => { if(i < attivi) s.classList.add('active'); else s.classList.remove('active'); });
+}
+
+// ══════ DASHBOARD UPDATE ══════
+function aggDashboard() {
+    const v = db.veicolo;
+    document.getElementById('vbNome').innerText = v.marca || 'Nessun veicolo';
+    document.getElementById('vbTarga').innerText = v.targa || '';
+
+    // Scadenze
+    const scadenze = [
+        { id:'assic', label:'Assicur.', data: db.assicurazione.scadG ? `${String(db.assicurazione.scadG).padStart(2,'0')}/${String(db.assicurazione.scadM).padStart(2,'0')}/${db.assicurazione.scadY}` : '', totGiorni:365 },
+        { id:'bollo', label:'Bollo', data: db.bollo.scadG ? `${String(db.bollo.scadG).padStart(2,'0')}/${String(db.bollo.scadM).padStart(2,'0')}/${db.bollo.scadY}` : '', totGiorni:365 },
+        { id:'revisione', label:'Revisione', data: db.revisione.scadG ? `${String(db.revisione.scadG).padStart(2,'0')}/${String(db.revisione.scadM).padStart(2,'0')}/${db.revisione.scadY}` : '', totGiorni:730 },
+        { id:'patente', label:'Patente', data: db.patente.scadG ? `${String(db.patente.scadG).padStart(2,'0')}/${String(db.patente.scadM).padStart(2,'0')}/${db.patente.scadY}` : '', totGiorni:3650 }
+    ];
+
+    let prossima = null;
+    let minGiorni = Infinity;
+
+    scadenze.forEach(function(s) {
+        const el = document.getElementById('val'+s.id.charAt(0).toUpperCase()+s.id.slice(1));
+        const sub = document.getElementById('sub'+s.id.charAt(0).toUpperCase()+s.id.slice(1));
+        const card = document.getElementById('card'+s.id.charAt(0).toUpperCase()+s.id.slice(1));
+        if (!s.data) { el.innerText='—'; sub.innerText='Non impostata'; card.className='card'; return; }
+        const gg = giorniAlla(s.data);
+        if (gg < 0) {
+            el.innerText = 'SCADUTA'; el.className='val red';
+            sub.innerText = s.data; card.className='card urgent';
+        } else if (gg <= 30) {
+            el.innerText = gg+'g'; el.className='val orange';
+            sub.innerText = s.data; card.className='card warning';
+        } else {
+            el.innerText = gg+'g'; el.className='val green';
+            sub.innerText = s.data; card.className='card ok';
+        }
+        if (gg >= 0 && gg < minGiorni) { minGiorni=gg; prossima=s; }
+    });
+
+    // Tagliando
+    const ta = db.tagliando;
+    const kmAtt = parseInt(db.veicolo.km)||0;
+    if (ta.intKm && ta.ultimoKm) {
+        const prossKm = parseInt(ta.ultimoKm)+parseInt(ta.intKm);
+        const mancano = prossKm - kmAtt;
+        const elT = document.getElementById('valTagliando');
+        const subT = document.getElementById('subTagliando');
+        const cardT = document.getElementById('cardTagliando');
+        if (mancano <= 0) {
+            elT.innerText='SCADUTO'; elT.className='val red'; cardT.className='card urgent';
+            subT.innerText='a '+fmtKm(prossKm)+' km';
+        } else if (mancano <= 500) {
+            elT.innerText=fmtKm(mancano)+' km'; elT.className='val orange'; cardT.className='card warning';
+            subT.innerText='a '+fmtKm(prossKm)+' km';
+        } else {
+            elT.innerText=fmtKm(mancano)+' km'; elT.className='val green'; cardT.className='card ok';
+            subT.innerText='a '+fmtKm(prossKm)+' km';
+        }
+    } else {
+        document.getElementById('valTagliando').innerText='—';
+        document.getElementById('subTagliando').innerText='Non impostato';
+        document.getElementById('cardTagliando').className='card';
+    }
+
+    // Spesa mese
+    const ora=new Date();
+    const spesaMese = (db.interventi||[]).filter(function(i){
+        const d=dataToObj(i.data);
+        return d && d.getMonth()===ora.getMonth() && d.getFullYear()===ora.getFullYear();
+    }).reduce(function(a,i){ return a+(parseFloat(i.costo)||0); },0);
+    document.getElementById('valSpesaMese').innerText=fmtEuro(spesaMese);
+
+    // Meter prossima scadenza
+    if (prossima) {
+        document.getElementById('meterLabel').innerText='⏰ PROSSIMA SCAD: '+prossima.label.toUpperCase();
+        document.getElementById('prossScad').innerText=minGiorni > 0 ? minGiorni+' giorni' : 'OGGI';
+        meterUpdate(minGiorni, prossima.totGiorni);
+    } else {
+        document.getElementById('meterLabel').innerText='PROSSIMA SCADENZA';
+        document.getElementById('prossScad').innerText='—';
+        meterUpdate(0,0);
+    }
+}
+
+// ══════ SETTINGS ══════
+function apriSettings() {
+    buildAllDates();
+    const v=db.veicolo, as=db.assicurazione, bo=db.bollo, re=db.revisione, pa=db.patente, ta=db.tagliando;
+    document.getElementById('setMarca').value=v.marca||'';
+    document.getElementById('setTarga').value=v.targa||'';
+    document.getElementById('setAnno').value=v.anno||'';
+    document.getElementById('setKmAttuali').value=v.km||'';
+    if (as.scadY) { document.getElementById('assicInizioG').value=as.inizioG; document.getElementById('assicInizioM').value=as.inizioM; document.getElementById('assicInizioY').value=as.inizioY; document.getElementById('assicScadG').value=as.scadG; document.getElementById('assicScadM').value=as.scadM; document.getElementById('assicScadY').value=as.scadY; }
+    document.getElementById('assicCosto').value=as.costo||'';
+    if (bo.scadY) { document.getElementById('bolloDataG').value=bo.dataG; document.getElementById('bolloDataM').value=bo.dataM; document.getElementById('bolloDataY').value=bo.dataY; document.getElementById('bolloScadG').value=bo.scadG; document.getElementById('bolloScadM').value=bo.scadM; document.getElementById('bolloScadY').value=bo.scadY; }
+    document.getElementById('bolloCosto').value=bo.costo||'';
+    if (re.scadY) { document.getElementById('revScadG').value=re.scadG; document.getElementById('revScadM').value=re.scadM; document.getElementById('revScadY').value=re.scadY; }
+    document.getElementById('revCosto').value=re.costo||'';
+    if (pa.scadY) { document.getElementById('patScadG').value=pa.scadG; document.getElementById('patScadM').value=pa.scadM; document.getElementById('patScadY').value=pa.scadY; }
+    document.getElementById('tagliandoIntKm').value=ta.intKm||'';
+    document.getElementById('tagliandoUltimoKm').value=ta.ultimoKm||'';
+    if (ta.dataY) { document.getElementById('tagliandoDataG').value=ta.dataG; document.getElementById('tagliandoDataM').value=ta.dataM; document.getElementById('tagliandoDataY').value=ta.dataY; }
+    document.getElementById('settingsView').style.display='flex';
+}
+
+function salvaSettings() {
+    db.veicolo.marca = document.getElementById('setMarca').value.trim();
+    db.veicolo.targa = document.getElementById('setTarga').value.trim().toUpperCase();
+    db.veicolo.anno = document.getElementById('setAnno').value;
+    db.veicolo.km = parseInt(document.getElementById('setKmAttuali').value)||0;
+
+    db.assicurazione.inizioG=document.getElementById('assicInizioG').value;
+    db.assicurazione.inizioM=document.getElementById('assicInizioM').value;
+    db.assicurazione.inizioY=document.getElementById('assicInizioY').value;
+    db.assicurazione.scadG=document.getElementById('assicScadG').value;
+    db.assicurazione.scadM=document.getElementById('assicScadM').value;
+    db.assicurazione.scadY=document.getElementById('assicScadY').value;
+    db.assicurazione.costo=parseFloat(document.getElementById('assicCosto').value)||0;
+
+    db.bollo.dataG=document.getElementById('bolloDataG').value;
+    db.bollo.dataM=document.getElementById('bolloDataM').value;
+    db.bollo.dataY=document.getElementById('bolloDataY').value;
+    db.bollo.scadG=document.getElementById('bolloScadG').value;
+    db.bollo.scadM=document.getElementById('bolloScadM').value;
+    db.bollo.scadY=document.getElementById('bolloScadY').value;
+    db.bollo.costo=parseFloat(document.getElementById('bolloCosto').value)||0;
+
+    db.revisione.scadG=document.getElementById('revScadG').value;
+    db.revisione.scadM=document.getElementById('revScadM').value;
+    db.revisione.scadY=document.getElementById('revScadY').value;
+    db.revisione.costo=parseFloat(document.getElementById('revCosto').value)||0;
+
+    db.patente.scadG=document.getElementById('patScadG').value;
+    db.patente.scadM=document.getElementById('patScadM').value;
+    db.patente.scadY=document.getElementById('patScadY').value;
+
+    db.tagliando.intKm=parseInt(document.getElementById('tagliandoIntKm').value)||0;
+    db.tagliando.ultimoKm=parseInt(document.getElementById('tagliandoUltimoKm').value)||0;
+    db.tagliando.dataG=document.getElementById('tagliandoDataG').value;
+    db.tagliando.dataM=document.getElementById('tagliandoDataM').value;
+    db.tagliando.dataY=document.getElementById('tagliandoDataY').value;
+
+    salvaDB();
+    pianificaNotifiche();
+    aggDashboard();
+    document.getElementById('settingsView').style.display='none';
+    mostraAlert('✅ Impostazioni salvate!');
+}
+
+// ══════ INTERVENTO ══════
+function apriModalIntervento(id) {
+    editingId = id || null;
+    buildDateSelect('intG','intM','intY', new Date().getDate(), new Date().getMonth()+1, new Date().getFullYear(), false);
+    document.getElementById('tipoIntKey').value='';
+    document.getElementById('labelTipoInt').innerText='Seleziona tipo...';
+    document.getElementById('intCosto').value='';
+    document.getElementById('intKm').value='';
+    document.getElementById('intNote').value='';
+    document.getElementById('titoloModalIntervento').innerText='Nuovo Intervento';
+
+    if (id !== null && id !== undefined) {
+        const int = (db.interventi||[]).find(x=>x.id===id);
+        if (int) {
+            document.getElementById('titoloModalIntervento').innerText='Modifica Intervento';
+            const p=int.data.split('/');
+            buildDateSelect('intG','intM','intY',parseInt(p[0]),parseInt(p[1]),parseInt(p[2]),false);
+            document.getElementById('tipoIntKey').value=int.tipo;
+            document.getElementById('labelTipoInt').innerText=int.tipoLabel;
+            document.getElementById('intCosto').value=int.costo||'';
+            document.getElementById('intKm').value=int.km||'';
+            document.getElementById('intNote').value=int.note||'';
+        }
+    }
+    document.getElementById('modalIntervento').style.display='flex';
+}
+
+function selTipo(key, label) {
+    document.getElementById('tipoIntKey').value=key;
+    document.getElementById('labelTipoInt').innerText=label;
+    document.getElementById('overlayTipoInt').style.display='none';
+}
+
+function salvaIntervento() {
+    const tipo = document.getElementById('tipoIntKey').value;
+    if (!tipo) { mostraAlert('Seleziona il tipo di intervento.'); return; }
+    const data = getDateStr('intG','intM','intY');
+    const costo = parseFloat(document.getElementById('intCosto').value)||0;
+    const km = parseInt(document.getElementById('intKm').value)||0;
+    const note = document.getElementById('intNote').value.trim();
+    const tipoLabel = document.getElementById('labelTipoInt').innerText;
+
+    if (!db.interventi) db.interventi=[];
+    if (editingId !== null && editingId !== undefined) {
+        const idx = db.interventi.findIndex(x=>x.id===editingId);
+        if (idx!==-1) { db.interventi[idx]={...db.interventi[idx], tipo, tipoLabel, data, costo, km, note}; }
+    } else {
+        db.interventi.push({ id:Date.now(), tipo, tipoLabel, data, costo, km, note });
+    }
+    // Aggiorna km veicolo se inseriti
+    if (km > 0 && km > (parseInt(db.veicolo.km)||0)) db.veicolo.km=km;
+    salvaDB();
+    aggDashboard();
+    chiudiModal('modalIntervento');
+}
+
+// ══════ STORICO ══════
+function apriStorico() {
+    const lista = document.getElementById('listaStorico');
+    const interventi = [...(db.interventi||[])].sort((a,b)=>dataToObj(b.data)-dataToObj(a.data));
+    if (!interventi.length) { lista.innerHTML='<p style="color:var(--dim); text-align:center; padding:20px;">Nessun intervento registrato.</p>'; }
+    else {
+        lista.innerHTML = interventi.map(function(i) {
+            return `<div class="storico-item" onclick="apriModalIntervento(${i.id})">
+                <div class="si-tipo">${i.tipoLabel}</div>
+                <div class="si-desc">${i.tipo==='altro'?i.note||i.tipoLabel:i.tipoLabel}</div>
+                ${i.note && i.tipo!=='altro'?`<div class="si-note">${i.note}</div>`:''}
+                <div class="si-row">
+                    <span class="si-data">📅 ${i.data}${i.km?' &nbsp;·&nbsp; 🛣️ '+i.km+' km':''}</span>
+                    <span class="si-costo">${i.costo?fmtEuro(i.costo):'—'}</span>
+                </div>
+                <div style="text-align:right; margin-top:6px;">
+                    <button onclick="event.stopPropagation(); chiediElimina(${i.id})" style="background:var(--accent); border:none; border-radius:8px; color:#fff; padding:4px 10px; font-size:11px; font-weight:900; cursor:pointer;">🗑️</button>
+                </div>
+            </div>`;
+        }).join('');
+    }
+    document.getElementById('storicoView').style.display='flex';
+}
+
+function chiediElimina(id) { idElimina=id; document.getElementById('modalElimina').style.display='flex'; }
+function confermaElimina() {
+    if (idElimina === 'RESET') {
+        localStorage.clear(); location.reload(); return;
+    }
+    db.interventi = (db.interventi||[]).filter(x=>x.id!==idElimina);
+    salvaDB(); aggDashboard(); chiudiModal('modalElimina');
+    apriStorico();
+}
+
+// ══════ RIEPILOGO ══════
+function apriRiepilogo() {
+    riepilogoMode='mese'; riepilogoPeriodo=0;
+    aggiornaRiepilogo();
+    document.getElementById('riepilogoView').style.display='flex';
+}
+
+function setRiepilogoMode(mode) {
+    riepilogoMode=mode; riepilogoPeriodo=0;
+    document.getElementById('btnMese').style.cssText='padding:10px;border-radius:12px;border:none;font-weight:900;font-size:12px;cursor:pointer;'+(mode==='mese'?'background:var(--primary);color:#000;':'background:#222;color:#fff;border:2px solid #444;');
+    document.getElementById('btnAnno').style.cssText='padding:10px;border-radius:12px;font-weight:900;font-size:12px;cursor:pointer;'+(mode==='anno'?'background:var(--primary);color:#000;border:none;':'background:#222;color:#fff;border:2px solid #444;');
+    aggiornaRiepilogo();
+}
+
+function cambiaperiodo(dir) { riepilogoPeriodo+=dir; aggiornaRiepilogo(); }
+
+function aggiornaRiepilogo() {
+    const ora=new Date();
+    let label='', interventi=[];
+    if (riepilogoMode==='mese') {
+        const d=new Date(ora.getFullYear(), ora.getMonth()+riepilogoPeriodo, 1);
+        label=MESI_FULL[d.getMonth()]+' '+d.getFullYear();
+        interventi=(db.interventi||[]).filter(function(i){
+            const di=dataToObj(i.data);
+            return di && di.getMonth()===d.getMonth() && di.getFullYear()===d.getFullYear();
+        });
+        // Aggiungi costi fissi del mese (assic, bollo ecc) se pagati in quel mese
+        const costiExtra = [];
+        if (db.assicurazione.costo && db.assicurazione.inizioY) {
+            const da=new Date(db.assicurazione.inizioY, db.assicurazione.inizioM-1, db.assicurazione.inizioG);
+            if (da.getMonth()===d.getMonth() && da.getFullYear()===d.getFullYear()) costiExtra.push({tipoLabel:'🛡️ Assicurazione', costo:db.assicurazione.costo});
+        }
+        if (db.bollo.costo && db.bollo.dataY) {
+            const db2=new Date(db.bollo.dataY, db.bollo.dataM-1, db.bollo.dataG);
+            if (db2.getMonth()===d.getMonth() && db2.getFullYear()===d.getFullYear()) costiExtra.push({tipoLabel:'📄 Bollo', costo:db.bollo.costo});
+        }
+        renderRiepilogo(label, interventi, costiExtra);
+    } else {
+        const anno=ora.getFullYear()+riepilogoPeriodo;
+        label='Anno '+anno;
+        interventi=(db.interventi||[]).filter(function(i){
+            const di=dataToObj(i.data);
+            return di && di.getFullYear()===anno;
+        });
+        renderRiepilogo(label, interventi, []);
+    }
+}
+
+function renderRiepilogo(label, interventi, costiExtra) {
+    const tot = interventi.reduce((a,i)=>a+(parseFloat(i.costo)||0),0) + (costiExtra||[]).reduce((a,i)=>a+(parseFloat(i.costo)||0),0);
+    // Raggruppa per tipo
+    const gruppi={};
+    interventi.forEach(function(i){
+        if (!gruppi[i.tipoLabel]) gruppi[i.tipoLabel]=0;
+        gruppi[i.tipoLabel]+=parseFloat(i.costo)||0;
+    });
+    (costiExtra||[]).forEach(function(i){
+        if (!gruppi[i.tipoLabel]) gruppi[i.tipoLabel]=0;
+        gruppi[i.tipoLabel]+=parseFloat(i.costo)||0;
+    });
+
+    let html=`<div class="rep-card"><div class="rep-title">📊 ${label}</div>`;
+    if (Object.keys(gruppi).length===0) {
+        html+='<p style="color:var(--dim);font-size:13px;">Nessuna spesa registrata.</p>';
+    } else {
+        Object.keys(gruppi).forEach(function(k){
+            html+=`<div class="rep-row"><span>${k}</span><span style="color:var(--primary);font-weight:900;">${fmtEuro(gruppi[k])}</span></div>`;
+        });
+        html+=`<div class="rep-tot">TOTALE: ${fmtEuro(tot)}</div>`;
+    }
+    html+='</div>';
+
+    if (interventi.length > 0) {
+        html+='<div class="rep-card"><div class="rep-title">📋 Dettaglio interventi</div>';
+        interventi.sort((a,b)=>dataToObj(b.data)-dataToObj(a.data)).forEach(function(i){
+            html+=`<div class="rep-row"><span>${i.tipoLabel} <span style="color:#555;font-size:11px;">${i.data}</span></span><span style="color:var(--primary);font-weight:900;">${i.costo?fmtEuro(i.costo):'—'}</span></div>`;
+        });
+        html+='</div>';
+    }
+    document.getElementById('riepilogoContent').innerHTML=html;
+}
+
+// ══════ BACKUP ══════
+function esportaBackup() {
+    const oggi=new Date();
+    const nome=`miovehicolo_backup_${oggi.getFullYear()}-${String(oggi.getMonth()+1).padStart(2,'0')}-${String(oggi.getDate()).padStart(2,'0')}.json`;
+    const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download=nome;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+function importaBackup(input) {
+    const file=input.files[0]; if (!file) return;
+    const r=new FileReader();
+    r.onload=function(e){
+        try {
+            const data=JSON.parse(e.target.result);
+            if (!data.veicolo) throw new Error('File non valido');
+            db=data; salvaDB(); aggDashboard();
+            mostraAlert('✅ Backup importato!');
+        } catch(err){ mostraAlert('❌ File non valido.'); }
+    };
+    r.readAsText(file);
+    input.value='';
+}
+
+// ══════ NOTIFICHE ══════
+function pianificaNotifiche() {
+    if (!window.Capacitor || !window.Capacitor.isNativePlatform()) return;
+    try {
+        const { LocalNotifications } = window.Capacitor.Plugins;
+        const notifications=[];
+        const scadenze=[
+            { tipo:'Assicurazione', data: db.assicurazione.scadG?`${db.assicurazione.scadG}/${db.assicurazione.scadM}/${db.assicurazione.scadY}`:'' },
+            { tipo:'Bollo', data: db.bollo.scadG?`${db.bollo.scadG}/${db.bollo.scadM}/${db.bollo.scadY}`:'' },
+            { tipo:'Revisione', data: db.revisione.scadG?`${db.revisione.scadG}/${db.revisione.scadM}/${db.revisione.scadY}`:'' },
+            { tipo:'Patente', data: db.patente.scadG?`${db.patente.scadG}/${db.patente.scadM}/${db.patente.scadY}`:'' }
+        ];
+        scadenze.forEach(function(s,i){
+            if (!s.data) return;
+            const scad=dataToObj(s.data);
+            if (!scad) return;
+            const avviso=new Date(scad); avviso.setDate(avviso.getDate()-5); avviso.setHours(9,0,0,0);
+            if (avviso > new Date()) {
+                notifications.push({ id:2000+i, title:'⏰ '+s.tipo+' in scadenza', body:s.tipo+' scade il '+s.data+'. Hai 5 giorni per rinnovare!', schedule:{at:avviso}, channelId:'default' });
+            }
+        });
+        if (notifications.length>0) {
+            LocalNotifications.cancel({notifications:notifications.map(n=>({id:n.id}))})
+                .then(()=>LocalNotifications.schedule({notifications})).catch(()=>{});
+        }
+    } catch(e){}
+}
+
+function checkScadenzeAlAvvio() {
+    const oggi=new Date(); oggi.setHours(0,0,0,0);
+    const avvisi=[];
+    const scadenze=[
+        { tipo:'Assicurazione', data: db.assicurazione.scadG?`${String(db.assicurazione.scadG).padStart(2,'0')}/${String(db.assicurazione.scadM).padStart(2,'0')}/${db.assicurazione.scadY}`:'' },
+        { tipo:'Bollo', data: db.bollo.scadG?`${String(db.bollo.scadG).padStart(2,'0')}/${String(db.bollo.scadM).padStart(2,'0')}/${db.bollo.scadY}`:'' },
+        { tipo:'Revisione', data: db.revisione.scadG?`${String(db.revisione.scadG).padStart(2,'0')}/${String(db.revisione.scadM).padStart(2,'0')}/${db.revisione.scadY}`:'' },
+        { tipo:'Patente', data: db.patente.scadG?`${String(db.patente.scadG).padStart(2,'0')}/${String(db.patente.scadM).padStart(2,'0')}/${db.patente.scadY}`:'' }
+    ];
+    scadenze.forEach(function(s){
+        if (!s.data) return;
+        const gg=giorniAlla(s.data);
+        const alertKey='mv_notif_'+s.tipo+'_'+s.data;
+        if (gg < 0) {
+            if (!localStorage.getItem(alertKey)) { localStorage.setItem(alertKey,'1'); avvisi.push('🔴 '+s.tipo+': SCADUTA il '+s.data); }
+        } else if (gg <= 5) {
+            if (!localStorage.getItem(alertKey)) { localStorage.setItem(alertKey,'1'); avvisi.push('⚠️ '+s.tipo+' scade il '+s.data+' (tra '+gg+' giorni).\nHai 5 giorni per rinnovarla, altrimenti non riceverai più avvisi.'); }
+        }
+    });
+    // Tagliando
+    const ta=db.tagliando; const kmAtt=parseInt(db.veicolo.km)||0;
+    if (ta.intKm && ta.ultimoKm) {
+        const prossKm=parseInt(ta.ultimoKm)+parseInt(ta.intKm);
+        const mancano=prossKm-kmAtt;
+        const alertKey='mv_notif_tagliando_'+prossKm;
+        if (mancano<=0 && !localStorage.getItem(alertKey)) {
+            localStorage.setItem(alertKey,'1');
+            avvisi.push('🔴 Tagliando SCADUTO: previsto a '+prossKm+' km.');
+        } else if (mancano>0 && mancano<=500 && !localStorage.getItem(alertKey)) {
+            localStorage.setItem(alertKey,'1');
+            avvisi.push('⚠️ Tagliando: mancano '+mancano+' km (previsto a '+prossKm+' km).\nAggiorna il km del prossimo tagliando nelle impostazioni.');
+        }
+    }
+    if (avvisi.length>0) {
+        setTimeout(function(){
+            alert('⏰ SCADENZE VEICOLO\n\n'+avvisi.join('\n\n'));
+        }, 800);
+    }
+}
+
+// ══════ SAFE RESET ══════
+let safeStep=0, safeTimeout=null;
+function safeClick(){
+    if(safeStep===0){
+        document.querySelector('.safe-door').classList.add('open');
+        const sl=document.querySelector('.safe-lock');
+        if(sl) sl.classList.add('unlock');
+        document.getElementById('safeLockIcon').classList.replace('fa-lock','fa-lock-open');
+        safeStep=1;
+        safeTimeout=setTimeout(resetSafeBtn,1000);
+    } else {
+        clearTimeout(safeTimeout);
+        resetSafeBtn();
+        document.getElementById('modalElimina').querySelector('p').innerText='Vuoi azzerare tutto il database? L\'operazione è irreversibile.';
+        idElimina='RESET';
+        document.getElementById('modalElimina').style.display='flex';
+    }
+}
+function resetSafeBtn(){
+    document.querySelector('.safe-door').classList.remove('open');
+    const sl=document.querySelector('.safe-lock');
+    if(sl) sl.classList.remove('unlock');
+    document.getElementById('safeLockIcon').classList.replace('fa-lock-open','fa-lock');
+    safeStep=0;
+}
+
+// ══════ NOTE ══════
+function apriNote(){
+    document.getElementById('noteText').value = localStorage.getItem('mv_note')||'';
+    document.getElementById('modalNote').style.display='flex';
+}
+function salvaNote(){
+    localStorage.setItem('mv_note', document.getElementById('noteText').value);
+    chiudiModal('modalNote');
+    mostraAlert('✅ Note salvate!');
+}
+
+// ══════ INFO ══════
+function apriInfo(){
+    mostraAlert('🚗 MioVeicolo\nVersion '+APP_VERSION+'\n\nApp per la gestione delle scadenze del tuo veicolo.\n\n© 2026 MioVeicolo');
+}
+
+// ══════ STAMPA ══════
+function stampaRiepilogo() {
+    const v = db.veicolo;
+    const contenuto = document.getElementById('riepilogoContent').innerHTML;
+    const win = window.open('', '_blank');
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <title>MioVeicolo - Riepilogo</title>
+    <style>
+        body { font-family: sans-serif; background:#fff; color:#111; margin:30px; }
+        h1 { font-size:22px; font-weight:900; margin-bottom:4px; }
+        h1 span { color:#00CCBC; }
+        .subtitle { font-size:12px; color:#888; margin-bottom:20px; }
+        .rep-card { border:1px solid #ddd; border-radius:10px; padding:14px; margin-bottom:14px; }
+        .rep-title { font-size:11px; color:#888; text-transform:uppercase; font-weight:bold; margin-bottom:10px; }
+        .rep-row { display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #eee; font-size:13px; }
+        .rep-row:last-child { border-bottom:none; }
+        .rep-tot { font-weight:900; font-size:16px; color:#00CCBC; margin-top:10px; }
+        @media print { body { margin:15px; } }
+    </style></head><body>
+    <h1>Mio<span>Veicolo</span></h1>
+    <div class="subtitle">${v.marca||'Veicolo non impostato'}${v.targa?' · '+v.targa:''} · Stampato il ${new Date().toLocaleDateString('it-IT')}</div>
+    ${contenuto}
+    <script>window.onload=function(){window.print();}<\/script>
+    </body></html>`);
+    win.document.close();
+}
+
+// ══════ INIT ══════
+document.addEventListener('DOMContentLoaded', function(){
+    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+        try { window.Capacitor.Plugins.LocalNotifications.requestPermissions(); } catch(e){}
+    }
+    meterBuild();
+    aggDashboard();
+    pianificaNotifiche();
+    checkScadenzeAlAvvio();
+});
+</script>
+</body>
+</html>
