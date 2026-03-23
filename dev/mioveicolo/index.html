@@ -35,10 +35,11 @@
         /* VEICOLO CARD ESPANSA */
         #veicoloBar {
             background: linear-gradient(135deg, #1a1a1a 0%, #1e1e2e 100%);
-            border: 1px solid #e879a0; border-radius:12px; padding:7px 12px;
+            border: 1px solid #e879a0; border-radius:12px; padding:8px 12px;
             margin-bottom:8px; display:flex; flex-direction:column;
             justify-content:center; gap:0; cursor:pointer;
-            position:relative; overflow:hidden; flex-shrink:0;
+            position:relative; overflow:hidden;
+            height:110px; flex-shrink:0;
         }
         #veicoloBar::before {
             content:''; position:absolute; inset:0; border-radius:12px;
@@ -46,17 +47,17 @@
             pointer-events:none;
         }
         .vb-top { display:flex; align-items:center; justify-content:space-between; }
-        .vb-nome { font-size:14px; font-weight:900; color:var(--primary); }
-        .vb-targa { font-size:11px; font-weight:700; color:#fff; background:#333; padding:2px 7px; border-radius:6px; border:1px solid #555; }
-        .vb-row { display:flex; gap:12px; margin-top:5px; }
+        .vb-nome { font-size:16px; font-weight:900; color:var(--primary); }
+        .vb-targa { font-size:12px; font-weight:700; color:#fff; background:#333; padding:2px 7px; border-radius:6px; border:1px solid #555; }
+        .vb-row { display:flex; gap:12px; margin-top:6px; }
         .vb-info { display:flex; flex-direction:column; align-items:flex-start; }
-        .vb-info-label { font-size:8px; color:#bbb; text-transform:uppercase; letter-spacing:1px; }
-        .vb-info-val { font-size:12px; font-weight:700; color:#fff; }
-        .vb-health { display:flex; align-items:center; gap:6px; margin-top:5px; padding-top:5px; border-top:1px solid #2a2a2a; }
-        .vb-health-label { font-size:8px; color:#bbb; text-transform:uppercase; letter-spacing:1px; }
-        .vb-health-bar { flex:1; height:5px; background:#222; border-radius:3px; overflow:hidden; }
+        .vb-info-label { font-size:9px; color:#bbb; text-transform:uppercase; letter-spacing:1px; }
+        .vb-info-val { font-size:13px; font-weight:700; color:#fff; }
+        .vb-health { display:flex; align-items:center; gap:6px; margin-top:6px; padding-top:6px; border-top:1px solid #2a2a2a; }
+        .vb-health-label { font-size:9px; color:#bbb; text-transform:uppercase; letter-spacing:1px; }
+        .vb-health-bar { flex:1; height:6px; background:#222; border-radius:3px; overflow:hidden; }
         .vb-health-fill { height:100%; border-radius:3px; transition:width 0.6s ease; }
-        .vb-health-txt { font-size:9px; font-weight:900; }
+        .vb-health-txt { font-size:10px; font-weight:900; }
         .vb-empty { display:flex; align-items:center; justify-content:center; gap:8px; color:var(--dim); font-size:12px; }
         .vb-empty i { color:var(--primary); font-size:18px; }
         @keyframes fadeSlideUp {
@@ -79,14 +80,14 @@
         .val.green { color:var(--green); }
         /* METER */
         .progress-container { background:var(--card); padding:6px 12px; border-radius:12px; margin-bottom:8px; border:1px solid #333; display:flex; flex-direction:column; gap:4px; }
-        .progress-header { display:flex; justify-content:center; font-weight:bold; color:var(--primary); font-size:12px; text-transform:uppercase; letter-spacing:1px; }
-        .progress-bar { background:#111; height:14px; border-radius:0; overflow:hidden; border:1px solid #333; display:flex; gap:1px; padding:1px; }
+        .progress-header { display:flex; justify-content:center; font-weight:bold; color:var(--primary); font-size:14px; text-transform:uppercase; letter-spacing:1px; }
+        .progress-bar { background:#111; height:20px; border-radius:0; overflow:hidden; border:1px solid #333; display:flex; gap:1px; padding:1px; }
         .meter-segments { display:flex; gap:1px; height:100%; width:100%; align-items:stretch; }
         .meter-seg { flex:1; border-radius:0; transition:opacity 0.1s; opacity:0.15; }
         .meter-seg.active { opacity:1; }
         .dash-info { display:flex; justify-content:space-between; align-items:center; padding:0 5px; margin-top:5px; }
-        #liveClock { font-weight:bold; color:var(--dim); font-size:11px; text-transform:uppercase; }
-        #prossScad { font-weight:bold; color:var(--primary); font-size:12px; }
+        #liveClock { font-weight:bold; color:var(--dim); font-size:13px; text-transform:uppercase; }
+        #prossScad { font-weight:bold; color:var(--primary); font-size:14px; }
         /* FOOTER */
         .sticky-footer {
             position:relative; margin-top:0; background:#161616;
@@ -211,9 +212,16 @@
 
     <!-- VEICOLO BAR -->
     <div id="veicoloBar" onclick="apriSettings()">
-        <div id="vbEmpty" class="vb-empty">
-            <i class="fas fa-car"></i>
-            <span>Tocca per aggiungere il tuo veicolo</span>
+        <div id="vbEmpty" style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:8px;">
+            <svg width="36" height="36" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 24v-2l2-7h18l2 7v2" stroke="#e879a0" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M10 22h18" stroke="#e879a0" stroke-width="1.5"/>
+                <circle cx="13" cy="26" r="2.5" fill="#e879a0"/>
+                <circle cx="25" cy="26" r="2.5" fill="#e879a0"/>
+                <path d="M12 17l2-5h10l2 5" stroke="#e879a0" stroke-width="1.5" stroke-linejoin="round"/>
+            </svg>
+            <div style="font-size:13px; font-weight:900; color:#e879a0; text-transform:uppercase; letter-spacing:1px;">Il tuo garage è vuoto</div>
+            <div style="font-size:11px; color:#888;">Tocca per aggiungere il tuo veicolo</div>
         </div>
         <div id="vbFull" style="display:none;">
             <div class="vb-top">
