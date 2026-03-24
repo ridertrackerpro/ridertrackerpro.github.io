@@ -35,11 +35,27 @@
         #veicoloBar {
             background: linear-gradient(135deg, #1a1a1a 0%, #1e1e2e 100%);
             border: 1px solid #e879a0; border-radius:12px; padding:0.8dvh 12px;
-            margin-bottom:0.8dvh; display:flex; flex-direction:column;
+            margin-bottom:0; display:flex; flex-direction:column;
             justify-content:center; gap:0; cursor:pointer;
             position:relative; overflow:hidden;
             height: clamp(90px, 13dvh, 115px); flex-shrink:0;
+            user-select:none; -webkit-user-select:none;
         }
+        #veicoloDots { display:flex; justify-content:center; gap:6px; height:0.8dvh; flex-shrink:0; align-items:center; }
+        .vdot { width:6px; height:6px; border-radius:50%; background:#444; transition:background 0.2s,transform 0.2s; }
+        .vdot.active { background:var(--primary); transform:scale(1.3); }
+        #garageOverlay { display:none; position:fixed; inset:0; z-index:9500; background:rgba(0,0,0,0.8); align-items:flex-end; justify-content:center; }
+        #garagePanel { background:var(--card); border:2px solid var(--primary); border-radius:20px 20px 0 0; padding:20px; width:100%; max-width:480px; max-height:80vh; overflow-y:auto; padding-bottom:max(20px,calc(20px + env(safe-area-inset-bottom,0px))); }
+        #garagePanel h3 { color:var(--primary); font-size:15px; text-transform:uppercase; letter-spacing:1px; margin:0 0 14px 0; }
+        .garage-item { background:#222; border:1px solid #333; border-radius:12px; padding:12px 14px; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; }
+        .garage-item.active-vehicle { border-color:var(--primary); }
+        .garage-item-info { text-align:left; flex:1; }
+        .garage-item-nome { font-size:14px; font-weight:900; color:#fff; }
+        .garage-item-targa { font-size:11px; color:#aaa; margin-top:2px; }
+        .garage-item-btns { display:flex; gap:6px; }
+        .garage-item-btn { background:#333; border:1px solid #444; border-radius:8px; padding:7px 11px; color:#fff; font-size:13px; cursor:pointer; }
+        .garage-item-btn.edit { border-color:var(--primary); color:var(--primary); }
+        .garage-item-btn.del { border-color:var(--accent); color:var(--accent); }
         #veicoloBar::before {
             content:''; position:absolute; inset:0; border-radius:12px;
             background: linear-gradient(135deg, rgba(232,121,160,0.08) 0%, transparent 60%);
@@ -59,13 +75,6 @@
         .vb-health-txt { font-size:10px; font-weight:900; }
         .vb-empty { display:flex; align-items:center; justify-content:center; gap:8px; color:var(--dim); font-size:12px; }
         .vb-empty i { color:var(--primary); font-size:18px; }
-        /* DOTS VEICOLI */
-        #vbDots { display:flex; justify-content:center; gap:5px; margin-top:4px; min-height:8px; }
-        .vb-dot { width:6px; height:6px; border-radius:50%; background:#444; transition:background 0.2s; flex-shrink:0; }
-        .vb-dot.active { background:var(--primary); }
-        /* GARAGE OVERLAY */
-        #garageOverlay { display:none; position:fixed; inset:0; z-index:9000; background:rgba(0,0,0,0.7); align-items:flex-end; justify-content:center; }
-        #garagePanel { background:#1a1a1a; border-radius:20px 20px 0 0; padding:20px 15px; width:100%; max-height:70dvh; overflow-y:auto; border-top:1px solid #e879a0; }
         @keyframes fadeSlideUp {
             from { opacity:0; transform:translateY(18px); }
             to { opacity:1; transform:translateY(0); }
@@ -222,7 +231,7 @@
     </div>
 
     <!-- VEICOLO BAR -->
-    <div id="veicoloBar" onclick="vbTap()" ontouchstart="vbTouchStart(event)" ontouchend="vbTouchEnd(event)">
+    <div id="veicoloBar">
         <div id="vbEmpty" style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:8px;">
             <svg width="36" height="36" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M8 24v-2l2-7h18l2 7v2" stroke="#e879a0" stroke-width="2" stroke-linejoin="round"/>
@@ -260,17 +269,7 @@
             </div>
         </div>
     </div>
-    <div id="vbDots"></div>
-
-    <!-- GARAGE OVERLAY -->
-    <div id="garageOverlay" onclick="chiudiGarage(event)">
-        <div id="garagePanel">
-            <div style="font-size:13px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; text-align:center;">🚗 Il tuo garage</div>
-            <div id="garageList"></div>
-            <button class="btn-full" onclick="aggiungiVeicolo()" style="margin-top:8px; background:#222; border:1px solid #e879a0; color:#e879a0;">+ Aggiungi veicolo</button>
-            <button class="btn-full" onclick="chiudiGarage()" style="margin-top:8px; background:#222; border:1px solid #444; color:#888;">✕ CHIUDI</button>
-        </div>
-    </div>
+    <div id="veicoloDots"></div>
 
     <!-- CARD SCADENZE -->
     <div style="flex-shrink:0;">
@@ -556,6 +555,16 @@
 </div>
 
 
+<!-- GARAGE OVERLAY -->
+<div id="garageOverlay" onclick="if(event.target===this)chiudiGarage()">
+    <div id="garagePanel">
+        <h3>🚗 Garage</h3>
+        <div id="garageList"></div>
+        <button class="btn-modal btn-save" onclick="aggiungiVeicolo()" style="margin-top:8px;">+ AGGIUNGI VEICOLO</button>
+        <button class="btn-modal btn-close" onclick="chiudiGarage()" style="margin-top:6px;">✕ CHIUDI</button>
+    </div>
+</div>
+
 <script>
 const APP_VERSION = '1.0.0';
 const MESI = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
@@ -570,51 +579,116 @@ function fmtEuro(n) {
     return '€' + Math.ceil(parseFloat(n)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
-// ══════ DB MULTI-VEICOLO ══════
-function creaVeicoloVuoto() {
+// --- DB MULTI-VEICOLO ---
+// { veicoli: [...], activeIdx: 0 }
+// Ogni veicolo: { id, marca, targa, anno, km, assicurazione, bollo, revisione, patente, tagliando, interventi, note }
+// Migrazione automatica da formato singolo vecchio
+
+var db;
+var activeIdx = 0;
+
+function nuovoVeicolo() {
     return {
-        id: Date.now(),
-        veicolo: { marca:'', targa:'', anno:'', km:0 },
-        assicurazione: { inizioG:'', inizioM:'', inizioY:'', scadG:'', scadM:'', scadY:'', costo:0 },
-        bollo: { dataG:'', dataM:'', dataY:'', scadG:'', scadM:'', scadY:'', costo:0 },
-        revisione: { scadG:'', scadM:'', scadY:'', costo:0 },
-        patente: { scadG:'', scadM:'', scadY:'' },
-        tagliando: { intKm:0, ultimoKm:0, dataG:'', dataM:'', dataY:'' },
-        interventi: []
+        id: Date.now() + Math.random(),
+        marca:'', targa:'', anno:'', km:0,
+        assicurazione:{ inizioG:'',inizioM:'',inizioY:'',scadG:'',scadM:'',scadY:'',costo:0 },
+        bollo:{ dataG:'',dataM:'',dataY:'',scadG:'',scadM:'',scadY:'',costo:0 },
+        revisione:{ scadG:'',scadM:'',scadY:'',costo:0 },
+        patente:{ scadG:'',scadM:'',scadY:'' },
+        tagliando:{ intKm:0,ultimoKm:0,dataG:'',dataM:'',dataY:'' },
+        interventi:[],
+        note:[]
     };
 }
 
-// Migrazione da vecchio formato a nuovo
-var _rawDb = JSON.parse(localStorage.getItem('miovehicolo_db') || 'null');
-var db;
-if (!_rawDb) {
-    db = { veicoli: [creaVeicoloVuoto()], veicoloAttivo: 0, note: [] };
-} else if (_rawDb.veicoli) {
-    db = _rawDb;
-} else {
-    // Migrazione vecchio formato
-    var veicoloMigrato = creaVeicoloVuoto();
-    veicoloMigrato.veicolo = _rawDb.veicolo || veicoloMigrato.veicolo;
-    veicoloMigrato.assicurazione = _rawDb.assicurazione || veicoloMigrato.assicurazione;
-    veicoloMigrato.bollo = _rawDb.bollo || veicoloMigrato.bollo;
-    veicoloMigrato.revisione = _rawDb.revisione || veicoloMigrato.revisione;
-    veicoloMigrato.patente = _rawDb.patente || veicoloMigrato.patente;
-    veicoloMigrato.tagliando = _rawDb.tagliando || veicoloMigrato.tagliando;
-    veicoloMigrato.interventi = _rawDb.interventi || [];
-    db = { veicoli: [veicoloMigrato], veicoloAttivo: 0, note: _rawDb.note || [] };
+function migraDB() {
+    var raw = localStorage.getItem('miovehicolo_db');
+    if (!raw) return { veicoli:[nuovoVeicolo()], activeIdx:0 };
+    var parsed;
+    try { parsed = JSON.parse(raw); } catch(e) { return { veicoli:[nuovoVeicolo()], activeIdx:0 }; }
+    if (parsed.veicoli && Array.isArray(parsed.veicoli)) return parsed;
+    // Formato singolo: migra
+    var v = nuovoVeicolo();
+    if (parsed.veicolo) { v.marca=parsed.veicolo.marca||''; v.targa=parsed.veicolo.targa||''; v.anno=parsed.veicolo.anno||''; v.km=parsed.veicolo.km||0; }
+    if (parsed.assicurazione) v.assicurazione=parsed.assicurazione;
+    if (parsed.bollo) v.bollo=parsed.bollo;
+    if (parsed.revisione) v.revisione=parsed.revisione;
+    if (parsed.patente) v.patente=parsed.patente;
+    if (parsed.tagliando) v.tagliando=parsed.tagliando;
+    if (parsed.interventi) v.interventi=parsed.interventi;
+    if (parsed.note) v.note=parsed.note;
+    return { veicoli:[v], activeIdx:0 };
 }
 
-// Shortcut al veicolo attivo
-function vdb() { return db.veicoli[db.veicoloAttivo] || db.veicoli[0]; }
+db = migraDB();
+activeIdx = db.activeIdx || 0;
+if (activeIdx >= db.veicoli.length) activeIdx = 0;
 
-let idElimina = null;
-let editingId = null;
-let riepilogoMode = 'mese';
-let riepilogoPeriodo = 0; // offset mesi/anni
+function vdb() { return db.veicoli[activeIdx]; }
 
-function salvaDB() { localStorage.setItem('miovehicolo_db', JSON.stringify(db)); }
+function salvaDB() { db.activeIdx=activeIdx; localStorage.setItem('miovehicolo_db', JSON.stringify(db)); }
 
-// ══════ DATE UTILS ══════
+// --- SWIPE / LONGPRESS sulla veicoloBar ---
+(function(){
+    var bar = document.getElementById('veicoloBar');
+    var sx=0, sy=0, st=0, lpTimer=null, lpFired=false;
+    bar.addEventListener('touchstart', function(e){
+        sx=e.touches[0].clientX; sy=e.touches[0].clientY; st=Date.now(); lpFired=false;
+        lpTimer=setTimeout(function(){ lpFired=true; apriGarage(); },600);
+    },{passive:true});
+    bar.addEventListener('touchmove', function(e){
+        if (!lpFired && (Math.abs(e.touches[0].clientX-sx)>8||Math.abs(e.touches[0].clientY-sy)>8)) clearTimeout(lpTimer);
+    },{passive:true});
+    bar.addEventListener('touchend', function(e){
+        clearTimeout(lpTimer);
+        if (lpFired) return;
+        var dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy, dt=Date.now()-st;
+        if (Math.abs(dx)>40 && Math.abs(dy)<60 && dt<500) {
+            if (db.veicoli.length>1) {
+                activeIdx = dx<0 ? (activeIdx+1)%db.veicoli.length : (activeIdx-1+db.veicoli.length)%db.veicoli.length;
+                salvaDB(); aggDashboard();
+            }
+        } else if (Math.abs(dx)<10 && Math.abs(dy)<10) {
+            apriSettings();
+        }
+    },{passive:true});
+})();
+
+// --- GARAGE ---
+function apriGarage() {
+    var list = document.getElementById('garageList');
+    list.innerHTML = '';
+    for (var i=0; i<db.veicoli.length; i++) {
+        var v=db.veicoli[i], nome=v.marca||('Veicolo '+(i+1)), targa=v.targa||'—', isAct=(i===activeIdx);
+        var div=document.createElement('div');
+        div.className='garage-item'+(isAct?' active-vehicle':'');
+        div.innerHTML='<div class="garage-item-info"><div class="garage-item-nome">'+nome+(isAct?' ✓':'')+'</div><div class="garage-item-targa">'+targa+'</div></div>'
+            +'<div class="garage-item-btns">'
+            +'<button class="garage-item-btn edit" onclick="selezionaVeicolo('+i+')"><i class="fas fa-check"></i></button>'
+            +'<button class="garage-item-btn edit" onclick="modificaVeicolo('+i+')"><i class="fas fa-pencil-alt"></i></button>'
+            +'<button class="garage-item-btn del" onclick="chiediEliminaVeicolo('+i+')"><i class="fas fa-trash"></i></button>'
+            +'</div>';
+        list.appendChild(div);
+    }
+    document.getElementById('garageOverlay').style.display='flex';
+}
+function chiudiGarage() { document.getElementById('garageOverlay').style.display='none'; }
+function selezionaVeicolo(i) { activeIdx=i; salvaDB(); aggDashboard(); chiudiGarage(); }
+function modificaVeicolo(i) { chiudiGarage(); activeIdx=i; salvaDB(); apriSettings(); }
+function aggiungiVeicolo() { db.veicoli.push(nuovoVeicolo()); activeIdx=db.veicoli.length-1; salvaDB(); chiudiGarage(); apriSettings(); }
+
+var _elimVeicoloIdx=null;
+function chiediEliminaVeicolo(i) {
+    if (db.veicoli.length<=1) { mostraAlert('Non puoi eliminare l\'unico veicolo.'); return; }
+    _elimVeicoloIdx=i;
+    idElimina='VEICOLO';
+    var nome=db.veicoli[i].marca||('Veicolo '+(i+1));
+    document.getElementById('modalElimina').querySelector('p').innerText='Eliminare '+nome+'? L\'operazione è irreversibile.';
+    chiudiGarage();
+    document.getElementById('modalElimina').style.display='flex';
+}
+
+// --- DATE UTILS ---
 function buildDateSelect(idG, idM, idY, selG, selM, selY, futuro) {
     const oggi = new Date();
     const g = document.getElementById(idG);
@@ -651,18 +725,14 @@ function giorniAlla(str) {
     return Math.round((scad-oggi)/86400000);
 }
 
-function formatData(str) {
-    if (!str) return '—';
-    return str;
-}
+function formatData(str) { if (!str) return '—'; return str; }
 
-// ══════ BUILD DATE SELECTS ══════
+// --- BUILD DATE SELECTS ---
 function buildAllDates() {
     const oggi = new Date();
     const g=oggi.getDate(), m=oggi.getMonth()+1, y=oggi.getFullYear();
+    const v=vdb(), as=v.assicurazione, bo=v.bollo, re=v.revisione, pa=v.patente, ta=v.tagliando;
     buildDateSelect('intG','intM','intY',g,m,y,false);
-    const v=vdb();
-    const as=v.assicurazione, bo=v.bollo, re=v.revisione, pa=v.patente, ta=v.tagliando;
     buildDateSelect('assicInizioG','assicInizioM','assicInizioY', as.inizioG||g, as.inizioM||m, as.inizioY||y, false);
     buildDateSelect('assicScadG','assicScadM','assicScadY', as.scadG||g, as.scadM||m, as.scadY||(y+1), true);
     buildDateSelect('bolloDataG','bolloDataM','bolloDataY', bo.dataG||g, bo.dataM||m, bo.dataY||y, false);
@@ -672,7 +742,7 @@ function buildAllDates() {
     buildDateSelect('tagliandoDataG','tagliandoDataM','tagliandoDataY', ta.dataG||g, ta.dataM||m, ta.dataY||y, false);
 }
 
-// ══════ CLOCK ══════
+// --- CLOCK ---
 function aggClock() {
     const el = document.getElementById('liveClock');
     if (!el) return;
@@ -682,14 +752,14 @@ function aggClock() {
 setInterval(aggClock, 1000);
 aggClock();
 
-// ══════ MODAL ══════
+// --- MODAL ---
 function chiudiModal(id) { document.getElementById(id).style.display='none'; }
 function mostraAlert(msg) {
     document.getElementById('modalAlertAppMsg').innerText = msg;
     document.getElementById('modalAlertApp').style.display = 'flex';
 }
 
-// ══════ METER ══════
+// --- METER ---
 function meterBuild() {
     const c = document.getElementById('meterSegments');
     c.innerHTML = '';
@@ -711,104 +781,22 @@ function meterUpdate(giorni, totGiorni) {
     segs.forEach((s,i) => { if(i < attivi) s.classList.add('active'); else s.classList.remove('active'); });
 }
 
-// ══════ MULTI-VEICOLO UI ══════
-var _vbTouchX = 0, _vbLongPress = null;
-
-function vbTouchStart(e) {
-    _vbTouchX = e.touches[0].clientX;
-    _vbLongPress = setTimeout(function(){ apriGarage(); }, 600);
-}
-
-function vbTouchEnd(e) {
-    clearTimeout(_vbLongPress);
-    const dx = e.changedTouches[0].clientX - _vbTouchX;
-    if (Math.abs(dx) > 40) {
-        if (dx < 0) cambiaVeicolo(1); else cambiaVeicolo(-1);
+// --- DOTS ---
+function aggiornaDotsVeicolo() {
+    var dotsEl = document.getElementById('veicoloDots');
+    dotsEl.innerHTML = '';
+    if (db.veicoli.length <= 1) return;
+    for (var i=0; i<db.veicoli.length; i++) {
+        var d=document.createElement('div');
+        d.className='vdot'+(i===activeIdx?' active':'');
+        dotsEl.appendChild(d);
     }
 }
 
-function vbTap() {
-    apriSettings();
-}
-
-function cambiaVeicolo(dir) {
-    const n = db.veicoli.length;
-    if (n <= 1) return;
-    db.veicoloAttivo = (db.veicoloAttivo + dir + n) % n;
-    salvaDB();
-    aggDashboard();
-}
-
-function aggDots() {
-    const dots = document.getElementById('vbDots');
-    if (!dots) return;
-    const n = db.veicoli.length;
-    if (n <= 1) { dots.innerHTML=''; return; }
-    dots.innerHTML = db.veicoli.map(function(_,i){
-        return `<div class="vb-dot${i===db.veicoloAttivo?' active':''}"></div>`;
-    }).join('');
-}
-
-function apriGarage() {
-    const lista = document.getElementById('garageList');
-    lista.innerHTML = db.veicoli.map(function(cv, i) {
-        const nome = cv.veicolo.marca || 'Veicolo '+(i+1);
-        const targa = cv.veicolo.targa || '';
-        const attivo = i === db.veicoloAttivo;
-        return `<div style="display:flex; align-items:center; gap:8px; padding:10px; background:${attivo?'rgba(232,121,160,0.12)':'#222'}; border:1px solid ${attivo?'#e879a0':'#333'}; border-radius:12px; margin-bottom:8px;">
-            <div style="flex:1; text-align:left; cursor:pointer;" onclick="selVeicolo(${i})">
-                <div style="font-size:14px; font-weight:900; color:${attivo?'#e879a0':'#fff'};">${nome}</div>
-                ${targa?`<div style="font-size:11px; color:#888;">${targa}</div>`:''}
-            </div>
-            <button onclick="modificaVeicolo(${i})" style="background:#333; border:1px solid #555; border-radius:8px; color:#e879a0; padding:6px 10px; font-size:11px; font-weight:900; cursor:pointer;">✏️</button>
-            ${db.veicoli.length>1?`<button onclick="eliminaVeicolo(${i})" style="background:#333; border:1px solid var(--accent); border-radius:8px; color:var(--accent); padding:6px 10px; font-size:11px; font-weight:900; cursor:pointer;">🗑️</button>`:''}
-        </div>`;
-    }).join('');
-    document.getElementById('garageOverlay').style.display='flex';
-}
-
-function chiudiGarage(e) {
-    if (!e || e.target===document.getElementById('garageOverlay')) {
-        document.getElementById('garageOverlay').style.display='none';
-    }
-}
-
-function selVeicolo(i) {
-    db.veicoloAttivo = i;
-    salvaDB();
-    aggDashboard();
-    document.getElementById('garageOverlay').style.display='none';
-}
-
-function modificaVeicolo(i) {
-    db.veicoloAttivo = i;
-    salvaDB();
-    document.getElementById('garageOverlay').style.display='none';
-    apriSettings();
-}
-
-function aggiungiVeicolo() {
-    db.veicoli.push(creaVeicoloVuoto());
-    db.veicoloAttivo = db.veicoli.length - 1;
-    salvaDB();
-    document.getElementById('garageOverlay').style.display='none';
-    apriSettings();
-}
-
-function eliminaVeicolo(i) {
-    if (db.veicoli.length <= 1) { mostraAlert('Non puoi eliminare l\'unico veicolo.'); return; }
-    if (!confirm('Eliminare '+( db.veicoli[i].veicolo.marca||'questo veicolo')+'?')) return;
-    db.veicoli.splice(i, 1);
-    if (db.veicoloAttivo >= db.veicoli.length) db.veicoloAttivo = db.veicoli.length - 1;
-    salvaDB();
-    aggDashboard();
-    apriGarage();
-}
-
-// ══════ DASHBOARD UPDATE ══════
+// --- DASHBOARD UPDATE ---
 function aggDashboard() {
-    const cv = vdb();
-    const v = cv.veicolo;
+    const v = vdb();
+    aggiornaDotsVeicolo();
     if (v.marca) {
         document.getElementById('vbEmpty').style.display='none';
         document.getElementById('vbFull').style.display='block';
@@ -821,14 +809,11 @@ function aggDashboard() {
         document.getElementById('vbFull').style.display='none';
     }
 
-    // Dots indicatori
-    aggDots();
-
     const scadenze = [
-        { id:'assic', label:'Assicur.', data: cv.assicurazione.scadG ? `${String(cv.assicurazione.scadG).padStart(2,'0')}/${String(cv.assicurazione.scadM).padStart(2,'0')}/${cv.assicurazione.scadY}` : '', totGiorni:365 },
-        { id:'bollo', label:'Bollo', data: cv.bollo.scadG ? `${String(cv.bollo.scadG).padStart(2,'0')}/${String(cv.bollo.scadM).padStart(2,'0')}/${cv.bollo.scadY}` : '', totGiorni:365 },
-        { id:'revisione', label:'Revisione', data: cv.revisione.scadG ? `${String(cv.revisione.scadG).padStart(2,'0')}/${String(cv.revisione.scadM).padStart(2,'0')}/${cv.revisione.scadY}` : '', totGiorni:730 },
-        { id:'patente', label:'Patente', data: cv.patente.scadG ? `${String(cv.patente.scadG).padStart(2,'0')}/${String(cv.patente.scadM).padStart(2,'0')}/${cv.patente.scadY}` : '', totGiorni:3650 }
+        { id:'assic', label:'Assicur.', data: v.assicurazione.scadG ? `${String(v.assicurazione.scadG).padStart(2,'0')}/${String(v.assicurazione.scadM).padStart(2,'0')}/${v.assicurazione.scadY}` : '', totGiorni:365 },
+        { id:'bollo', label:'Bollo', data: v.bollo.scadG ? `${String(v.bollo.scadG).padStart(2,'0')}/${String(v.bollo.scadM).padStart(2,'0')}/${v.bollo.scadY}` : '', totGiorni:365 },
+        { id:'revisione', label:'Revisione', data: v.revisione.scadG ? `${String(v.revisione.scadG).padStart(2,'0')}/${String(v.revisione.scadM).padStart(2,'0')}/${v.revisione.scadY}` : '', totGiorni:730 },
+        { id:'patente', label:'Patente', data: v.patente.scadG ? `${String(v.patente.scadG).padStart(2,'0')}/${String(v.patente.scadM).padStart(2,'0')}/${v.patente.scadY}` : '', totGiorni:3650 }
     ];
 
     let prossima = null;
@@ -853,9 +838,8 @@ function aggDashboard() {
         if (gg >= 0 && gg < minGiorni) { minGiorni=gg; prossima=s; }
     });
 
-    // Tagliando
-    const ta = cv.tagliando;
-    const kmAtt = parseInt(cv.veicolo.km)||0;
+    const ta = v.tagliando;
+    const kmAtt = parseInt(v.km)||0;
     if (ta.intKm && ta.ultimoKm) {
         const prossKm = parseInt(ta.ultimoKm)+parseInt(ta.intKm);
         const mancano = prossKm - kmAtt;
@@ -878,17 +862,13 @@ function aggDashboard() {
         document.getElementById('cardTagliando').className='card';
     }
 
-    // Spesa mese (tutti i veicoli)
     const ora=new Date();
-    const spesaMese = db.veicoli.reduce(function(tot, vv) {
-        return tot + (vv.interventi||[]).filter(function(i){
-            const d=dataToObj(i.data);
-            return d && d.getMonth()===ora.getMonth() && d.getFullYear()===ora.getFullYear();
-        }).reduce(function(a,i){ return a+(parseFloat(i.costo)||0); },0);
-    },0);
+    const spesaMese = (v.interventi||[]).filter(function(i){
+        const d=dataToObj(i.data);
+        return d && d.getMonth()===ora.getMonth() && d.getFullYear()===ora.getFullYear();
+    }).reduce(function(a,i){ return a+(parseFloat(i.costo)||0); },0);
     document.getElementById('valSpesaMese').innerText=fmtEuro(spesaMese);
 
-    // Meter
     if (prossima) {
         document.getElementById('meterLabel').innerText='⏰ PROSSIMA SCAD: '+prossima.label.toUpperCase();
         document.getElementById('prossScad').innerText=minGiorni > 0 ? minGiorni+' giorni' : 'OGGI';
@@ -909,12 +889,12 @@ function aggDashboard() {
         meterUpdate(0,0);
         if (v.marca) { document.getElementById('vbProssScad').innerText='—'; }
     }
+}
 
-// ══════ SETTINGS ══════
+// --- SETTINGS ---
 function apriSettings() {
     buildAllDates();
-    const cv=vdb();
-    const v=cv.veicolo, as=cv.assicurazione, bo=cv.bollo, re=cv.revisione, pa=cv.patente, ta=cv.tagliando;
+    const v=vdb(), as=v.assicurazione, bo=v.bollo, re=v.revisione, pa=v.patente, ta=v.tagliando;
     document.getElementById('setMarca').value=v.marca||'';
     document.getElementById('setTarga').value=v.targa||'';
     document.getElementById('setAnno').value=v.anno||'';
@@ -934,43 +914,37 @@ function apriSettings() {
 }
 
 function salvaSettings() {
-    const cv=vdb();
-    cv.veicolo.marca = document.getElementById('setMarca').value.trim();
-    cv.veicolo.targa = document.getElementById('setTarga').value.trim().toUpperCase();
-    cv.veicolo.anno = document.getElementById('setAnno').value;
-    cv.veicolo.km = parseInt(document.getElementById('setKmAttuali').value)||0;
-
-    db.assicurazione.inizioG=document.getElementById('assicInizioG').value;
-    db.assicurazione.inizioM=document.getElementById('assicInizioM').value;
-    cv.assicurazione.inizioY=document.getElementById('assicInizioY').value;
-    cv.assicurazione.scadG=document.getElementById('assicScadG').value;
-    cv.assicurazione.scadM=document.getElementById('assicScadM').value;
-    cv.assicurazione.scadY=document.getElementById('assicScadY').value;
-    cv.assicurazione.costo=parseFloat(document.getElementById('assicCosto').value)||0;
-
-    cv.bollo.dataG=document.getElementById('bolloDataG').value;
-    cv.bollo.dataM=document.getElementById('bolloDataM').value;
-    cv.bollo.dataY=document.getElementById('bolloDataY').value;
-    cv.bollo.scadG=document.getElementById('bolloScadG').value;
-    cv.bollo.scadM=document.getElementById('bolloScadM').value;
-    cv.bollo.scadY=document.getElementById('bolloScadY').value;
-    cv.bollo.costo=parseFloat(document.getElementById('bolloCosto').value)||0;
-
-    cv.revisione.scadG=document.getElementById('revScadG').value;
-    cv.revisione.scadM=document.getElementById('revScadM').value;
-    cv.revisione.scadY=document.getElementById('revScadY').value;
-    cv.revisione.costo=parseFloat(document.getElementById('revCosto').value)||0;
-
-    cv.patente.scadG=document.getElementById('patScadG').value;
-    cv.patente.scadM=document.getElementById('patScadM').value;
-    cv.patente.scadY=document.getElementById('patScadY').value;
-
-    cv.tagliando.intKm=parseInt(document.getElementById('tagliandoIntKm').value)||0;
-    cv.tagliando.ultimoKm=parseInt(document.getElementById('tagliandoUltimoKm').value)||0;
-    cv.tagliando.dataG=document.getElementById('tagliandoDataG').value;
-    cv.tagliando.dataM=document.getElementById('tagliandoDataM').value;
-    cv.tagliando.dataY=document.getElementById('tagliandoDataY').value;
-
+    const v=vdb();
+    v.marca = document.getElementById('setMarca').value.trim();
+    v.targa = document.getElementById('setTarga').value.trim().toUpperCase();
+    v.anno = document.getElementById('setAnno').value;
+    v.km = parseInt(document.getElementById('setKmAttuali').value)||0;
+    v.assicurazione.inizioG=document.getElementById('assicInizioG').value;
+    v.assicurazione.inizioM=document.getElementById('assicInizioM').value;
+    v.assicurazione.inizioY=document.getElementById('assicInizioY').value;
+    v.assicurazione.scadG=document.getElementById('assicScadG').value;
+    v.assicurazione.scadM=document.getElementById('assicScadM').value;
+    v.assicurazione.scadY=document.getElementById('assicScadY').value;
+    v.assicurazione.costo=parseFloat(document.getElementById('assicCosto').value)||0;
+    v.bollo.dataG=document.getElementById('bolloDataG').value;
+    v.bollo.dataM=document.getElementById('bolloDataM').value;
+    v.bollo.dataY=document.getElementById('bolloDataY').value;
+    v.bollo.scadG=document.getElementById('bolloScadG').value;
+    v.bollo.scadM=document.getElementById('bolloScadM').value;
+    v.bollo.scadY=document.getElementById('bolloScadY').value;
+    v.bollo.costo=parseFloat(document.getElementById('bolloCosto').value)||0;
+    v.revisione.scadG=document.getElementById('revScadG').value;
+    v.revisione.scadM=document.getElementById('revScadM').value;
+    v.revisione.scadY=document.getElementById('revScadY').value;
+    v.revisione.costo=parseFloat(document.getElementById('revCosto').value)||0;
+    v.patente.scadG=document.getElementById('patScadG').value;
+    v.patente.scadM=document.getElementById('patScadM').value;
+    v.patente.scadY=document.getElementById('patScadY').value;
+    v.tagliando.intKm=parseInt(document.getElementById('tagliandoIntKm').value)||0;
+    v.tagliando.ultimoKm=parseInt(document.getElementById('tagliandoUltimoKm').value)||0;
+    v.tagliando.dataG=document.getElementById('tagliandoDataG').value;
+    v.tagliando.dataM=document.getElementById('tagliandoDataM').value;
+    v.tagliando.dataY=document.getElementById('tagliandoDataY').value;
     salvaDB();
     pianificaNotifiche();
     aggDashboard();
@@ -978,7 +952,12 @@ function salvaSettings() {
     mostraAlert('✅ Impostazioni salvate!');
 }
 
-// ══════ INTERVENTO ══════
+// --- INTERVENTO ---
+let idElimina = null;
+let editingId = null;
+let riepilogoMode = 'mese';
+let riepilogoPeriodo = 0;
+
 function apriModalIntervento(id) {
     editingId = id || null;
     buildDateSelect('intG','intM','intY', new Date().getDate(), new Date().getMonth()+1, new Date().getFullYear(), false);
@@ -988,7 +967,6 @@ function apriModalIntervento(id) {
     document.getElementById('intKm').value='';
     document.getElementById('intNote').value='';
     document.getElementById('titoloModalIntervento').innerText='Nuovo Intervento';
-
     if (id !== null && id !== undefined) {
         const int = (vdb().interventi||[]).find(x=>x.id===id);
         if (int) {
@@ -1019,21 +997,21 @@ function salvaIntervento() {
     const km = parseInt(document.getElementById('intKm').value)||0;
     const note = document.getElementById('intNote').value.trim();
     const tipoLabel = document.getElementById('labelTipoInt').innerText;
-    const cv = vdb();
-    if (!cv.interventi) cv.interventi=[];
+    const v = vdb();
+    if (!v.interventi) v.interventi=[];
     if (editingId !== null && editingId !== undefined) {
-        const idx = cv.interventi.findIndex(x=>x.id===editingId);
-        if (idx!==-1) { cv.interventi[idx]={...cv.interventi[idx], tipo, tipoLabel, data, costo, km, note}; }
+        const idx = v.interventi.findIndex(x=>x.id===editingId);
+        if (idx!==-1) { v.interventi[idx]={...v.interventi[idx], tipo, tipoLabel, data, costo, km, note}; }
     } else {
-        cv.interventi.push({ id:Date.now(), tipo, tipoLabel, data, costo, km, note });
+        v.interventi.push({ id:Date.now(), tipo, tipoLabel, data, costo, km, note });
     }
-    if (km > 0 && km > (parseInt(cv.veicolo.km)||0)) cv.veicolo.km=km;
+    if (km > 0 && km > (parseInt(v.km)||0)) v.km=km;
     salvaDB();
     aggDashboard();
     chiudiModal('modalIntervento');
 }
 
-// ══════ STORICO ══════
+// --- STORICO ---
 function apriStorico() {
     const lista = document.getElementById('listaStorico');
     const interventi = [...(vdb().interventi||[])].sort((a,b)=>dataToObj(b.data)-dataToObj(a.data));
@@ -1061,16 +1039,22 @@ function apriStorico() {
 
 function chiediElimina(id) { idElimina=id; document.getElementById('modalElimina').style.display='flex'; }
 function confermaElimina() {
-    if (idElimina === 'RESET') {
-        localStorage.clear(); location.reload(); return;
+    if (idElimina === 'RESET') { localStorage.clear(); location.reload(); return; }
+    if (idElimina === 'VEICOLO') {
+        if (_elimVeicoloIdx!==null && db.veicoli.length>1) {
+            db.veicoli.splice(_elimVeicoloIdx,1);
+            if (activeIdx>=db.veicoli.length) activeIdx=db.veicoli.length-1;
+            _elimVeicoloIdx=null; salvaDB(); aggDashboard();
+        }
+        chiudiModal('modalElimina'); return;
     }
-    const cv=vdb();
-    cv.interventi = (cv.interventi||[]).filter(x=>x.id!==idElimina);
+    const v=vdb();
+    v.interventi = (v.interventi||[]).filter(x=>x.id!==idElimina);
     salvaDB(); aggDashboard(); chiudiModal('modalElimina');
     apriStorico();
 }
 
-// ══════ RIEPILOGO ══════
+// --- RIEPILOGO ---
 function apriRiepilogo() {
     riepilogoMode='mese'; riepilogoPeriodo=0;
     aggiornaRiepilogo();
@@ -1087,30 +1071,29 @@ function setRiepilogoMode(mode) {
 function cambiaperiodo(dir) { riepilogoPeriodo+=dir; aggiornaRiepilogo(); }
 
 function aggiornaRiepilogo() {
-    const cv=vdb();
-    const ora=new Date();
+    const v=vdb(), ora=new Date();
     let label='', interventi=[];
     if (riepilogoMode==='mese') {
         const d=new Date(ora.getFullYear(), ora.getMonth()+riepilogoPeriodo, 1);
         label=MESI_FULL[d.getMonth()]+' '+d.getFullYear();
-        interventi=(cv.interventi||[]).filter(function(i){
+        interventi=(v.interventi||[]).filter(function(i){
             const di=dataToObj(i.data);
             return di && di.getMonth()===d.getMonth() && di.getFullYear()===d.getFullYear();
         });
         const costiExtra = [];
-        if (cv.assicurazione.costo && cv.assicurazione.inizioY) {
-            const da=new Date(cv.assicurazione.inizioY, cv.assicurazione.inizioM-1, cv.assicurazione.inizioG);
-            if (da.getMonth()===d.getMonth() && da.getFullYear()===d.getFullYear()) costiExtra.push({tipoLabel:'🛡️ Assicurazione', costo:cv.assicurazione.costo});
+        if (v.assicurazione.costo && v.assicurazione.inizioY) {
+            const da=new Date(v.assicurazione.inizioY, v.assicurazione.inizioM-1, v.assicurazione.inizioG);
+            if (da.getMonth()===d.getMonth() && da.getFullYear()===d.getFullYear()) costiExtra.push({tipoLabel:'🛡️ Assicurazione', costo:v.assicurazione.costo});
         }
-        if (cv.bollo.costo && cv.bollo.dataY) {
-            const db2=new Date(cv.bollo.dataY, cv.bollo.dataM-1, cv.bollo.dataG);
-            if (db2.getMonth()===d.getMonth() && db2.getFullYear()===d.getFullYear()) costiExtra.push({tipoLabel:'📄 Bollo', costo:cv.bollo.costo});
+        if (v.bollo.costo && v.bollo.dataY) {
+            const db2=new Date(v.bollo.dataY, v.bollo.dataM-1, v.bollo.dataG);
+            if (db2.getMonth()===d.getMonth() && db2.getFullYear()===d.getFullYear()) costiExtra.push({tipoLabel:'📄 Bollo', costo:v.bollo.costo});
         }
         renderRiepilogo(label, interventi, costiExtra);
     } else {
         const anno=ora.getFullYear()+riepilogoPeriodo;
         label='Anno '+anno;
-        interventi=(cv.interventi||[]).filter(function(i){
+        interventi=(v.interventi||[]).filter(function(i){
             const di=dataToObj(i.data);
             return di && di.getFullYear()===anno;
         });
@@ -1120,7 +1103,6 @@ function aggiornaRiepilogo() {
 
 function renderRiepilogo(label, interventi, costiExtra) {
     const tot = interventi.reduce((a,i)=>a+(parseFloat(i.costo)||0),0) + (costiExtra||[]).reduce((a,i)=>a+(parseFloat(i.costo)||0),0);
-    // Raggruppa per tipo
     const gruppi={};
     interventi.forEach(function(i){
         if (!gruppi[i.tipoLabel]) gruppi[i.tipoLabel]=0;
@@ -1130,7 +1112,6 @@ function renderRiepilogo(label, interventi, costiExtra) {
         if (!gruppi[i.tipoLabel]) gruppi[i.tipoLabel]=0;
         gruppi[i.tipoLabel]+=parseFloat(i.costo)||0;
     });
-
     let html=`<div class="rep-card"><div class="rep-title">📊 ${label}</div>`;
     if (Object.keys(gruppi).length===0) {
         html+='<p style="color:var(--dim);font-size:13px;">Nessuna spesa registrata.</p>';
@@ -1141,7 +1122,6 @@ function renderRiepilogo(label, interventi, costiExtra) {
         html+=`<div class="rep-tot">TOTALE: ${fmtEuro(tot)}</div>`;
     }
     html+='</div>';
-
     if (interventi.length > 0) {
         html+='<div class="rep-card"><div class="rep-title">📋 Dettaglio interventi</div>';
         interventi.sort((a,b)=>dataToObj(b.data)-dataToObj(a.data)).forEach(function(i){
@@ -1152,7 +1132,7 @@ function renderRiepilogo(label, interventi, costiExtra) {
     document.getElementById('riepilogoContent').innerHTML=html;
 }
 
-// ══════ BACKUP ══════
+// --- BACKUP ---
 async function esportaBackup() {
     const oggi=new Date();
     const nome=`miovehicolo_backup_${oggi.getFullYear()}-${String(oggi.getMonth()+1).padStart(2,'0')}-${String(oggi.getDate()).padStart(2,'0')}.json`;
@@ -1183,8 +1163,14 @@ function importaBackup(input) {
     r.onload=function(e){
         try {
             const data=JSON.parse(e.target.result);
-            if (!data.veicolo) throw new Error('File non valido');
-            db=data; salvaDB(); aggDashboard();
+            if (data.veicoli && Array.isArray(data.veicoli)) {
+                db=data;
+            } else if (data.veicolo) {
+                db=migraDB();
+            } else { throw new Error('File non valido'); }
+            activeIdx=db.activeIdx||0;
+            if (activeIdx>=db.veicoli.length) activeIdx=0;
+            salvaDB(); aggDashboard();
             mostraAlert('✅ Backup importato!');
         } catch(err){ mostraAlert('❌ File non valido.'); }
     };
@@ -1192,19 +1178,19 @@ function importaBackup(input) {
     input.value='';
 }
 
-// ══════ NOTIFICHE ══════
+// --- NOTIFICHE ---
 function pianificaNotifiche() {
     if (!window.Capacitor || !window.Capacitor.isNativePlatform()) return;
     try {
         const { LocalNotifications } = window.Capacitor.Plugins;
         const notifications=[];
-        db.veicoli.forEach(function(cv, vi) {
-            const nome = cv.veicolo.marca || ('Veicolo '+(vi+1));
+        for (var vi=0; vi<db.veicoli.length; vi++) {
+            const v=db.veicoli[vi], nome=v.marca||('Veicolo '+(vi+1));
             const scadenze=[
-                { tipo:'Assicurazione', data: cv.assicurazione.scadG?`${cv.assicurazione.scadG}/${cv.assicurazione.scadM}/${cv.assicurazione.scadY}`:'' },
-                { tipo:'Bollo', data: cv.bollo.scadG?`${cv.bollo.scadG}/${cv.bollo.scadM}/${cv.bollo.scadY}`:'' },
-                { tipo:'Revisione', data: cv.revisione.scadG?`${cv.revisione.scadG}/${cv.revisione.scadM}/${cv.revisione.scadY}`:'' },
-                { tipo:'Patente', data: cv.patente.scadG?`${cv.patente.scadG}/${cv.patente.scadM}/${cv.patente.scadY}`:'' }
+                { tipo:'Assicurazione', data: v.assicurazione.scadG?`${v.assicurazione.scadG}/${v.assicurazione.scadM}/${v.assicurazione.scadY}`:'' },
+                { tipo:'Bollo', data: v.bollo.scadG?`${v.bollo.scadG}/${v.bollo.scadM}/${v.bollo.scadY}`:'' },
+                { tipo:'Revisione', data: v.revisione.scadG?`${v.revisione.scadG}/${v.revisione.scadM}/${v.revisione.scadY}`:'' },
+                { tipo:'Patente', data: v.patente.scadG?`${v.patente.scadG}/${v.patente.scadM}/${v.patente.scadY}`:'' }
             ];
             scadenze.forEach(function(s,i){
                 if (!s.data) return;
@@ -1212,14 +1198,14 @@ function pianificaNotifiche() {
                 if (!scad) return;
                 const avviso5=new Date(scad); avviso5.setDate(avviso5.getDate()-5); avviso5.setHours(9,0,0,0);
                 if (avviso5 > new Date()) {
-                    notifications.push({ id:2000+vi*10+i, title:'⏰ '+nome+' - '+s.tipo+' tra 5 giorni', body:s.tipo+' scade il '+s.data+'. Rinnovalo prima che scada!', schedule:{at:avviso5, allowWhileIdle:true, exact:true}, channelId:'default' });
+                    notifications.push({ id:2000+vi*10+i, title:'⏰ '+s.tipo+' ('+nome+') in scadenza tra 5 giorni', body:s.tipo+' scade il '+s.data+'. Rinnovalo prima che scada!', schedule:{at:avviso5, allowWhileIdle:true, exact:true}, channelId:'default' });
                 }
                 const avviso0=new Date(scad); avviso0.setHours(9,0,0,0);
                 if (avviso0 > new Date()) {
-                    notifications.push({ id:3000+vi*10+i, title:'🔴 '+nome+' - '+s.tipo+' SCADE OGGI', body:s.tipo+' scade oggi '+s.data+'. Rinnovalo subito!', schedule:{at:avviso0, allowWhileIdle:true, exact:true}, channelId:'default' });
+                    notifications.push({ id:3000+vi*10+i, title:'🔴 '+s.tipo+' ('+nome+') SCADE OGGI', body:s.tipo+' scade oggi '+s.data+'. Rinnovalo subito!', schedule:{at:avviso0, allowWhileIdle:true, exact:true}, channelId:'default' });
                 }
             });
-        });
+        }
         const ids = notifications.map(n=>({id:n.id}));
         LocalNotifications.cancel({notifications:ids})
             .then(()=>{ if(notifications.length>0) LocalNotifications.schedule({notifications}).catch(()=>{}); })
@@ -1230,46 +1216,44 @@ function pianificaNotifiche() {
 function checkScadenzeAlAvvio() {
     const oggi=new Date(); oggi.setHours(0,0,0,0);
     const avvisi=[];
-    db.veicoli.forEach(function(cv) {
-        const nome = cv.veicolo.marca || 'Veicolo';
+    for (var vi=0; vi<db.veicoli.length; vi++) {
+        const v=db.veicoli[vi], nome=v.marca||('Veicolo '+(vi+1));
         const scadenze=[
-            { tipo:'Assicurazione', data: cv.assicurazione.scadG?`${String(cv.assicurazione.scadG).padStart(2,'0')}/${String(cv.assicurazione.scadM).padStart(2,'0')}/${cv.assicurazione.scadY}`:'' },
-            { tipo:'Bollo', data: cv.bollo.scadG?`${String(cv.bollo.scadG).padStart(2,'0')}/${String(cv.bollo.scadM).padStart(2,'0')}/${cv.bollo.scadY}`:'' },
-            { tipo:'Revisione', data: cv.revisione.scadG?`${String(cv.revisione.scadG).padStart(2,'0')}/${String(cv.revisione.scadM).padStart(2,'0')}/${cv.revisione.scadY}`:'' },
-            { tipo:'Patente', data: cv.patente.scadG?`${String(cv.patente.scadG).padStart(2,'0')}/${String(cv.patente.scadM).padStart(2,'0')}/${cv.patente.scadY}`:'' }
+            { tipo:'Assicurazione', data: v.assicurazione.scadG?`${String(v.assicurazione.scadG).padStart(2,'0')}/${String(v.assicurazione.scadM).padStart(2,'0')}/${v.assicurazione.scadY}`:'' },
+            { tipo:'Bollo', data: v.bollo.scadG?`${String(v.bollo.scadG).padStart(2,'0')}/${String(v.bollo.scadM).padStart(2,'0')}/${v.bollo.scadY}`:'' },
+            { tipo:'Revisione', data: v.revisione.scadG?`${String(v.revisione.scadG).padStart(2,'0')}/${String(v.revisione.scadM).padStart(2,'0')}/${v.revisione.scadY}`:'' },
+            { tipo:'Patente', data: v.patente.scadG?`${String(v.patente.scadG).padStart(2,'0')}/${String(v.patente.scadM).padStart(2,'0')}/${v.patente.scadY}`:'' }
         ];
         scadenze.forEach(function(s){
             if (!s.data) return;
             const gg=giorniAlla(s.data);
-            const alertKey='mv_notif_'+nome+'_'+s.tipo+'_'+s.data;
+            const alertKey='mv_notif_'+vi+'_'+s.tipo+'_'+s.data;
             if (gg < 0) {
-                if (!localStorage.getItem(alertKey)) { localStorage.setItem(alertKey,'1'); avvisi.push('🔴 '+nome+' - '+s.tipo+': SCADUTA il '+s.data); }
+                if (!localStorage.getItem(alertKey)) { localStorage.setItem(alertKey,'1'); avvisi.push('🔴 ['+nome+'] '+s.tipo+': SCADUTA il '+s.data); }
             } else if (gg <= 5) {
-                if (!localStorage.getItem(alertKey)) { localStorage.setItem(alertKey,'1'); avvisi.push('⚠️ '+nome+' - '+s.tipo+' scade il '+s.data+' (tra '+gg+' giorni).'); }
+                if (!localStorage.getItem(alertKey)) { localStorage.setItem(alertKey,'1'); avvisi.push('⚠️ ['+nome+'] '+s.tipo+' scade il '+s.data+' (tra '+gg+' giorni).'); }
             }
         });
-        const ta=cv.tagliando; const kmAtt=parseInt(cv.veicolo.km)||0;
+        const ta=v.tagliando; const kmAtt=parseInt(v.km)||0;
         if (ta.intKm && ta.ultimoKm) {
             const prossKm=parseInt(ta.ultimoKm)+parseInt(ta.intKm);
             const mancano=prossKm-kmAtt;
-            const alertKey='mv_notif_tagliando_'+nome+'_'+prossKm;
+            const alertKey='mv_notif_tagliando_'+vi+'_'+prossKm;
             if (mancano<=0 && !localStorage.getItem(alertKey)) {
                 localStorage.setItem(alertKey,'1');
-                avvisi.push('🔴 '+nome+' - Tagliando SCADUTO: previsto a '+prossKm+' km.');
+                avvisi.push('🔴 ['+nome+'] Tagliando SCADUTO: previsto a '+prossKm+' km.');
             } else if (mancano>0 && mancano<=500 && !localStorage.getItem(alertKey)) {
                 localStorage.setItem(alertKey,'1');
-                avvisi.push('⚠️ '+nome+' - Tagliando: mancano '+mancano+' km (previsto a '+prossKm+' km).');
+                avvisi.push('⚠️ ['+nome+'] Tagliando: mancano '+mancano+' km (previsto a '+prossKm+' km).');
             }
         }
-    });
+    }
     if (avvisi.length>0) {
-        setTimeout(function(){
-            alert('⏰ SCADENZE VEICOLO\n\n'+avvisi.join('\n\n'));
-        }, 800);
+        setTimeout(function(){ alert('⏰ SCADENZE VEICOLO\n\n'+avvisi.join('\n\n')); }, 800);
     }
 }
 
-// ══════ SAFE RESET ══════
+// --- SAFE RESET ---
 let safeStep=0, safeTimeout=null;
 function safeClick(){
     if(safeStep===0){
@@ -1295,17 +1279,18 @@ function resetSafeBtn(){
     safeStep=0;
 }
 
-// ══════ NOTE ══════
+// --- NOTE ---
 function apriNote(){
     if (!document.getElementById('noteText').getAttribute('data-edit-id')) {
         document.getElementById('noteText').value = '';
     }
     const lista = document.getElementById('noteStorico');
-    if (!db.note) db.note = [];
-    if (db.note.length === 0) {
+    const v=vdb();
+    if (!v.note) v.note = [];
+    if (v.note.length === 0) {
         lista.innerHTML = '<p style="color:var(--dim);font-size:12px;text-align:center;">Nessuna nota salvata.</p>';
     } else {
-        lista.innerHTML = [...db.note].reverse().map(function(n) {
+        lista.innerHTML = [...v.note].reverse().map(function(n) {
             return `<div style="background:#222;border:1px solid #333;border-radius:10px;padding:8px 10px;margin-bottom:6px;text-align:left;">
                 <div style="font-size:10px;color:#aaa;margin-bottom:3px;">📅 ${n.data}</div>
                 <div style="font-size:13px;color:#fff;margin-bottom:6px;">${n.testo}</div>
@@ -1319,7 +1304,7 @@ function apriNote(){
     document.getElementById('modalNote').style.display='flex';
 }
 function modificaNota(id){
-    const nota = (db.note||[]).find(n=>n.id===id);
+    const nota = (vdb().note||[]).find(n=>n.id===id);
     if (!nota) return;
     document.getElementById('noteText').value = nota.testo;
     document.getElementById('noteText').setAttribute('data-edit-id', id);
@@ -1327,38 +1312,40 @@ function modificaNota(id){
     document.getElementById('noteText').focus();
 }
 function eliminaNota(id){
-    db.note = (db.note||[]).filter(n=>n.id!==id);
+    const v=vdb();
+    v.note = (v.note||[]).filter(n=>n.id!==id);
     salvaDB();
     apriNote();
 }
 function salvaNote(){
     const testo = document.getElementById('noteText').value.trim();
     if (!testo) { mostraAlert('Scrivi una nota prima di salvare.'); return; }
-    if (!db.note) db.note = [];
+    const v=vdb();
+    if (!v.note) v.note = [];
     const editId = document.getElementById('noteText').getAttribute('data-edit-id');
     if (editId) {
-        const idx = db.note.findIndex(n=>n.id===parseInt(editId));
-        if (idx!==-1) db.note[idx].testo = testo;
+        const idx = v.note.findIndex(n=>n.id===parseInt(editId));
+        if (idx!==-1) v.note[idx].testo = testo;
         document.getElementById('noteText').removeAttribute('data-edit-id');
         document.getElementById('noteSalvaBtn').innerText = 'SALVA NOTA';
     } else {
         const ora = new Date();
         const data = `${String(ora.getDate()).padStart(2,'0')}/${String(ora.getMonth()+1).padStart(2,'0')}/${ora.getFullYear()} ${String(ora.getHours()).padStart(2,'0')}:${String(ora.getMinutes()).padStart(2,'0')}`;
-        db.note.push({ id: Date.now(), data, testo });
+        v.note.push({ id: Date.now(), data, testo });
     }
     salvaDB();
     document.getElementById('noteText').value = '';
     apriNote();
 }
 
-// ══════ INFO ══════
+// --- INFO ---
 function apriInfo(){
     mostraAlert('🚗 AutoCris\nVersion '+APP_VERSION+'\n\nApp per la gestione delle scadenze del tuo veicolo.\n\n© 2026 Marco Carbone');
 }
 
-// ══════ STAMPA PDF ══════
+// --- STAMPA PDF ---
 function stampaRiepilogo() {
-    var v = db.veicolo;
+    var v = vdb();
     var isNative = window.Capacitor && window.Capacitor.isNativePlatform();
     var contenuto = document.getElementById('riepilogoContent');
     var RENDER_W = 800;
@@ -1421,13 +1408,12 @@ function stampaRiepilogo() {
     }, 100);
 }
 
-// ══════ INIT ══════
+// --- INIT ---
 document.addEventListener('DOMContentLoaded', function(){
     if (window.Capacitor && window.Capacitor.isNativePlatform()) {
         try {
             const LN = window.Capacitor.Plugins.LocalNotifications;
             LN.requestPermissions().then(function() {
-                // Crea canale notifiche Android
                 LN.createChannel({
                     id: 'default',
                     name: 'Scadenze AutoCris',
@@ -1435,7 +1421,6 @@ document.addEventListener('DOMContentLoaded', function(){
                     visibility: 1,
                     vibration: true
                 }).catch(function(){});
-                // Richiedi permesso exact alarm Android 12+ solo una volta
                 try { LN.checkExactNotificationSetting().then(function(r){
                     if (r.result !== 'granted' && !localStorage.getItem('exact_alarm_asked')) {
                         localStorage.setItem('exact_alarm_asked', '1');
@@ -1450,22 +1435,25 @@ document.addEventListener('DOMContentLoaded', function(){
     pianificaNotifiche();
     checkScadenzeAlAvvio();
 
-    // Back button Android
+    // Back button Android - no for...of
     if (window.Capacitor && window.Capacitor.isNativePlatform()) {
         try {
             window.Capacitor.Plugins.App.addListener('backButton', function() {
-                var views = ['settingsView','storicoView','riepilogoView'];
-                for (var i=0; i<views.length; i++) {
-                    var el = document.getElementById(views[i]);
-                    if (el && el.style.display === 'flex') { el.style.display='none'; return; }
-                }
                 var go = document.getElementById('garageOverlay');
-                if (go && go.style.display === 'flex') { go.style.display='none'; return; }
-                var modals = document.querySelectorAll('.modal');
-                for (var i=0; i<modals.length; i++) {
-                    if (modals[i].style.display === 'flex') { modals[i].style.display='none'; return; }
+                if (go && go.style.display==='flex') { chiudiGarage(); return; }
+                var views = ['settingsView','storicoView','riepilogoView'];
+                for (var vi=0; vi<views.length; vi++) {
+                    var el = document.getElementById(views[vi]);
+                    if (el && el.style.display==='flex') { el.style.display='none'; return; }
                 }
-                // Nessuna view aperta — non uscire dall'app
+                var modals = document.querySelectorAll('.modal');
+                for (var mi=0; mi<modals.length; mi++) {
+                    if (modals[mi].style.display==='flex') { modals[mi].style.display='none'; return; }
+                }
+                var overlays = document.querySelectorAll('.select-overlay');
+                for (var oi=0; oi<overlays.length; oi++) {
+                    if (overlays[oi].style.display==='flex') { overlays[oi].style.display='none'; return; }
+                }
             });
         } catch(e) {}
     }
