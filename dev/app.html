@@ -4736,39 +4736,39 @@ document.getElementById("fileBackup").addEventListener("change", function (e) {
         if (ignorati.length > 0) msg += '\n\n⚠️ Ignorati:\n' + ignorati.map(function(r){ return '• ' + r; }).join('\n');
         msg += '\n\nL\'app verrà ricaricata.';
 
-        // Dopo import: resetta il flag mese cosi al reload viene fatto il check sul mese con dati
+        // Dopo import: trova l'ultimo mese con dati e forza il check al prossimo avvio
         try {
-            if (dbMerged && dbMerged.turni && dbMerged.turni.length > 0) {
-                // Trova l'ultimo mese con dati nel backup
-                var tuttiMesi = {};
-                dbMerged.turni.forEach(function(tur) {
-                    var tag = tur.data ? tur.data.substring(3) : null;
-                    if (tag) tuttiMesi[tag] = true;
+            var tuttiMesiDati = {};
+            (dbMerged.turni||[]).forEach(function(tur) {
+                var tag = tur.data ? tur.data.substring(3) : null;
+                if (tag) tuttiMesiDati[tag] = true;
+            });
+            (dbMerged.rifornimenti||[]).forEach(function(r) {
+                var tag = r.data ? r.data.substring(3) : null;
+                if (tag) tuttiMesiDati[tag] = true;
+            });
+            (dbMerged.extraKm||[]).forEach(function(e) {
+                var tag = e.data ? e.data.substring(3) : null;
+                if (tag) tuttiMesiDati[tag] = true;
+            });
+            // Se non ci sono mesi con dati reali, usa riportoNegativo come fallback
+            if (Object.keys(tuttiMesiDati).length === 0 && dbMerged.riportoNegativo) {
+                Object.keys(dbMerged.riportoNegativo).forEach(function(tag) {
+                    tuttiMesiDati[tag] = true;
                 });
-                (dbMerged.rifornimenti||[]).forEach(function(r) {
-                    var tag = r.data ? r.data.substring(3) : null;
-                    if (tag) tuttiMesi[tag] = true;
+            }
+            var _now2 = new Date();
+            var meseCorrenteTag = (_now2.getMonth()+1).toString().padStart(2,'0') + '/' + _now2.getFullYear();
+            delete tuttiMesiDati[meseCorrenteTag];
+            if (Object.keys(tuttiMesiDati).length > 0) {
+                localStorage.removeItem('ultimo_avviso_fine_mese');
+                var mesiOrdinati = Object.keys(tuttiMesiDati).sort(function(a,b) {
+                    var pa = a.split('/'), pb = b.split('/');
+                    var da = new Date(parseInt(pa[1]), parseInt(pa[0])-1, 1);
+                    var db2 = new Date(parseInt(pb[1]), parseInt(pb[0])-1, 1);
+                    return da - db2;
                 });
-                (dbMerged.extraKm||[]).forEach(function(e) {
-                    var tag = e.data ? e.data.substring(3) : null;
-                    if (tag) tuttiMesi[tag] = true;
-                });
-                var _now = new Date();
-                var meseCorrente = (_now.getMonth()+1).toString().padStart(2,'0') + '/' + _now.getFullYear();
-                // Rimuovi il mese corrente — interessa solo i mesi passati
-                delete tuttiMesi[meseCorrente];
-                if (Object.keys(tuttiMesi).length > 0) {
-                    // Resetta il flag: al reload il check vedra l'ultimo mese con dati
-                    localStorage.removeItem('ultimo_avviso_fine_mese');
-                    // Salva quale mese controllare al prossimo avvio
-                    var mesiOrdinati = Object.keys(tuttiMesi).sort(function(a,b) {
-                        var pa = a.split('/'), pb = b.split('/');
-                        var da = new Date(parseInt(pa[1]), parseInt(pa[0])-1, 1);
-                        var db2 = new Date(parseInt(pb[1]), parseInt(pb[0])-1, 1);
-                        return da - db2;
-                    });
-                    localStorage.setItem('check_mese_backup', mesiOrdinati[mesiOrdinati.length-1]);
-                }
+                localStorage.setItem('check_mese_backup', mesiOrdinati[mesiOrdinati.length-1]);
             }
         } catch(e2) {}
 
