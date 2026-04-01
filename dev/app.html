@@ -4735,6 +4735,42 @@ document.getElementById("fileBackup").addEventListener("change", function (e) {
         var msg = '✅ Ripristinati:\n' + ripristinati.map(function(r){ return '• ' + r; }).join('\n');
         if (ignorati.length > 0) msg += '\n\n⚠️ Ignorati:\n' + ignorati.map(function(r){ return '• ' + r; }).join('\n');
         msg += '\n\nL\'app verrà ricaricata.';
+
+        // Dopo import: resetta il flag mese cosi al reload viene fatto il check sul mese con dati
+        try {
+            if (dbMerged && dbMerged.turni && dbMerged.turni.length > 0) {
+                // Trova l'ultimo mese con dati nel backup
+                var tuttiMesi = {};
+                dbMerged.turni.forEach(function(tur) {
+                    var tag = tur.data ? tur.data.substring(3) : null;
+                    if (tag) tuttiMesi[tag] = true;
+                });
+                (dbMerged.rifornimenti||[]).forEach(function(r) {
+                    var tag = r.data ? r.data.substring(3) : null;
+                    if (tag) tuttiMesi[tag] = true;
+                });
+                (dbMerged.extraKm||[]).forEach(function(e) {
+                    var tag = e.data ? e.data.substring(3) : null;
+                    if (tag) tuttiMesi[tag] = true;
+                });
+                var meseCorrente = (new Date().getMonth()+1) + '/' + new Date().getFullYear();
+                // Rimuovi il mese corrente — interessa solo i mesi passati
+                delete tuttiMesi[meseCorrente];
+                if (Object.keys(tuttiMesi).length > 0) {
+                    // Resetta il flag: al reload il check vedra l'ultimo mese con dati
+                    localStorage.removeItem('ultimo_avviso_fine_mese');
+                    // Salva quale mese controllare al prossimo avvio
+                    var mesiOrdinati = Object.keys(tuttiMesi).sort(function(a,b) {
+                        var pa = a.split('/'), pb = b.split('/');
+                        var da = new Date(parseInt(pa[1]), parseInt(pa[0])-1, 1);
+                        var db2 = new Date(parseInt(pb[1]), parseInt(pb[0])-1, 1);
+                        return da - db2;
+                    });
+                    localStorage.setItem('check_mese_backup', mesiOrdinati[mesiOrdinati.length-1]);
+                }
+            }
+        } catch(e2) {}
+
         alert(msg);
         location.reload();
     };
@@ -5067,13 +5103,21 @@ window.onload = function() {
 
     const ultimoAvviso = localStorage.getItem('ultimo_avviso_fine_mese');
     const meseCorrente = `${new Date().getMonth() + 1}/${new Date().getFullYear()}`;
+    const checkMeseBackup = localStorage.getItem('check_mese_backup');
 
-    if (ultimoAvviso !== meseCorrente) {
+    if (ultimoAvviso !== meseCorrente || checkMeseBackup) {
         setTimeout(() => {
-            const mesePrecedente = (() => {
+            // Se c'e' un mese specifico da controllare (dopo import backup), usa quello
+            // altrimenti usa il mese precedente normale
+            var meseDaControllare;
+            if (checkMeseBackup) {
+                meseDaControllare = checkMeseBackup;
+                localStorage.removeItem('check_mese_backup');
+            } else {
                 const d = new Date(); d.setDate(0);
-                return `${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`;
-            })();
+                meseDaControllare = `${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`;
+            }
+            const mesePrecedente = meseDaControllare;
             const turniPrec = db.turni.filter(t => t.data.endsWith(mesePrecedente));
             const rifPrec = db.rifornimenti.filter(r => r.data.endsWith(mesePrecedente));
             const extraPrec = (db.extraKm || []).filter(e => e.data.endsWith(mesePrecedente));
@@ -5096,7 +5140,6 @@ window.onload = function() {
                 document.getElementById('modalRiportoNegativo').style.display = 'flex';
                 window._riportoNetto = nettoP;
             } else if (turniPrec.length > 0 || rifPrec.length > 0 || extraPrec.length > 0) {
-                // Mostra il popup di fine mese SOLO se c'è almeno un dato nel mese precedente
                 const modal = document.getElementById('modalFineMese');
                 if (modal) modal.style.display = 'flex';
             }
