@@ -4582,7 +4582,7 @@ function salvaBackup() {
             var Share = window.Capacitor.Plugins.Share;
             Filesystem.writeFile({
                 path: fileName,
-                data: jsonStr,
+                content: jsonStr,
                 directory: 'CACHE',
                 encoding: 'utf8'
             }).then(function(result) {
