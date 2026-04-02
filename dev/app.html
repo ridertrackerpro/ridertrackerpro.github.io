@@ -4567,34 +4567,22 @@ function salvaBackup() {
     var it = (typeof currentLang === 'undefined' || currentLang !== 'en');
 
     if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-        var SaveFile = window.Capacitor.Plugins.SaveFile;
-        if (SaveFile) {
-            SaveFile.saveFile({
-                filename: fileName,
-                data: jsonStr,
-                mimeType: 'application/json'
-            }).then(function() {
-                mostraAlertApp(it ? '✅ Backup salvato con successo!' : '✅ Backup saved successfully!');
+        var Filesystem = window.Capacitor.Plugins.Filesystem;
+        var Share = window.Capacitor.Plugins.Share;
+        Filesystem.writeFile({
+            path: fileName,
+            data: jsonStr,
+            directory: 'CACHE',
+            encoding: 'utf8'
+        }).then(function(result) {
+            Share.share({
+                title: 'Backup RiderTracker',
+                url: result.uri,
+                dialogTitle: it ? 'Salva o condividi il backup' : 'Save or share backup'
             }).catch(function() {});
-        } else {
-            // Fallback Share se plugin non disponibile
-            var Filesystem = window.Capacitor.Plugins.Filesystem;
-            var Share = window.Capacitor.Plugins.Share;
-            Filesystem.writeFile({
-                path: fileName,
-                content: jsonStr,
-                directory: 'CACHE',
-                encoding: 'utf8'
-            }).then(function(result) {
-                Share.share({
-                    title: 'Backup RiderTracker',
-                    url: result.uri,
-                    dialogTitle: it ? 'Salva o condividi il backup' : 'Save or share backup'
-                }).catch(function() {});
-            }).catch(function(e) {
-                mostraAlertApp(it ? 'Errore backup: ' + e.message : 'Backup error: ' + e.message);
-            });
-        }
+        }).catch(function(e) {
+            mostraAlertApp(it ? 'Errore backup: ' + e.message : 'Backup error: ' + e.message);
+        });
     } else {
         var blob = new Blob([jsonStr], { type: 'application/json' });
         var url = URL.createObjectURL(blob);
