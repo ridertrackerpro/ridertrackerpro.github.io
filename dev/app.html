@@ -67,6 +67,12 @@ html, body { touch-action: pan-x pan-y; }
     from { opacity: 0; }
     to   { opacity: 1; }
 }
+@keyframes turnoActiveBlink {
+    0%,100% { opacity:1; }
+    50% { opacity:0.25; }
+}
+.turno-btn-active-blink { animation: turnoActiveBlink 1s ease-in-out infinite; color: var(--accent) !important; }
+.turno-btn-active-blink i { color: var(--accent) !important; }
 .view-enter { animation: fadeSlideUp 0.28s cubic-bezier(0.22,1,0.36,1) both; }
 .modal-content { animation: fadeSlideUp 0.22s cubic-bezier(0.22,1,0.36,1) both; }
         .app-title { margin:10px 0 15px; font-size:30px; font-weight:800; color:var(--primary); text-transform:uppercase; user-select:none; cursor: pointer; }
@@ -777,7 +783,10 @@ body {
     <div class="modal-content" style="border-color:var(--primary); padding:16px 18px; max-height:96dvh; max-height:96vh; overflow-y:auto;">
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
             <h3 data-translate="new_shift" style="margin:0; font-size:14px;">Nuovo Turno</h3>
-            <div id="dateT" class="date-row" style="margin:0; font-size:11px;"></div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <div id="dateT" class="date-row" style="margin:0; font-size:11px;"></div>
+                <button id="btnChiudiTurnoSenzaAnnullare" onclick="chiudiTurnoSenzaAnnullare()" style="display:none; background:none; border:none; color:#888; font-size:18px; cursor:pointer; padding:0 0 0 4px; line-height:1;">✕</button>
+            </div>
         </div>
 
         <!-- ── BANNER VEICOLO ATTIVO + carburante inline ── -->
@@ -1349,7 +1358,7 @@ body {
     </div>
 </div>
 <div id="stickyFooterGrid" class="sticky-footer no-print">
-    <div class="foot-btn" style="color:var(--primary)" onclick="apriM('modalTurno')">
+    <div id="footBtnTurno" class="foot-btn" style="color:var(--primary)" onclick="apriM('modalTurno')">
         <i class="fas fa-plus-circle" style="color:var(--primary)"></i><span data-translate="btn_shift">TURNO</span>
     </div>
     <div class="foot-btn" style="color:var(--orange)" onclick="apriM('modalBenza')">
@@ -3522,6 +3531,24 @@ var _pickerOraValPrecedente = '';
 
 var _turnoTimerStart = null; // timestamp ms inizio turno manuale
 
+function chiudiTurnoSenzaAnnullare() {
+    document.getElementById('modalTurno').style.display = 'none';
+}
+
+function aggTurnoAttivoBlink() {
+    var turnoAttivo = (GPS.active || GPS.completed || _turnoTimerStart !== null);
+    var btn = document.getElementById('footBtnTurno');
+    var xBtn = document.getElementById('btnChiudiTurnoSenzaAnnullare');
+    if (btn) {
+        if (turnoAttivo) {
+            btn.classList.add('turno-btn-active-blink');
+        } else {
+            btn.classList.remove('turno-btn-active-blink');
+        }
+    }
+    if (xBtn) xBtn.style.display = turnoAttivo ? 'block' : 'none';
+}
+
 function iniziaTurno() {
     var _vaCheck = getVeicoloAttivo();
     if (!_vaCheck) {
@@ -3556,6 +3583,20 @@ function iniziaTurno() {
         }
         var kmStart = document.getElementById('tKStart').value;
         if (kmStart) localStorage.setItem(_kmPartenzaKey(), kmStart);
+        aggTurnoAttivoBlink();
+        // Salva stato form per ripristino dopo chiusura app
+        localStorage.setItem('turno_form_snap', JSON.stringify({
+            tL: document.getElementById('tL').value,
+            tO: document.getElementById('tO').value,
+            tK: document.getElementById('tK').value,
+            tC: document.getElementById('tC').value,
+            tMezzo: document.getElementById('tMezzo').value,
+            tCarburante: document.getElementById('tCarburante').value,
+            tOStart: document.getElementById('tOStart').value,
+            dateTD: document.getElementById('dateTD').value,
+            dateTM: document.getElementById('dateTM').value,
+            dateTY: document.getElementById('dateTY').value
+        }));
     } else {
         // ── FINE TIMER ──
         var elapsed = (Date.now() - _turnoTimerStart) / 1000 / 60 / 60; // ore
@@ -3573,6 +3614,8 @@ function iniziaTurno() {
         }
         _turnoTimerStart = null;
         localStorage.removeItem('turno_manual_tStart');
+        localStorage.removeItem('turno_form_snap');
+        aggTurnoAttivoBlink();
         // Ripristina bottone
         var btn2 = document.getElementById('btnIniziaTurno');
         if (btn2) {
@@ -3601,6 +3644,8 @@ function _resetCampiTurno() {
     var ch = document.getElementById('consHint'); if(ch) ch.innerText='';
     _pickerOraH = -1; _pickerOraM = -1;
     localStorage.removeItem('ora_inizio_tmp');
+    localStorage.removeItem('turno_form_snap');
+    aggTurnoAttivoBlink();
     // Reset timer manuale
     _turnoTimerStart = null;
     localStorage.removeItem('turno_manual_tStart');
@@ -5019,6 +5064,12 @@ window.onload = function() {
                         ? '⚠️ GPS session interrupted\n\nThe app was reloaded ('+elapsed+' min elapsed).\n✅ Partial track recovered: '+snap.km.toFixed(1)+' km, '+snap.pts.length+' points.\n\nYou can save the shift — the recovered GPS data will be included.'
                         : '⚠️ Sessione GPS interrotta\n\nL\'app è stata ricaricata ('+elapsed+' min trascorsi).\n✅ Percorso parziale recuperato: '+snap.km.toFixed(1)+' km, '+snap.pts.length+' punti.\n\nPuoi salvare il turno — i dati GPS recuperati saranno inclusi.'
                     );
+                    // Ripristina campi form e riapri modale
+                    var fsnap = localStorage.getItem('turno_form_snap');
+                    if (fsnap) { try { var fs=JSON.parse(fsnap); if(fs.tL)document.getElementById('tL').value=fs.tL; if(fs.tMezzo){document.getElementById('tMezzo').value=fs.tMezzo;var lm=document.getElementById('labelMezzo');if(lm)lm.innerText=_getMezzoLabel(fs.tMezzo);} if(fs.tOStart){document.getElementById('tOStart').value=fs.tOStart;var los=document.getElementById('labelOraStart');if(los)los.innerText=fs.tOStart;} if(fs.dateTD)document.getElementById('dateTD').value=fs.dateTD; if(fs.dateTM)document.getElementById('dateTM').value=fs.dateTM; if(fs.dateTY)document.getElementById('dateTY').value=fs.dateTY; } catch(e){} }
+                    var kmTmp = localStorage.getItem(_kmPartenzaKey());
+                    if (kmTmp) document.getElementById('tKStart').value = kmTmp;
+                    apriM('modalTurno');
                 }, 800);
             } else {
                 _gpsCheckpointClear();
@@ -5038,7 +5089,6 @@ window.onload = function() {
         var manualTStart = parseInt(localStorage.getItem('turno_manual_tStart') || '0');
         if (manualTStart) {
             _turnoTimerStart = manualTStart;
-            // Ripristina aspetto bottone "FINE TURNO"
             setTimeout(function() {
                 var btn = document.getElementById('btnIniziaTurno');
                 if (btn) {
@@ -5046,7 +5096,28 @@ window.onload = function() {
                     btn.style.background = 'var(--accent)';
                     btn.style.color = '#fff';
                 }
-            }, 300);
+                // Ripristina campi form e riapri modale
+                var snap = localStorage.getItem('turno_form_snap');
+                if (snap) {
+                    try {
+                        var s = JSON.parse(snap);
+                        if (s.tL) document.getElementById('tL').value = s.tL;
+                        if (s.tO) document.getElementById('tO').value = s.tO;
+                        if (s.tK) document.getElementById('tK').value = s.tK;
+                        if (s.tC) document.getElementById('tC').value = s.tC;
+                        if (s.tMezzo) { document.getElementById('tMezzo').value = s.tMezzo; var lm=document.getElementById('labelMezzo'); if(lm) lm.innerText=_getMezzoLabel(s.tMezzo); }
+                        if (s.tCarburante) document.getElementById('tCarburante').value = s.tCarburante;
+                        if (s.tOStart) { document.getElementById('tOStart').value = s.tOStart; var los=document.getElementById('labelOraStart'); if(los) los.innerText=s.tOStart; }
+                        if (s.dateTD) document.getElementById('dateTD').value = s.dateTD;
+                        if (s.dateTM) document.getElementById('dateTM').value = s.dateTM;
+                        if (s.dateTY) document.getElementById('dateTY').value = s.dateTY;
+                    } catch(e) {}
+                }
+                var kmTmp = localStorage.getItem(_kmPartenzaKey());
+                if (kmTmp) document.getElementById('tKStart').value = kmTmp;
+                apriM('modalTurno');
+                aggTurnoAttivoBlink();
+            }, 500);
         }
     })();
 
@@ -6169,6 +6240,20 @@ function gpsAvvia(){
     // Persisti stato GPS su localStorage (sopravvive al background)
     localStorage.setItem('gps_session_active', '1');
     localStorage.setItem('gps_session_tStart', String(GPS.tStart));
+    // Salva stato form per ripristino dopo chiusura app
+    localStorage.setItem('turno_form_snap', JSON.stringify({
+        tL: document.getElementById('tL').value,
+        tO: document.getElementById('tO').value,
+        tK: document.getElementById('tK').value,
+        tC: document.getElementById('tC').value,
+        tMezzo: document.getElementById('tMezzo').value,
+        tCarburante: document.getElementById('tCarburante').value,
+        tOStart: document.getElementById('tOStart').value,
+        dateTD: document.getElementById('dateTD').value,
+        dateTM: document.getElementById('dateTM').value,
+        dateTY: document.getElementById('dateTY').value
+    }));
+    aggTurnoAttivoBlink();
 
     var bar=document.getElementById('gpsLiveBar');
     if(bar) bar.classList.add('visible');
@@ -6400,6 +6485,8 @@ function gpsTermina(){
     var _lblG=document.getElementById('lblGpsSection');if(_lblG)_lblG.style.display='';
     localStorage.removeItem('gps_session_active');
     localStorage.removeItem('gps_session_tStart');
+    localStorage.removeItem('turno_form_snap');
+    aggTurnoAttivoBlink();
     gpsLbl('✅ '+GPS.km.toFixed(2)+' km · '+GPS.soste.length+' soste');
 }
 
