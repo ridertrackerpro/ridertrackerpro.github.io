@@ -6254,6 +6254,8 @@ function gpsAvvia(){
         dateTY: document.getElementById('dateTY').value
     }));
     aggTurnoAttivoBlink();
+    // Avvia foreground service per mantenere GPS attivo anche con app chiusa
+    try { if (window.Capacitor && window.Capacitor.isNativePlatform()) window.Capacitor.Plugins.GpsService.start().catch(function(){}); } catch(e) {}
 
     var bar=document.getElementById('gpsLiveBar');
     if(bar) bar.classList.add('visible');
@@ -6487,6 +6489,8 @@ function gpsTermina(){
     localStorage.removeItem('gps_session_tStart');
     localStorage.removeItem('turno_form_snap');
     aggTurnoAttivoBlink();
+    // Ferma foreground service
+    try { if (window.Capacitor && window.Capacitor.isNativePlatform()) window.Capacitor.Plugins.GpsService.stop().catch(function(){}); } catch(e) {}
     gpsLbl('✅ '+GPS.km.toFixed(2)+' km · '+GPS.soste.length+' soste');
 }
 
@@ -6494,6 +6498,7 @@ function gpsResetUI(){
     gpsDot('');gpsLbl('GPS · Pronto');
     localStorage.removeItem('gps_session_active');
     localStorage.removeItem('gps_session_tStart');
+    try { if (window.Capacitor && window.Capacitor.isNativePlatform()) window.Capacitor.Plugins.GpsService.stop().catch(function(){}); } catch(e) {}
     _wakeLockRelease();
     _gpsNotifClear();
     _gpsCheckpointClear();
