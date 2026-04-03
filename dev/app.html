@@ -5041,48 +5041,28 @@ window.onload = function() {
 
             function _ripristinaConPunti(pts) {
                 if (pts && pts.length > 1) {
-                    // Calcola km dai punti del service
-                    var km = 0;
-                    for (var i=1; i<pts.length; i++) {
-                        var a=pts[i-1], b=pts[i];
-                        var R=6371, dLat=(b.la-a.la)*Math.PI/180, dLon=(b.lo-a.lo)*Math.PI/180;
-                        var s=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(a.la*Math.PI/180)*Math.cos(b.la*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
-                        var d=R*2*Math.atan2(Math.sqrt(s),Math.sqrt(1-s));
-                        if(d>0.000001&&d<2) km+=d;
-                    }
-                    GPS.pts   = pts;
-                    GPS.soste = [];
-                    GPS.km    = km;
-                    GPS.vmax  = 0;
-                    GPS.tStart = gpsTStart;
-                    GPS.active = false;
-                    window._gpsRotta = {
-                        coords: pts.map(function(p){return{la:p.la,lo:p.lo,ts:p.ts,spd:p.spd||0};}),
-                        soste: [], km: km, vmax: 0, vmedia: 0,
-                        tStart: gpsTStart, tEnd: pts[pts.length-1].ts
-                    };
                     _gpsCheckpointClear();
+                    _ripristinaForm();
                     setTimeout(function() {
-                        mostraAlertApp(
-                            (typeof currentLang !== 'undefined' && currentLang === 'en')
-                            ? '⚠️ GPS session interrupted\n\nThe app was closed ('+elapsed+' min elapsed).\n✅ Track recovered from background service: '+km.toFixed(1)+' km, '+pts.length+' points.\n\nYou can save the shift.'
-                            : '⚠️ Sessione GPS interrotta\n\nL\'app è stata chiusa ('+elapsed+' min trascorsi).\n✅ Percorso recuperato dal service: '+km.toFixed(1)+' km, '+pts.length+' punti.\n\nPuoi salvare il turno.'
-                        );
-                        _ripristinaForm();
                         apriM('modalTurno');
-                    }, 800);
+                        setTimeout(function() {
+                            gpsAvviaConRipristino(pts, gpsTStart);
+                            gpsLbl('GPS ripristinato — ' + pts.length + ' punti recuperati');
+                        }, 300);
+                    }, 500);
                 } else {
                     // Prova checkpoint JS
                     var snap = _gpsCheckpointRestore();
                     _gpsCheckpointClear();
                     if (snap && snap.pts && snap.pts.length > 1) {
-                        GPS.pts=snap.pts; GPS.soste=snap.soste||[]; GPS.km=snap.km||0; GPS.vmax=snap.vmax||0;
-                        GPS.tStart=snap.tStart||gpsTStart; GPS.active=false;
-                        window._gpsRotta={coords:snap.pts.map(function(p){return{la:p.la,lo:p.lo,ts:p.ts,spd:p.spd||0};}),soste:snap.soste||[],km:snap.km||0,vmax:snap.vmax||0,vmedia:0,tStart:snap.tStart||gpsTStart,tEnd:snap.ts};
-                        setTimeout(function(){
-                            mostraAlertApp((typeof currentLang!=='undefined'&&currentLang==='en')?'⚠️ GPS session interrupted\n\n✅ Partial track recovered: '+snap.km.toFixed(1)+' km, '+snap.pts.length+' points.':'⚠️ Sessione GPS interrotta\n\n✅ Percorso parziale recuperato: '+snap.km.toFixed(1)+' km, '+snap.pts.length+' punti.');
-                            _ripristinaForm(); apriM('modalTurno');
-                        }, 800);
+                        _ripristinaForm();
+                        setTimeout(function() {
+                            apriM('modalTurno');
+                            setTimeout(function() {
+                                gpsAvviaConRipristino(snap.pts, snap.tStart || gpsTStart);
+                                gpsLbl('GPS ripristinato — ' + snap.pts.length + ' punti recuperati');
+                            }, 300);
+                        }, 500);
                     } else {
                         setTimeout(function(){
                             mostraAlertApp((typeof currentLang!=='undefined'&&currentLang==='en')?'⚠️ GPS session interrupted\n\nThe recorded track has been lost.\nYou can still save the shift manually.':'⚠️ Sessione GPS interrotta\n\nIl percorso registrato è andato perso.\nPuoi ancora salvare il turno manualmente.');
@@ -6250,6 +6230,45 @@ function _spdColor(k){return k<3?'#ff4d4d':k<30?'#00CCBC':k<60?'#4ade80':k<90?'#
 
 function gpsDot(s){var e=document.getElementById('gpsDot');if(e)e.className='gps-dot'+(s?' '+s:'');}
 function gpsLbl(t){var e=document.getElementById('gpsLbl');if(e)e.innerText=t;}
+
+function gpsAvviaConRipristino(ptsPrec, tStartPrec) {
+    if(!navigator.geolocation) return;
+    GPS.active=true;
+    GPS.pts = ptsPrec || [];
+    GPS.soste = [];
+    GPS.km = 0;
+    // Ricalcola km dai punti precedenti
+    for (var i=1; i<GPS.pts.length; i++) {
+        var a=GPS.pts[i-1], b=GPS.pts[i];
+        var R=6371, dLat=(b.la-a.la)*Math.PI/180, dLon=(b.lo-a.lo)*Math.PI/180;
+        var s=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(a.la*Math.PI/180)*Math.cos(b.la*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+        var d=R*2*Math.atan2(Math.sqrt(s),Math.sqrt(1-s));
+        if(d>0.000001&&d<2) GPS.km+=d;
+    }
+    GPS.vmax=0; GPS.tStart=tStartPrec||Date.now(); GPS.inSosta=false; GPS.sostaT=null;
+    GPS.completed=false; GPS.cancelMode=false;
+    _kalmanReset();
+    localStorage.setItem('gps_session_active', '1');
+    localStorage.setItem('gps_session_tStart', String(GPS.tStart));
+    aggTurnoAttivoBlink();
+    try { if (window.Capacitor && window.Capacitor.isNativePlatform()) window.Capacitor.Plugins.GpsService.start().catch(function(){}); } catch(e) {}
+    var bar=document.getElementById('gpsLiveBar'); if(bar) bar.classList.add('visible');
+    var lbl=document.getElementById('lblGpsSection'); if(lbl) lbl.style.display='none';
+    document.getElementById('gpsBtnGo').disabled=true;
+    document.getElementById('gpsBtnStop').disabled=false;
+    gpsDot('on'); gpsLbl('Ripristino sessione...');
+    GPS.tempoTimer=setInterval(function(){
+        if(!GPS.tStart)return;
+        var el=document.getElementById('gpsTempo');
+        if(el)el.innerText=_fmtDur((Date.now()-GPS.tStart)/1000);
+    },1000);
+    GPS.checkpointTimer=setInterval(function(){ _gpsCheckpointSave(); },30000);
+    GPS.watchId=navigator.geolocation.watchPosition(
+        function(pos){ if(GPS.active) _gpsOnPos(pos); },
+        function(e){ if(GPS.active && e.code===3) gpsLbl('Segnale debole...'); },
+        {enableHighAccuracy:true,maximumAge:2000,timeout:10000}
+    );
+}
 
 function gpsAvvia(){
     var _vaCheck = getVeicoloAttivo();
