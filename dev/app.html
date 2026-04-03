@@ -2584,7 +2584,7 @@ function apriM(id) {
             }
         })();
 
-        var kmTmp = localStorage.getItem('km_partenza_tmp');
+        var kmTmp = localStorage.getItem(_kmPartenzaKey());
         if (kmTmp) document.getElementById('tKStart').value = kmTmp;
         var oraTmp = localStorage.getItem('ora_inizio_tmp');
         if (oraTmp) {
@@ -3555,7 +3555,7 @@ function iniziaTurno() {
             btn.style.color = '#fff';
         }
         var kmStart = document.getElementById('tKStart').value;
-        if (kmStart) localStorage.setItem('km_partenza_tmp', kmStart);
+        if (kmStart) localStorage.setItem(_kmPartenzaKey(), kmStart);
     } else {
         // ── FINE TIMER ──
         var elapsed = (Date.now() - _turnoTimerStart) / 1000 / 60 / 60; // ore
@@ -3600,7 +3600,6 @@ function _resetCampiTurno() {
     document.getElementById('labelOraEnd').innerText   = currentLang==='en'?'End time':'Ora fine';
     var ch = document.getElementById('consHint'); if(ch) ch.innerText='';
     _pickerOraH = -1; _pickerOraM = -1;
-    localStorage.removeItem('km_partenza_tmp');
     localStorage.removeItem('ora_inizio_tmp');
     // Reset timer manuale
     _turnoTimerStart = null;
@@ -3658,7 +3657,7 @@ function azzeraKmStart() {
     document.getElementById('tKStart').value = '';
     document.getElementById('tKEnd').value = '';
     document.getElementById('tK').value = '';
-    localStorage.removeItem('km_partenza_tmp');
+    localStorage.removeItem(_kmPartenzaKey());
 }
 
 function azzeraKmEnd() {
@@ -3769,9 +3768,13 @@ function _applicaPickerOra() {
     }
     calcolaOreDaOrari();
 }
+function _kmPartenzaKey() {
+    var va = typeof getVeicoloAttivo === 'function' ? getVeicoloAttivo() : null;
+    return 'km_partenza_tmp' + (va ? '_' + va.id : '');
+}
 function salvaKmPartenzaTmp() {
     var v = document.getElementById('tKStart').value;
-    if (v) localStorage.setItem('km_partenza_tmp', v);
+    if (v) localStorage.setItem(_kmPartenzaKey(), v);
 }
 
 function calcolaKmDaOdometro() {
@@ -4087,6 +4090,12 @@ function effettuaSalvataggioTurno(prezzo, rif) {
     // Veicolo attivo al momento del salvataggio
     var _vAtt = getVeicoloAttivo();
     if (_vAtt) { obj.veicoloId = _vAtt.id; obj.veicoloNome = _vAtt.marca + ' ' + _vAtt.modello; }
+
+    // Salva km partenza e km arrivo odometro
+    var _kStartVal = document.getElementById('tKStart').value;
+    var _kEndVal = document.getElementById('tKEnd').value;
+    if (_kStartVal !== '') obj.kmOdoStart = parseFloat(_kStartVal);
+    if (_kEndVal !== '') obj.kmOdoEnd = parseFloat(_kEndVal);
 
     if (editingId !== null && editingCat === 'turni') {
         const idx = db.turni.findIndex(x => x.id === editingId);
@@ -4465,6 +4474,11 @@ function modificaVoce(categoria, id) {
             document.getElementById('tCarburante').value = item.tipoCarburante;
             var _lctEl=document.getElementById('labelCarburanteTurno');if(_lctEl){if(_lctEl.tagName==='INPUT')_lctEl.value=getIconaCarburante(item.tipoCarburante) + ' ' + getNomeCarburante(item.tipoCarburante);else _lctEl.innerText=getIconaCarburante(item.tipoCarburante) + ' ' + getNomeCarburante(item.tipoCarburante);}
         }
+        // Ripristina km odometro partenza e arrivo
+        var _tKSel = document.getElementById('tKStart');
+        var _tKEel = document.getElementById('tKEnd');
+        if (_tKSel) _tKSel.value = (item.kmOdoStart !== undefined && item.kmOdoStart !== null) ? item.kmOdoStart : '';
+        if (_tKEel) _tKEel.value = (item.kmOdoEnd !== undefined && item.kmOdoEnd !== null) ? item.kmOdoEnd : '';
     } else if (categoria === 'rifornimenti') {
         apriM('modalBenza');
         document.getElementById('dateBD').value = parseInt(item.data.substring(0,2));
