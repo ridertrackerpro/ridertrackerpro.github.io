@@ -4913,26 +4913,18 @@ function obShowSlide(n) {
         document.getElementById('obS' + n).innerHTML = c.s;
     }
     if (n === 7) {
-        obAggiornaPermessi();
         var it = obLang !== 'en';
-        document.getElementById('obPermTitle').innerText = it ? '⚙️ Permessi Richiesti' : '⚙️ Required Permissions';
-        document.getElementById('obPermSub').innerText = it ? 'Questi permessi garantiscono il corretto funzionamento del GPS. Concedi o segui le istruzioni per ciascuno.' : 'These permissions ensure GPS works correctly. Grant each one or follow the instructions.';
-        document.getElementById('permLabel0').innerText = it ? 'Posizione — Consenti sempre' : 'Location — Allow all the time';
-        document.getElementById('permDesc0').innerText = it ? 'Necessario per il GPS in background' : 'Required for background GPS tracking';
-        document.getElementById('permLabel1').innerText = it ? 'Notifiche' : 'Notifications';
-        document.getElementById('permDesc1').innerText = it ? 'Per avvisi turno attivo e scadenze' : 'For active shift alerts and reminders';
-        document.getElementById('permLabel2').innerText = it ? 'Batteria — Senza restrizioni' : 'Battery — Unrestricted';
-        document.getElementById('permDesc2').innerText = it ? 'Impedisce la chiusura forzata del GPS. Impostazioni → App → RiderTracker → Batteria → Senza restrizioni' : 'Prevents forced GPS shutdown. Settings → Apps → RiderTracker → Battery → Unrestricted';
-        document.getElementById('permLabel3').innerText = it ? 'Dati in background' : 'Background data';
-        document.getElementById('permDesc3').innerText = it ? 'Impostazioni → App → RiderTracker → Connessione dati → attiva tutto' : 'Settings → Apps → RiderTracker → Mobile data → enable all';
-        document.getElementById('permLabel4').innerText = it ? 'Gestione app non utilizzate' : 'Unused app management';
-        document.getElementById('permDesc4').innerText = it ? 'Impostazioni → App → RiderTracker → disattiva se attivo' : 'Settings → Apps → RiderTracker → disable if active';
-        document.getElementById('permBtn0').innerText = it ? 'Concedi' : 'Grant';
-        document.getElementById('permBtn1').innerText = it ? 'Concedi' : 'Grant';
-        document.getElementById('permBtn2').innerText = it ? 'Vai →' : 'Go →';
-        document.getElementById('permBtn3').innerText = it ? 'Vai →' : 'Go →';
-        document.getElementById('permBtn4').innerText = it ? 'Vai →' : 'Go →';
-        document.getElementById('obRefreshBtn').innerText = it ? '↻ Aggiorna stato permessi' : '↻ Refresh permission status';
+        document.getElementById('obPermTitle').innerText = it ? '⚠️ Permessi Importanti' : '⚠️ Important Permissions';
+        document.getElementById('obPermSub').innerText = it ? 'Per garantire il funzionamento del GPS in background, segui questi passaggi.' : 'To ensure GPS works in background, follow these steps.';
+        document.getElementById('obPermStep1').innerText = it ? '📍 Posizione' : '📍 Location';
+        document.getElementById('obPermStep1d').innerHTML = it ? 'Impostazioni → App → RiderTracker Pro → Autorizzazioni → Posizione → <strong style="color:#22c55e;">Consenti sempre</strong>' : 'Settings → Apps → RiderTracker Pro → Permissions → Location → <strong style="color:#22c55e;">Allow all the time</strong>';
+        document.getElementById('obPermStep2').innerText = it ? '🔋 Batteria' : '🔋 Battery';
+        document.getElementById('obPermStep2d').innerHTML = it ? 'Impostazioni → App → RiderTracker Pro → Batteria → <strong style="color:#22c55e;">Senza restrizioni</strong>' : 'Settings → Apps → RiderTracker Pro → Battery → <strong style="color:#22c55e;">Unrestricted</strong>';
+        document.getElementById('obPermStep3').innerText = it ? '📡 Dati in background' : '📡 Background data';
+        document.getElementById('obPermStep3d').innerHTML = it ? 'Impostazioni → App → RiderTracker Pro → Connessione dati → <strong style="color:#22c55e;">Attiva tutto</strong>' : 'Settings → Apps → RiderTracker Pro → Mobile data → <strong style="color:#22c55e;">Enable all</strong>';
+        document.getElementById('obPermStep4').innerText = it ? '🛡️ Gestione app non utilizzate' : '🛡️ Unused app management';
+        document.getElementById('obPermStep4d').innerHTML = it ? 'Impostazioni → App → RiderTracker Pro → <strong style="color:#ef4444;">Disattiva</strong> "Gestisci app non utilizzate" se attivo' : 'Settings → Apps → RiderTracker Pro → <strong style="color:#ef4444;">Disable</strong> "Unused app management" if active';
+        document.getElementById('obPermGotoBtn').innerText = it ? '⚙️ Vai alle impostazioni app' : '⚙️ Go to app settings';
     }
     var isLast = n === 7;
     var skipBtn = document.getElementById('obBtnSkip');
@@ -4962,84 +4954,10 @@ function obFinish() {
     window._playIntroOnHome = true;
 }
 
-function _obSetPerm(idx, ok, manual) {
-    var item = document.getElementById('permItem' + idx);
-    var status = document.getElementById('permStatus' + idx);
-    var btn = document.getElementById('permBtn' + idx);
-    if (ok) {
-        item.classList.add('ok'); item.classList.remove('fail');
-        status.innerText = '✅';
-        if (btn) btn.style.display = 'none';
-    } else {
-        item.classList.remove('ok'); item.classList.add('fail');
-        status.innerText = manual ? '⚠️' : '❌';
-        if (btn) btn.style.display = '';
-    }
-}
-
-function obAggiornaPermessi() {
-    // Permesso posizione
-    if (navigator.permissions) {
-        navigator.permissions.query({name:'geolocation'}).then(function(r) {
-            _obSetPerm(0, r.state === 'granted');
-        }).catch(function() { _obSetPerm(0, false); });
-    } else {
-        navigator.geolocation.getCurrentPosition(
-            function() { _obSetPerm(0, true); },
-            function() { _obSetPerm(0, false); },
-            {timeout:2000}
-        );
-    }
-    // Notifiche
-    if (window.Notification) {
-        _obSetPerm(1, Notification.permission === 'granted');
-    } else {
-        _obSetPerm(1, false);
-    }
-    // Batteria/Dati/GestioneApp — non verificabili, rimangono ⚠️ finché l'utente non preme "Fatto"
-    var bat = localStorage.getItem('ob_perm_battery') === '1';
-    var dati = localStorage.getItem('ob_perm_data') === '1';
-    var gestione = localStorage.getItem('ob_perm_gestione') === '1';
-    _obSetPerm(2, bat, true);
-    _obSetPerm(3, dati, true);
-    _obSetPerm(4, gestione, true);
-}
-
-function obRichiediPosizione() {
-    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-        try {
-            window.Capacitor.Plugins.Geolocation.requestPermissions().then(function() {
-                setTimeout(obAggiornaPermessi, 500);
-            }).catch(function() { obAggiornaPermessi(); });
-        } catch(e) { obAggiornaPermessi(); }
-    } else {
-        navigator.geolocation.getCurrentPosition(
-            function() { _obSetPerm(0, true); },
-            function() { _obSetPerm(0, false); },
-            {timeout:5000}
-        );
-    }
-}
-
-function obRichiediNotifiche() {
-    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-        try {
-            window.Capacitor.Plugins.LocalNotifications.requestPermissions().then(function(r) {
-                _obSetPerm(1, r.display === 'granted');
-            }).catch(function() { _obSetPerm(1, false); });
-        } catch(e) { _obSetPerm(1, false); }
-    } else if (window.Notification) {
-        Notification.requestPermission().then(function(r) {
-            _obSetPerm(1, r === 'granted');
-        });
-    }
-}
-
 function obApriImpostazioni() {
     if (window.Capacitor && window.Capacitor.isNativePlatform()) {
         try {
-            var pkg = 'com.ridertracker.pro';
-            window.Capacitor.Plugins.App.openUrl({url: 'package:' + pkg}).catch(function() {});
+            window.Capacitor.Plugins.App.openUrl({url: 'package:com.ridertracker.pro'}).catch(function() {});
         } catch(e) {}
     }
 }
@@ -5838,76 +5756,30 @@ calcola();
         <div class="ob-slide" id="obSlide5"><div class="ob-icon-emoji">📋</div><div class="ob-title" id="obT5"></div><div class="ob-sub" id="obS5"></div></div>
         <div class="ob-slide" id="obSlide6"><div class="ob-icon-emoji">📈</div><div class="ob-title" id="obT6"></div><div class="ob-sub" id="obS6"></div></div>
         <div class="ob-perm-slide" id="obSlide7">
-            <div class="ob-perm-title" id="obPermTitle">⚙️ Permessi Richiesti</div>
-            <div class="ob-perm-sub" id="obPermSub">Questi permessi sono necessari per il corretto funzionamento del GPS in background. Segui i passaggi.</div>
+            <div class="ob-perm-title" id="obPermTitle">⚠️ Permessi Importanti</div>
+            <div class="ob-perm-sub" id="obPermSub">Per garantire il funzionamento del GPS anche con l'app in background, segui questi passaggi nelle impostazioni del telefono.</div>
 
-            <!-- 1. Posizione sempre -->
-            <div class="ob-perm-item" id="permItem0">
-                <div class="ob-perm-icon">📍</div>
-                <div class="ob-perm-info">
-                    <div class="ob-perm-label" id="permLabel0">Posizione — Consenti sempre</div>
-                    <div class="ob-perm-desc" id="permDesc0">Necessario per il GPS in background</div>
-                </div>
-                <div class="ob-perm-status" id="permStatus0">⏳</div>
-                <button class="ob-perm-btn primary" id="permBtn0" onclick="obRichiediPosizione()">Concedi</button>
+            <div class="ob-perm-item" style="flex-direction:column; align-items:flex-start; gap:6px;">
+                <div style="font-size:11px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px;" id="obPermStep1">📍 Posizione</div>
+                <div style="font-size:11px; color:#ccc; line-height:1.6;" id="obPermStep1d">Impostazioni → App → RiderTracker Pro → Autorizzazioni → Posizione → <strong style="color:#22c55e;">Consenti sempre</strong></div>
             </div>
 
-            <!-- 2. Notifiche -->
-            <div class="ob-perm-item" id="permItem1">
-                <div class="ob-perm-icon">🔔</div>
-                <div class="ob-perm-info">
-                    <div class="ob-perm-label" id="permLabel1">Notifiche</div>
-                    <div class="ob-perm-desc" id="permDesc1">Per avvisi turno attivo e scadenze</div>
-                </div>
-                <div class="ob-perm-status" id="permStatus1">⏳</div>
-                <button class="ob-perm-btn primary" id="permBtn1" onclick="obRichiediNotifiche()">Concedi</button>
+            <div class="ob-perm-item" style="flex-direction:column; align-items:flex-start; gap:6px;">
+                <div style="font-size:11px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px;" id="obPermStep2">🔋 Batteria</div>
+                <div style="font-size:11px; color:#ccc; line-height:1.6;" id="obPermStep2d">Impostazioni → App → RiderTracker Pro → Batteria → <strong style="color:#22c55e;">Senza restrizioni</strong></div>
             </div>
 
-            <!-- 3. Batteria senza restrizioni -->
-            <div class="ob-perm-item" id="permItem2">
-                <div class="ob-perm-icon">🔋</div>
-                <div class="ob-perm-info">
-                    <div class="ob-perm-label" id="permLabel2">Batteria — Senza restrizioni</div>
-                    <div class="ob-perm-desc" id="permDesc2">Impedisce la chiusura forzata del GPS</div>
-                </div>
-                <div class="ob-perm-status" id="permStatus2">⏳</div>
-                <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
-                    <button class="ob-perm-btn" id="permBtn2" onclick="obApriImpostazioni()">Vai →</button>
-                    <button class="ob-perm-btn" style="background:#1a1a1a;border-color:#555;color:#aaa;" onclick="localStorage.setItem('ob_perm_battery','1');obAggiornaPermessi()">Fatto ✓</button>
-                </div>
+            <div class="ob-perm-item" style="flex-direction:column; align-items:flex-start; gap:6px;">
+                <div style="font-size:11px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px;" id="obPermStep3">📡 Dati in background</div>
+                <div style="font-size:11px; color:#ccc; line-height:1.6;" id="obPermStep3d">Impostazioni → App → RiderTracker Pro → Connessione dati → <strong style="color:#22c55e;">Attiva tutto</strong></div>
             </div>
 
-            <!-- 4. Dati in background -->
-            <div class="ob-perm-item" id="permItem3">
-                <div class="ob-perm-icon">📡</div>
-                <div class="ob-perm-info">
-                    <div class="ob-perm-label" id="permLabel3">Dati in background</div>
-                    <div class="ob-perm-desc" id="permDesc3">Impostazioni → App → RiderTracker → Connessione dati → attiva tutto</div>
-                </div>
-                <div class="ob-perm-status" id="permStatus3">⏳</div>
-                <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
-                    <button class="ob-perm-btn" id="permBtn3" onclick="obApriImpostazioni()">Vai →</button>
-                    <button class="ob-perm-btn" style="background:#1a1a1a;border-color:#555;color:#aaa;" onclick="localStorage.setItem('ob_perm_data','1');obAggiornaPermessi()">Fatto ✓</button>
-                </div>
+            <div class="ob-perm-item" style="flex-direction:column; align-items:flex-start; gap:6px;">
+                <div style="font-size:11px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px;" id="obPermStep4">🛡️ Gestione app non utilizzate</div>
+                <div style="font-size:11px; color:#ccc; line-height:1.6;" id="obPermStep4d">Impostazioni → App → RiderTracker Pro → <strong style="color:#ef4444;">Disattiva</strong> "Gestisci app non utilizzate" se attivo</div>
             </div>
 
-            <!-- 5. Gestisci app non utilizzate -->
-            <div class="ob-perm-item" id="permItem4">
-                <div class="ob-perm-icon">🛡️</div>
-                <div class="ob-perm-info">
-                    <div class="ob-perm-label" id="permLabel4">Gestisci app non utilizzate</div>
-                    <div class="ob-perm-desc" id="permDesc4">Impostazioni → App → RiderTracker → disattiva se attivo</div>
-                </div>
-                <div class="ob-perm-status" id="permStatus4">⏳</div>
-                <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
-                    <button class="ob-perm-btn" id="permBtn4" onclick="obApriImpostazioni()">Vai →</button>
-                    <button class="ob-perm-btn" style="background:#1a1a1a;border-color:#555;color:#aaa;" onclick="localStorage.setItem('ob_perm_gestione','1');obAggiornaPermessi()">Fatto ✓</button>
-                </div>
-            </div>
-
-            <div style="text-align:center; margin-top:8px;">
-                <button onclick="obAggiornaPermessi()" style="background:none; border:none; color:var(--primary); font-size:11px; font-weight:700; cursor:pointer; text-decoration:underline;" id="obRefreshBtn">↻ Aggiorna stato permessi</button>
-            </div>
+            <button onclick="obApriImpostazioni()" style="width:100%; margin-top:10px; padding:13px; background:var(--primary); border:none; border-radius:12px; color:#000; font-size:13px; font-weight:900; cursor:pointer; text-transform:uppercase; letter-spacing:0.5px;" id="obPermGotoBtn">⚙️ Vai alle impostazioni app</button>
         </div>
     </div>
     <div style="width:100%; display:flex; flex-direction:column; align-items:center;">
