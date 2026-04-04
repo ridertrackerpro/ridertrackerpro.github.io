@@ -846,6 +846,10 @@ body {
         <input type="hidden" id="tOEnd">
 
         <!-- ── KM INIZIO / KM FINE odometro ── -->
+        <div style="display:flex; gap:8px; margin-bottom:2px;" id="rowKmOdoLabels">
+            <div style="flex:1; min-width:0; text-align:center; font-size:9px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.8px;" id="lblTKStart">KM INIZIO</div>
+            <div style="flex:1; min-width:0; text-align:center; font-size:9px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.8px;" id="lblTKEnd">KM FINE</div>
+        </div>
         <div style="display:flex; gap:8px; margin-bottom:6px;" id="rowKmOdo">
             <div style="position:relative; flex:1; min-width:0;">
                 <input type="number" id="tKStart" data-translate-placeholder="ph_km_start" style="text-align:center; padding:11px 36px 11px 14px; margin-bottom:0;" inputmode="decimal" autocomplete="off" oninput="salvaKmPartenzaTmp(); calcolaKmDaOdometro();">
@@ -858,6 +862,10 @@ body {
         </div>
 
         <!-- ── KM TOTALI + CONSUMI (nascosti per noCons) ── -->
+        <div style="display:flex; gap:8px; margin-bottom:2px;" id="rowKmConsLabels">
+            <div style="flex:1; min-width:0; text-align:center; font-size:9px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.8px;" id="lblTK">KM PERCORSI</div>
+            <div style="flex:1; min-width:0; text-align:center; font-size:9px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.8px;" id="lblTC">CONSUMO</div>
+        </div>
         <div style="display:flex; gap:8px; margin-bottom:6px; margin-top:0;" id="rowKmCons">
             <input type="number" id="tK" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" data-translate-placeholder="ph_km_short" inputmode="decimal" autocomplete="off">
             <input type="number" id="tC" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" data-translate-placeholder="ph_cons_short" step="0.1" inputmode="decimal" autocomplete="off">
@@ -865,7 +873,11 @@ body {
         <div id="consHint" style="font-size:10px; color:var(--primary); margin:0 0 6px 2px; min-height:0; font-style:italic; line-height:1.2;"></div>
 
         <!-- ── ORE LAVORATE + LORDO affiancati ── -->
-        <div id="rowOre" style="display:flex; gap:8px; margin-bottom:6px; margin-top:auto; padding-top:20px;">
+        <div style="display:flex; gap:8px; margin-bottom:2px; padding-top:20px;">
+            <div style="flex:1; min-width:0; text-align:center; font-size:9px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.8px;">ORE LAVORATE</div>
+            <div style="flex:1; min-width:0; text-align:center; font-size:9px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.8px;" id="lblTL">LORDO (€)</div>
+        </div>
+        <div id="rowOre" style="display:flex; gap:8px; margin-bottom:6px; margin-top:0; padding-top:0;">
             <input type="number" id="tO" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" data-translate-placeholder="ph_ore_short" step="0.1" inputmode="decimal" autocomplete="off">
             <input type="number" id="tL" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" data-translate-placeholder="ph_lordo_short" inputmode="decimal" autocomplete="off">
         </div>
@@ -957,8 +969,14 @@ body {
             <i class="fas fa-chevron-down"></i>
         </div>
         <input type="hidden" id="bTipo" value="benzina">
-        <input type="number" id="bE" style="text-align:center; margin-bottom:14px;" data-translate-placeholder="ph_spent" step="0.01" inputmode="decimal" autocomplete="off">
-        <input type="text" id="bP" style="text-align:center; margin-bottom:14px;" data-translate-placeholder="insert_ph" inputmode="decimal" oninput="formattaPrezzo(this)" autocomplete="off">
+        <div style="display:flex; align-items:center; background:#252525; border:1px solid #444; border-radius:10px; margin-bottom:14px; padding:0 14px;">
+            <span style="color:var(--dim); font-size:13px; font-weight:700; flex-shrink:0;">€</span>
+            <input type="number" id="bE" style="text-align:center; flex:1; background:transparent; border:none; outline:none; color:#fff; padding:11px 0; font-size:16px;" data-translate-placeholder="ph_spent" step="0.01" inputmode="decimal" autocomplete="off">
+        </div>
+        <div style="display:flex; align-items:center; background:#252525; border:1px solid #444; border-radius:10px; margin-bottom:14px; padding:0 14px;">
+            <span style="color:var(--dim); font-size:13px; font-weight:700; flex-shrink:0;">€/L</span>
+            <input type="text" id="bP" style="text-align:center; flex:1; background:transparent; border:none; outline:none; color:#fff; padding:11px 0; font-size:16px;" data-translate-placeholder="insert_ph" inputmode="decimal" oninput="formattaPrezzo(this)" autocomplete="off">
+        </div>
         <div id="campiMiscela" style="display:none;">
             <p style="font-size:11px; color:var(--dim); margin:0 0 10px; text-transform:uppercase; letter-spacing:0.5px;" data-translate="mix_data">DATI MISCELA</p>
             <input type="number" id="bPercMiscela" style="text-align:center; margin-bottom:14px;" data-translate-placeholder="ph_mix_pct" step="0.1">
@@ -1055,7 +1073,10 @@ body {
             <i class="fas fa-chevron-down"></i>
         </div>
         <input type="hidden" id="extraCategoriaKey" value="">
-        <input type="number" id="extraImportoInput" style="text-align:center; margin-bottom:14px;" data-translate-placeholder="ph_extra_amount" step="0.01" inputmode="decimal" autocomplete="off">
+        <div style="display:flex; align-items:center; background:#252525; border:1px solid #444; border-radius:10px; margin-bottom:14px; padding:0 14px;">
+            <span style="color:var(--dim); font-size:13px; font-weight:700; flex-shrink:0;">€</span>
+            <input type="number" id="extraImportoInput" style="text-align:center; flex:1; background:transparent; border:none; outline:none; color:#fff; padding:11px 0; font-size:16px;" data-translate-placeholder="ph_extra_amount" step="0.01" inputmode="decimal" autocomplete="off">
+        </div>
         <div id="extraAltroWrap" style="display:none;">
             <input type="text" id="extraDescInput" style="text-align:center; margin-bottom:14px;" data-translate-placeholder="ph_extra_reason" autocomplete="off">
         </div>
@@ -1790,7 +1811,7 @@ chart_eur_km: '/KM',
         cancel_gps_back: 'CONTINUE',
     }
 };
-let currentLang = localStorage.getItem('app_language') || 'it';
+let currentLang = 'it';
 function cambiaLingua(lang) {
     currentLang = lang;
     document.getElementById('htmlRoot').setAttribute('lang', lang);
@@ -1855,18 +1876,8 @@ function apriLanguageEN() {
 }
 
 function apriModalSettings() {
-    const settingsDist = document.getElementById('settingsDistance');
-    const settingsVol  = document.getElementById('settingsVolume');
-    const settingsMass = document.getElementById('settingsMass');
-    const settingsCurr = document.getElementById('settingsCurrency');
     const settingsCons = document.getElementById('settingsConsumption');
-
-    if (settingsDist) settingsDist.value = userSettings.distance;
-    if (settingsVol)  settingsVol.value  = userSettings.volume;
-    if (settingsMass) settingsMass.value = userSettings.mass;
-    if (settingsCurr) settingsCurr.value = userSettings.currency;
     if (settingsCons) settingsCons.value = userSettings.consumption;
-
     document.getElementById('modalSettings').style.display = 'flex';
 }
 function t(chiave) {
@@ -1928,33 +1939,35 @@ if (bPInput) {
         inputKm.placeholder = userSettings.distance === 'miles'
             ? t('ph_miles_driven')
             : t('ph_km');
-        // Also update data-translate-placeholder so t() picks it up on lang change
         inputKm.setAttribute('data-translate-placeholder', userSettings.distance === 'miles' ? 'ph_miles_driven' : 'ph_km');
     }
+    var _lblTK = document.getElementById('lblTK');
+    if (_lblTK) _lblTK.innerText = userSettings.distance === 'miles' ? 'MIGLIA PERCORSE' : 'KM PERCORSI';
 
     const inputCons = document.getElementById('tC');
     if (inputCons) {
-
+        var _consUnit;
         if (userSettings.consumption === 'km_l') {
-            inputCons.placeholder = userSettings.distance === 'miles'
-                ? 'MI/GAL'
-                : 'KM/L';
-        }
-
-        else if (userSettings.consumption === 'mpg_us') {
-            inputCons.placeholder = 'MPG (US)';
-        }
-
-        else if (userSettings.consumption === 'mpg_uk') {
-            inputCons.placeholder = 'MPG (UK)';
-        }
-
-        else {
+            _consUnit = userSettings.distance === 'miles' ? 'MI/GAL' : 'KM/L';
+        } else if (userSettings.consumption === 'mpg_us') {
+            _consUnit = 'MPG (US)';
+        } else if (userSettings.consumption === 'mpg_uk') {
+            _consUnit = 'MPG (UK)';
+        } else {
             const volUnit = (userSettings.volume === 'gallons_us' || userSettings.volume === 'gallons_uk') ? 'gal' : 'L';
             const distUnit = userSettings.distance === 'miles' ? 'mi' : '100km';
-            inputCons.placeholder = volUnit + '/' + distUnit;
+            _consUnit = volUnit + '/' + distUnit;
         }
+        inputCons.placeholder = _consUnit;
+        var _lblTC = document.getElementById('lblTC');
+        if (_lblTC) _lblTC.innerText = 'CONSUMO (' + _consUnit + ')';
     }
+
+    var _distLbl = userSettings.distance === 'miles' ? 'MI' : 'KM';
+    var _lblTKStart = document.getElementById('lblTKStart');
+    var _lblTKEnd = document.getElementById('lblTKEnd');
+    if (_lblTKStart) _lblTKStart.innerText = _distLbl + ' INIZIO';
+    if (_lblTKEnd) _lblTKEnd.innerText = _distLbl + ' FINE';
     
     /* --- PLACEHOLDER OLIO DINAMICO --- */
     const _oilFields = ['bPrezzoOlio', 'pOlioInizio'];
@@ -4551,14 +4564,17 @@ function modificaVoce(categoria, id) {
             var _tCEl = document.getElementById('tC');
             var _tKEl = document.getElementById('tK');
             var _rowKmConsEl = document.getElementById('rowKmCons');
+            var _rowKmConsLblEl = document.getElementById('rowKmConsLabels');
             if (_editNoCons) {
                 if (_tCEl) { _tCEl.style.display = 'none'; _tCEl.value = ''; }
                 if (_tKEl) _tKEl.style.width = '100%';
                 if (_rowKmConsEl) _rowKmConsEl.style.display = 'none';
+                if (_rowKmConsLblEl) _rowKmConsLblEl.style.display = 'none';
             } else {
                 if (_tCEl) { _tCEl.style.display = ''; }
                 if (_tKEl) _tKEl.style.width = '';
                 if (_rowKmConsEl) _rowKmConsEl.style.display = 'flex';
+                if (_rowKmConsLblEl) _rowKmConsLblEl.style.display = 'flex';
             }
         }
         if (item.tipoCarburante) {
@@ -4888,8 +4904,6 @@ let obLang = localStorage.getItem('app_language') || 'it';
 
 function obSetLang(lang) {
     obLang = lang;
-    document.getElementById('obLangIT').classList.toggle('selected', lang === 'it');
-    document.getElementById('obLangEN').classList.toggle('selected', lang === 'en');
 }
 
 function obBuildDots() {
@@ -4924,7 +4938,6 @@ function obShowSlide(n) {
         document.getElementById('obPermStep3d').innerHTML = it ? 'Impostazioni → App → RiderTracker Pro → Connessione dati → <strong style="color:#22c55e;">Attiva tutto</strong>' : 'Settings → Apps → RiderTracker Pro → Mobile data → <strong style="color:#22c55e;">Enable all</strong>';
         document.getElementById('obPermStep4').innerText = it ? '🛡️ Gestione app non utilizzate' : '🛡️ Unused app management';
         document.getElementById('obPermStep4d').innerHTML = it ? 'Impostazioni → App → RiderTracker Pro → <strong style="color:#ef4444;">Disattiva</strong> "Gestisci app non utilizzate" se attivo' : 'Settings → Apps → RiderTracker Pro → <strong style="color:#ef4444;">Disable</strong> "Unused app management" if active';
-        document.getElementById('obPermGotoBtn').innerText = it ? '⚙️ Vai alle impostazioni app' : '⚙️ Go to app settings';
     }
     var isLast = n === 7;
     var skipBtn = document.getElementById('obBtnSkip');
@@ -4937,14 +4950,12 @@ function obShowSlide(n) {
 }
 
 function obNext() {
-    if (obStep === 0) cambiaLingua(obLang);
     if (obStep >= 7) { obFinish(); return; }
     obStep++;
     obShowSlide(obStep);
 }
 
 function obSkip() {
-    cambiaLingua(obLang);
     obFinish();
 }
 
@@ -5099,11 +5110,9 @@ window.onload = function() {
             function _avviaConPunti(pts) {
                 _ripristinaForm();
                 setTimeout(function() {
-                    apriM('modalTurno');
-                    setTimeout(function() {
-                        gpsAvviaConRipristino(pts, gpsTStart);
-                    }, 300);
-                }, 500);
+                    gpsAvviaConRipristino(pts, gpsTStart);
+                    // Rimani sulla homepage — il tasto TURNO lampeggia
+                }, 300);
             }
 
             // Prima prova le coordinate dal foreground service
@@ -5121,23 +5130,23 @@ window.onload = function() {
                                 _avviaConPunti(snap.pts);
                             } else {
                                 _ripristinaForm();
-                                setTimeout(function(){ apriM('modalTurno'); }, 500);
+                                aggTurnoAttivoBlink();
                             }
                         }
                     }).catch(function() {
                         var snap = _gpsCheckpointRestore(); _gpsCheckpointClear();
                         if (snap && snap.pts && snap.pts.length > 1) _avviaConPunti(snap.pts);
-                        else { _ripristinaForm(); setTimeout(function(){ apriM('modalTurno'); }, 500); }
+                        else { _ripristinaForm(); aggTurnoAttivoBlink(); }
                     });
                 } else {
                     var snap = _gpsCheckpointRestore(); _gpsCheckpointClear();
                     if (snap && snap.pts && snap.pts.length > 1) _avviaConPunti(snap.pts);
-                    else { _ripristinaForm(); setTimeout(function(){ apriM('modalTurno'); }, 500); }
+                    else { _ripristinaForm(); aggTurnoAttivoBlink(); }
                 }
             } catch(e) {
                 var snap2 = _gpsCheckpointRestore(); _gpsCheckpointClear();
                 if (snap2 && snap2.pts && snap2.pts.length > 1) _avviaConPunti(snap2.pts);
-                else { _ripristinaForm(); setTimeout(function(){ apriM('modalTurno'); }, 500); }
+                else { _ripristinaForm(); aggTurnoAttivoBlink(); }
             }
         }
     })();
@@ -5159,7 +5168,6 @@ window.onload = function() {
                 var kmTmp = localStorage.getItem(_kmPartenzaKey());
                 if (kmTmp) document.getElementById('tKStart').value = kmTmp;
                 aggTurnoAttivoBlink();
-                apriM('modalTurno');
             }, 500);
         }
     })();
@@ -5543,71 +5551,16 @@ function stampaPagina() {
                 <span id="settingsTitle">⚙️ Preferenze</span>
             </h3>
 
-            <!-- Selezione lingua -->
-            <div style="display:flex; align-items:center; justify-content:space-between; background:#1a1a1a; border-radius:12px; padding:6px 10px; border:1px solid #2a2a2a; margin-bottom:8px;">
-                <label style="color:#aaa; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; margin:0;">🌍 Lingua / Language</label>
-                <div style="display:flex; gap:10px; align-items:center;">
-                    <span id="flagIT" onclick="apriLanguageIT()"
-                          style="font-size:26px; cursor:pointer; transition:0.2s; opacity:1; line-height:1;"
-                          title="Italiano">🇮🇹</span>
-                    <span id="flagEN" onclick="apriLanguageEN()"
-                          style="font-size:26px; cursor:pointer; transition:0.2s; opacity:0.4; line-height:1;"
-                          title="English">🇺🇸</span>
-                </div>
-            </div>
-
-            <!-- 5 righe: label a sinistra, select a destra — tutto leggibile -->
+            <!-- Solo consumi -->
             <div style="display:flex; flex-direction:column; gap:8px;">
-
-                <!-- Distanza -->
-                <div style="display:flex; align-items:center; justify-content:space-between; background:#1a1a1a; border-radius:12px; padding:6px 10px; border:1px solid #2a2a2a;">
-                    <label id="lblSettingsDist" style="color:#aaa; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; margin:0;">📏 Distanza</label>
-                    <select id="settingsDistance" style="background:#252525; color:#fff; border:1px solid #444; border-radius:8px; font-size:13px; font-weight:600; padding:6px 10px; outline:none; cursor:pointer; min-width:130px; text-align:right;">
-                        <option value="km" id="optKm">Chilometri (km)</option>
-                        <option value="miles" id="optMiles">Miglia (mi)</option>
-                    </select>
-                </div>
-
-                <!-- Volume -->
-                <div style="display:flex; align-items:center; justify-content:space-between; background:#1a1a1a; border-radius:12px; padding:6px 10px; border:1px solid #2a2a2a;">
-                    <label id="lblSettingsVol" style="color:#aaa; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; margin:0;">🧪 Volume</label>
-                    <select id="settingsVolume" style="background:#252525; color:#fff; border:1px solid #444; border-radius:8px; font-size:13px; font-weight:600; padding:6px 10px; outline:none; cursor:pointer; min-width:130px; text-align:right;">
-                        <option value="liters" id="optLiters">Litri (L)</option>
-                        <option value="gallons_us" id="optGallonsUS">Galloni US</option>
-                        <option value="gallons_uk" id="optGallonsUK">Galloni UK</option>
-                    </select>
-                </div>
-
-                <!-- Massa -->
-                <div style="display:flex; align-items:center; justify-content:space-between; background:#1a1a1a; border-radius:12px; padding:6px 10px; border:1px solid #2a2a2a;">
-                    <label id="lblSettingsMass" style="color:#aaa; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; margin:0;">⚖️ Massa</label>
-                    <select id="settingsMass" style="background:#252525; color:#fff; border:1px solid #444; border-radius:8px; font-size:13px; font-weight:600; padding:6px 10px; outline:none; cursor:pointer; min-width:130px; text-align:right;">
-                        <option value="kg" id="optKg">Chilogrammi (kg)</option>
-                        <option value="lbs" id="optLbs">Libbre (lbs)</option>
-                    </select>
-                </div>
-
-                <!-- Valuta -->
-                <div style="display:flex; align-items:center; justify-content:space-between; background:#1a1a1a; border-radius:12px; padding:6px 10px; border:1px solid #2a2a2a;">
-                    <label id="lblSettingsCurr" style="color:#aaa; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; margin:0;">💶 Valuta</label>
-                    <select id="settingsCurrency" style="background:#252525; color:#fff; border:1px solid #444; border-radius:8px; font-size:13px; font-weight:600; padding:6px 10px; outline:none; cursor:pointer; min-width:130px; text-align:right;">
-                        <option value="EUR">€ Euro</option>
-                        <option value="USD">$ Dollaro</option>
-                        <option value="GBP">£ Sterlina</option>
-                    </select>
-                </div>
-
                 <!-- Consumi -->
                 <div style="display:flex; align-items:center; justify-content:space-between; background:#1a1a1a; border-radius:12px; padding:6px 10px; border:1px solid #2a2a2a;">
                     <label id="lblSettingsCons" style="color:#aaa; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; margin:0;">⛽ Consumi</label>
                     <select id="settingsConsumption" style="background:#252525; color:#fff; border:1px solid #444; border-radius:8px; font-size:13px; font-weight:600; padding:6px 10px; outline:none; cursor:pointer; min-width:130px; text-align:right;">
                         <option value="l_100km">L / 100km</option>
                         <option value="km_l" id="optKmL">km / L</option>
-                        <option value="mpg_us">MPG (US)</option>
-                        <option value="mpg_uk">MPG (UK)</option>
                     </select>
                 </div>
-
             </div>
 
             <!-- Separatore + label veicoli -->
@@ -5693,18 +5646,8 @@ function chiudiModalSettings() {
 }
 
 function salvaSettingsEChiudi() {
-    const d = document.getElementById('settingsDistance');
-    const v = document.getElementById('settingsVolume');
-    const m = document.getElementById('settingsMass');
-    const c = document.getElementById('settingsCurrency');
     const k = document.getElementById('settingsConsumption');
-
-    if (d) userSettings.distance    = d.value;
-    if (v) userSettings.volume      = v.value;
-    if (m) userSettings.mass        = m.value;
-    if (c) userSettings.currency    = c.value;
     if (k) userSettings.consumption = k.value;
-
     salvaUserSettings();
     chiudiModalSettings();
 }
@@ -5720,17 +5663,10 @@ var _msContent = document.querySelector('#modalSettings .modal-content');
 if (_msContent) _msContent.addEventListener('click', function(e) { e.stopPropagation(); });
 
 function apriLanguageSettings() {
-    apriLanguageEN();
+    // lingua fissa IT
 }
 // Inizializzazione app all'avvio
 aggiornaLabelSettings();
-
-const flagIT = document.getElementById('flagIT');
-const flagEN = document.getElementById('flagEN');
-if (flagIT && flagEN) {
-    flagIT.style.opacity = currentLang === 'it' ? '1' : '0.4';
-    flagEN.style.opacity = currentLang === 'en' ? '1' : '0.4';
-}
 
 updateInterface();
 calcola();
@@ -5742,12 +5678,8 @@ calcola();
     <div class="ob-slides">
         <div class="ob-slide active" id="obSlide0">
             <img class="ob-icon" src="icon-192.png" alt="">
-            <div class="ob-title" id="obT0">Benvenuto</div>
-            <div class="ob-sub">Scegli la lingua / Choose your language</div>
-            <div class="ob-lang-row">
-                <button class="ob-lang-btn selected" id="obLangIT" onclick="obSetLang('it')">🇮🇹 Italiano</button>
-                <button class="ob-lang-btn" id="obLangEN" onclick="obSetLang('en')">🇬🇧 English</button>
-            </div>
+            <div class="ob-title" id="obT0">Benvenuto 👋</div>
+            <div class="ob-sub">Rider Tracker Pro è la tua app per gestire turni, km, rifornimenti e guadagni. Scorri per scoprire le funzionalità.</div>
         </div>
         <div class="ob-slide" id="obSlide1"><div class="ob-icon-emoji">📊</div><div class="ob-title" id="obT1"></div><div class="ob-sub" id="obS1"></div></div>
         <div class="ob-slide" id="obSlide2"><div class="ob-icon-emoji">🕒</div><div class="ob-title" id="obT2"></div><div class="ob-sub" id="obS2"></div></div>
@@ -5779,7 +5711,7 @@ calcola();
                 <div style="font-size:11px; color:#ccc; line-height:1.6;" id="obPermStep4d">Impostazioni → App → RiderTracker Pro → <strong style="color:#ef4444;">Disattiva</strong> "Gestisci app non utilizzate" se attivo</div>
             </div>
 
-            <button onclick="obApriImpostazioni()" style="width:100%; margin-top:10px; padding:13px; background:var(--primary); border:none; border-radius:12px; color:#000; font-size:13px; font-weight:900; cursor:pointer; text-transform:uppercase; letter-spacing:0.5px;" id="obPermGotoBtn">⚙️ Vai alle impostazioni app</button>
+            <button onclick="obApriImpostazioni()" style="display:none;" id="obPermGotoBtn">⚙️ Vai alle impostazioni app</button>
         </div>
     </div>
     <div style="width:100%; display:flex; flex-direction:column; align-items:center;">
@@ -5959,7 +5891,8 @@ calcola();
         <input type="number" id="vehSerbatoio2" placeholder="es. 50" class="veh-req-fuel2" inputmode="decimal" style="width:100%;padding:11px;text-align:center;background:#252525;border:1px solid #444;color:#fff;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
       </div>
       <div style="margin-bottom:14px;">
-        <input type="number" id="vehConsMedio" placeholder="Consumo medio" inputmode="decimal" style="width:100%;padding:11px;text-align:center;background:#252525;border:1px solid #444;color:#fff;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
+        <label id="lblVehConsMedio" style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:5px;">Consumo medio</label>
+        <input type="number" id="vehConsMedio" placeholder="es. 18" inputmode="decimal" style="width:100%;padding:11px;text-align:center;background:#252525;border:1px solid #444;color:#fff;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
       </div>
       <div id="vehConsMedio2Wrap" style="display:none;margin-bottom:14px;">
         <input type="number" id="vehConsMedio2" placeholder="Consumo 2° carb." inputmode="decimal" style="width:100%;padding:11px;text-align:center;background:#252525;border:1px solid #444;color:#fff;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
@@ -6022,13 +5955,22 @@ function apriFormVeicolo(id) {
     document.getElementById('vehCilindrata').value = v ? (v.cilindrata || '') : '';
     document.getElementById('vehTarga').value      = v ? (v.targa || '') : '';
     document.getElementById('vehSerbatoio').value  = v ? (v.serbatoio || '') : '';
-    document.getElementById('vehConsMedio').value  = v ? (v.consMedio || '') : '';
+    // Converti consumo medio in unità display corrente
+    var _consVal = v ? (v.consMedio || null) : null;
+    var _consDisp = _consVal ? consL100kmToDisplayValue(_consVal) : '';
+    document.getElementById('vehConsMedio').value = _consDisp;
+    // Aggiorna label e placeholder consumo
+    var _consUnit = userSettings.consumption === 'km_l' ? 'km/L' : userSettings.consumption === 'mpg_us' ? 'MPG (US)' : userSettings.consumption === 'mpg_uk' ? 'MPG (UK)' : 'L/100km';
+    var _lbl = document.getElementById('lblVehConsMedio');
+    if (_lbl) _lbl.innerText = 'Consumo medio (' + _consUnit + ')';
+    var _inp = document.getElementById('vehConsMedio');
+    if (_inp) _inp.placeholder = 'es. ' + (userSettings.consumption === 'km_l' ? '30' : userSettings.consumption === 'mpg_us' ? '65' : userSettings.consumption === 'mpg_uk' ? '78' : '3.5');
     document.getElementById('vehCarburante').value = v ? (v.carburante || 'benzina') : 'benzina';
     // bifuel extra
     var s2el = document.getElementById('vehSerbatoio2');
     var c2el = document.getElementById('vehConsMedio2');
     if (s2el) s2el.value = v ? (v.serbatoio2 || '') : '';
-    if (c2el) c2el.value = v ? (v.consMedio2 || '') : '';
+    if (c2el) c2el.value = v ? (v.consMedio2 ? consL100kmToDisplayValue(v.consMedio2) : '') : '';
     // Applica logica visibilità
     vehOnTipoChange();
     vehOnCarbChange();
@@ -6054,7 +5996,7 @@ function salvaVeicolo() {
         targa:       document.getElementById('vehTarga').value.trim().toUpperCase(),
         serbatoio:   serbatoio,
         serbatoio2:  parseFloat(document.getElementById('vehSerbatoio2').value) || null,
-        consMedio:   parseFloat(document.getElementById('vehConsMedio').value) || null,
+        consMedio:   parseFloat(document.getElementById('vehConsMedio').value) ? consDisplayToL100km(parseFloat(document.getElementById('vehConsMedio').value)) : null,
         consMedio2:  parseFloat(document.getElementById('vehConsMedio2').value) || null,
         carburante:  carburante,
         noCons:      isNC,
@@ -6990,8 +6932,8 @@ salvaVeicolo = function() {
         targa:       document.getElementById('vehTarga').value.trim().toUpperCase(),
         serbatoio:   noCons ? 0 : serbatoio,
         serbatoio2:  _isBifuel(carb) ? serbatoio2 : 0,
-        consMedio:   noCons ? 0 : (parseFloat(document.getElementById('vehConsMedio').value) || null),
-        consMedio2:  _isBifuel(carb) ? (parseFloat(document.getElementById('vehConsMedio2').value) || null) : null,
+        consMedio:   noCons ? 0 : (parseFloat(document.getElementById('vehConsMedio').value) ? consDisplayToL100km(parseFloat(document.getElementById('vehConsMedio').value)) : null),
+        consMedio2:  _isBifuel(carb) ? (parseFloat(document.getElementById('vehConsMedio2').value) ? consDisplayToL100km(parseFloat(document.getElementById('vehConsMedio2').value)) : null) : null,
         carburante:  carb,
         noCons:      noCons,
         attivo:      editId ? ((vv.find(function(x){return x.id===parseInt(editId);})||{}).attivo || false) : isFirst
@@ -7037,10 +6979,10 @@ _syncVeicoloAttivo = function() {
     var it = (typeof currentLang !== 'undefined') ? currentLang !== 'en' : true;
 
     if (!va) {
-        // Nessun veicolo configurato: mostra row mezzo+carb, nascondi banner
         if (bannerRow) bannerRow.style.display = 'none';
         if (rowMezzoCa) rowMezzoCa.style.display = 'flex';
         if (rowKmCons) rowKmCons.style.display = 'flex';
+        var _lkc0 = document.getElementById('rowKmConsLabels'); if (_lkc0) _lkc0.style.display = 'flex';
         if (rowOre) rowOre.style.display = 'flex';
         if (fieldCons) fieldCons.disabled = false;
         return;
@@ -7050,23 +6992,21 @@ _syncVeicoloAttivo = function() {
     var isBif  = _isBifuel(va.carburante);
     var tipoIcona = _getMezzoIcona(va.tipo || 'auto');
 
-    // Aggiorna banner
     if (bannerRow)   bannerRow.style.display = 'flex';
     if (bannerIcona) bannerIcona.innerText = tipoIcona;
     if (bannerLbl)   bannerLbl.innerText = (va.marca||'') + ' ' + (va.modello||'') + (va.targa ? ' · '+va.targa : '');
 
-    // Carburante nel banner: label per monofuel, select per bifuel, nulla per noCons
     if (carbLabel)  carbLabel.style.display  = (noCons || isBif) ? 'none' : '';
     if (carbSelect) carbSelect.style.display = isBif ? 'flex' : 'none';
     if (carbLabel && !noCons && !isBif) {
         carbLabel.innerText = getIconaCarburante(va.carburante) + ' ' + getNomeCarburante(va.carburante).toUpperCase();
     }
 
-    // Nascondi riga mezzo+carb (non serve con veicolo fisso)
     if (rowMezzoCa) rowMezzoCa.style.display = 'none';
 
     if (noCons) {
         if (rowKmCons) rowKmCons.style.display = 'none';
+        var _lkc1 = document.getElementById('rowKmConsLabels'); if (_lkc1) _lkc1.style.display = 'none';
         if (rowOre)    rowOre.style.display = 'flex';
         if (consHint)  consHint.style.minHeight = '0';
         if (consHint)  consHint.innerText = '';
@@ -7077,15 +7017,21 @@ _syncVeicoloAttivo = function() {
         var mezzoEl = document.getElementById('tMezzo');
         if (mezzoEl) mezzoEl.value = va.tipo || 'bici';
         var rowKmOdo = document.getElementById('rowKmOdo');
-        if (rowKmOdo) rowKmOdo.style.display = (va.tipo === 'bici') ? 'none' : 'flex';
+        var rowKmOdoLbl = document.getElementById('rowKmOdoLabels');
+        var _showOdo = va.tipo !== 'bici';
+        if (rowKmOdo) rowKmOdo.style.display = _showOdo ? 'flex' : 'none';
+        if (rowKmOdoLbl) rowKmOdoLbl.style.display = _showOdo ? 'flex' : 'none';
         return;
     }
 
     if (rowKmCons) rowKmCons.style.display = 'flex';
+    var _lkc2 = document.getElementById('rowKmConsLabels'); if (_lkc2) _lkc2.style.display = 'flex';
     if (rowOre)    rowOre.style.display = 'flex';
     if (fieldCons) fieldCons.disabled = false;
     var rowKmOdoEl = document.getElementById('rowKmOdo');
+    var rowKmOdoLblEl = document.getElementById('rowKmOdoLabels');
     if (rowKmOdoEl) rowKmOdoEl.style.display = 'flex';
+    if (rowKmOdoLblEl) rowKmOdoLblEl.style.display = 'flex';
     var tKEl2 = document.getElementById('tK');
     if (tKEl2) tKEl2.style.width = '';
     var tCEl2 = document.getElementById('tC');
