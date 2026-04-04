@@ -785,7 +785,7 @@ body {
             <h3 data-translate="new_shift" style="margin:0; font-size:14px;">Nuovo Turno</h3>
             <div style="display:flex; align-items:center; gap:8px;">
                 <div id="dateT" class="date-row" style="margin:0; font-size:11px;"></div>
-                <button id="btnChiudiTurnoSenzaAnnullare" onclick="chiudiTurnoSenzaAnnullare()" style="display:none; background:none; border:none; color:#888; font-size:18px; cursor:pointer; padding:0 0 0 4px; line-height:1;">✕</button>
+                <button id="btnChiudiTurnoSenzaAnnullare" onclick="chiudiTurnoSenzaAnnullare()" style="display:none; background:none; border:none; color:#888; font-size:20px; cursor:pointer; padding:0 0 0 4px; line-height:1;">✕</button>
             </div>
         </div>
 
@@ -3536,17 +3536,51 @@ function chiudiTurnoSenzaAnnullare() {
 }
 
 function aggTurnoAttivoBlink() {
-    var turnoAttivo = (GPS.active || GPS.completed || _turnoTimerStart !== null);
+    var turnoAttivo = (typeof GPS !== 'undefined' && (GPS.active || GPS.completed)) || _turnoTimerStart !== null;
     var btn = document.getElementById('footBtnTurno');
     var xBtn = document.getElementById('btnChiudiTurnoSenzaAnnullare');
     if (btn) {
-        if (turnoAttivo) {
-            btn.classList.add('turno-btn-active-blink');
-        } else {
-            btn.classList.remove('turno-btn-active-blink');
-        }
+        if (turnoAttivo) btn.classList.add('turno-btn-active-blink');
+        else btn.classList.remove('turno-btn-active-blink');
     }
     if (xBtn) xBtn.style.display = turnoAttivo ? 'block' : 'none';
+}
+
+function gpsAvviaConRipristino(ptsPrec, tStartPrec) {
+    if (!navigator.geolocation) return;
+    GPS.active = true;
+    GPS.pts = ptsPrec || [];
+    GPS.soste = []; GPS.km = 0; GPS.vmax = 0;
+    for (var i=1; i<GPS.pts.length; i++) {
+        var a=GPS.pts[i-1], b=GPS.pts[i];
+        var R=6371, dLat=(b.la-a.la)*Math.PI/180, dLon=(b.lo-a.lo)*Math.PI/180;
+        var s=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(a.la*Math.PI/180)*Math.cos(b.la*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+        var d=R*2*Math.atan2(Math.sqrt(s),Math.sqrt(1-s));
+        if (d>0.000001&&d<2) GPS.km+=d;
+    }
+    GPS.tStart = tStartPrec || Date.now();
+    GPS.inSosta = false; GPS.sostaT = null; GPS.completed = false; GPS.cancelMode = false;
+    _kalmanReset();
+    localStorage.setItem('gps_session_active', '1');
+    localStorage.setItem('gps_session_tStart', String(GPS.tStart));
+    aggTurnoAttivoBlink();
+    try { if (window.Capacitor && window.Capacitor.isNativePlatform()) window.Capacitor.Plugins.GpsService.start().catch(function(){}); } catch(e) {}
+    var bar=document.getElementById('gpsLiveBar'); if(bar) bar.classList.add('visible');
+    var lbl=document.getElementById('lblGpsSection'); if(lbl) lbl.style.display='none';
+    document.getElementById('gpsBtnGo').disabled=true;
+    document.getElementById('gpsBtnStop').disabled=false;
+    gpsDot('on'); gpsLbl('GPS ripristinato...');
+    GPS.tempoTimer=setInterval(function(){
+        if(!GPS.tStart)return;
+        var el=document.getElementById('gpsTempo');
+        if(el)el.innerText=_fmtDur((Date.now()-GPS.tStart)/1000);
+    },1000);
+    GPS.checkpointTimer=setInterval(function(){ _gpsCheckpointSave(); },30000);
+    GPS.watchId=navigator.geolocation.watchPosition(
+        function(pos){ if(GPS.active) _gpsOnPos(pos); },
+        function(err){ if(GPS.active && err.code===3) gpsLbl('Segnale debole...'); },
+        {enableHighAccuracy:true, maximumAge:2000, timeout:10000}
+    );
 }
 
 function iniziaTurno() {
@@ -3583,8 +3617,6 @@ function iniziaTurno() {
         }
         var kmStart = document.getElementById('tKStart').value;
         if (kmStart) localStorage.setItem(_kmPartenzaKey(), kmStart);
-        aggTurnoAttivoBlink();
-        // Salva stato form per ripristino dopo chiusura app
         localStorage.setItem('turno_form_snap', JSON.stringify({
             tL: document.getElementById('tL').value,
             tO: document.getElementById('tO').value,
@@ -3597,12 +3629,12 @@ function iniziaTurno() {
             dateTM: document.getElementById('dateTM').value,
             dateTY: document.getElementById('dateTY').value
         }));
+        aggTurnoAttivoBlink();
     } else {
         // ── FINE TIMER ──
-        var elapsed = (Date.now() - _turnoTimerStart) / 1000 / 60 / 60; // ore
+        var elapsed = (Date.now() - _turnoTimerStart) / 1000 / 60 / 60;
         var oreArrotondate = Math.round(elapsed * 10) / 10;
         document.getElementById('tO').value = oreArrotondate > 0 ? oreArrotondate : '';
-        // Pre-imposta ora fine se non già compilata
         var now2 = new Date();
         var hh2 = String(now2.getHours()).padStart(2,'0');
         var mm2 = String(now2.getMinutes()).padStart(2,'0');
@@ -3616,7 +3648,6 @@ function iniziaTurno() {
         localStorage.removeItem('turno_manual_tStart');
         localStorage.removeItem('turno_form_snap');
         aggTurnoAttivoBlink();
-        // Ripristina bottone
         var btn2 = document.getElementById('btnIniziaTurno');
         if (btn2) {
             btn2.setAttribute('data-translate','btn_start_shift');
@@ -3645,10 +3676,10 @@ function _resetCampiTurno() {
     _pickerOraH = -1; _pickerOraM = -1;
     localStorage.removeItem('ora_inizio_tmp');
     localStorage.removeItem('turno_form_snap');
-    aggTurnoAttivoBlink();
     // Reset timer manuale
     _turnoTimerStart = null;
     localStorage.removeItem('turno_manual_tStart');
+    aggTurnoAttivoBlink();
     var btnI = document.getElementById('btnIniziaTurno');
     if (btnI) {
         btnI.setAttribute('data-translate','btn_start_shift');
@@ -4135,12 +4166,11 @@ function effettuaSalvataggioTurno(prezzo, rif) {
     // Veicolo attivo al momento del salvataggio
     var _vAtt = getVeicoloAttivo();
     if (_vAtt) { obj.veicoloId = _vAtt.id; obj.veicoloNome = _vAtt.marca + ' ' + _vAtt.modello; }
-
-    // Salva km partenza e km arrivo odometro
-    var _kStartVal = document.getElementById('tKStart').value;
-    var _kEndVal = document.getElementById('tKEnd').value;
-    if (_kStartVal !== '') obj.kmOdoStart = parseFloat(_kStartVal);
-    if (_kEndVal !== '') obj.kmOdoEnd = parseFloat(_kEndVal);
+    // Salva km odometro partenza e arrivo
+    var _kSv = document.getElementById('tKStart').value;
+    var _kEv = document.getElementById('tKEnd').value;
+    if (_kSv !== '') obj.kmOdoStart = parseFloat(_kSv);
+    if (_kEv !== '') obj.kmOdoEnd = parseFloat(_kEv);
 
     if (editingId !== null && editingCat === 'turni') {
         const idx = db.turni.findIndex(x => x.id === editingId);
@@ -4783,39 +4813,22 @@ document.getElementById("fileBackup").addEventListener("change", function (e) {
         if (ignorati.length > 0) msg += '\n\n⚠️ Ignorati:\n' + ignorati.map(function(r){ return '• ' + r; }).join('\n');
         msg += '\n\nL\'app verrà ricaricata.';
 
-        // Dopo import: trova l'ultimo mese con dati e forza il check al prossimo avvio
+        // Dopo import: trova ultimo mese con dati e forza check saldo al riavvio
         try {
             var tuttiMesiDati = {};
-            (dbMerged.turni||[]).forEach(function(tur) {
-                var tag = tur.data ? tur.data.substring(3) : null;
-                if (tag) tuttiMesiDati[tag] = true;
-            });
-            (dbMerged.rifornimenti||[]).forEach(function(r) {
-                var tag = r.data ? r.data.substring(3) : null;
-                if (tag) tuttiMesiDati[tag] = true;
-            });
-            (dbMerged.extraKm||[]).forEach(function(e) {
-                var tag = e.data ? e.data.substring(3) : null;
-                if (tag) tuttiMesiDati[tag] = true;
-            });
-            // Se non ci sono mesi con dati reali, usa riportoNegativo come fallback
+            (dbMerged.turni||[]).forEach(function(tur) { var tag=tur.data?tur.data.substring(3):null; if(tag)tuttiMesiDati[tag]=true; });
+            (dbMerged.rifornimenti||[]).forEach(function(r) { var tag=r.data?r.data.substring(3):null; if(tag)tuttiMesiDati[tag]=true; });
+            (dbMerged.extraKm||[]).forEach(function(ex) { var tag=ex.data?ex.data.substring(3):null; if(tag)tuttiMesiDati[tag]=true; });
             if (Object.keys(tuttiMesiDati).length === 0 && dbMerged.riportoNegativo) {
-                Object.keys(dbMerged.riportoNegativo).forEach(function(tag) {
-                    tuttiMesiDati[tag] = true;
-                });
+                Object.keys(dbMerged.riportoNegativo).forEach(function(tag){ tuttiMesiDati[tag]=true; });
             }
-            var _now2 = new Date();
-            var meseCorrenteTag = (_now2.getMonth()+1).toString().padStart(2,'0') + '/' + _now2.getFullYear();
+            var _now2=new Date();
+            var meseCorrenteTag=(_now2.getMonth()+1).toString().padStart(2,'0')+'/'+_now2.getFullYear();
             delete tuttiMesiDati[meseCorrenteTag];
             if (Object.keys(tuttiMesiDati).length > 0) {
                 localStorage.removeItem('ultimo_avviso_fine_mese');
-                var mesiOrdinati = Object.keys(tuttiMesiDati).sort(function(a,b) {
-                    var pa = a.split('/'), pb = b.split('/');
-                    var da = new Date(parseInt(pa[1]), parseInt(pa[0])-1, 1);
-                    var db2 = new Date(parseInt(pb[1]), parseInt(pb[0])-1, 1);
-                    return da - db2;
-                });
-                localStorage.setItem('check_mese_backup', mesiOrdinati[mesiOrdinati.length-1]);
+                var mesiOrd=Object.keys(tuttiMesiDati).sort(function(a,b){ var pa=a.split('/'),pb=b.split('/'); return new Date(parseInt(pa[1]),parseInt(pa[0])-1,1)-new Date(parseInt(pb[1]),parseInt(pb[0])-1,1); });
+                localStorage.setItem('check_mese_backup', mesiOrd[mesiOrd.length-1]);
             }
         } catch(e2) {}
 
@@ -5035,42 +5048,8 @@ window.onload = function() {
         var gpsWasActive = localStorage.getItem('gps_session_active');
         var gpsTStart    = parseInt(localStorage.getItem('gps_session_tStart') || '0');
         if (gpsWasActive && gpsTStart) {
-            var elapsed = Math.round((Date.now() - gpsTStart) / 1000 / 60);
             localStorage.removeItem('gps_session_active');
             localStorage.removeItem('gps_session_tStart');
-
-            function _ripristinaConPunti(pts) {
-                if (pts && pts.length > 1) {
-                    _gpsCheckpointClear();
-                    _ripristinaForm();
-                    setTimeout(function() {
-                        apriM('modalTurno');
-                        setTimeout(function() {
-                            gpsAvviaConRipristino(pts, gpsTStart);
-                            gpsLbl('GPS ripristinato — ' + pts.length + ' punti recuperati');
-                        }, 300);
-                    }, 500);
-                } else {
-                    // Prova checkpoint JS
-                    var snap = _gpsCheckpointRestore();
-                    _gpsCheckpointClear();
-                    if (snap && snap.pts && snap.pts.length > 1) {
-                        _ripristinaForm();
-                        setTimeout(function() {
-                            apriM('modalTurno');
-                            setTimeout(function() {
-                                gpsAvviaConRipristino(snap.pts, snap.tStart || gpsTStart);
-                                gpsLbl('GPS ripristinato — ' + snap.pts.length + ' punti recuperati');
-                            }, 300);
-                        }, 500);
-                    } else {
-                        setTimeout(function(){
-                            mostraAlertApp((typeof currentLang!=='undefined'&&currentLang==='en')?'⚠️ GPS session interrupted\n\nThe recorded track has been lost.\nYou can still save the shift manually.':'⚠️ Sessione GPS interrotta\n\nIl percorso registrato è andato perso.\nPuoi ancora salvare il turno manualmente.');
-                            _ripristinaForm(); apriM('modalTurno');
-                        }, 800);
-                    }
-                }
-            }
 
             function _ripristinaForm() {
                 var fsnap = localStorage.getItem('turno_form_snap');
@@ -5079,25 +5058,56 @@ window.onload = function() {
                 if (kmTmp) document.getElementById('tKStart').value = kmTmp;
             }
 
-            // Prima prova a leggere le coordinate dal foreground service
+            function _avviaConPunti(pts) {
+                _ripristinaForm();
+                setTimeout(function() {
+                    apriM('modalTurno');
+                    setTimeout(function() {
+                        gpsAvviaConRipristino(pts, gpsTStart);
+                    }, 300);
+                }, 500);
+            }
+
+            // Prima prova le coordinate dal foreground service
             try {
                 if (window.Capacitor && window.Capacitor.isNativePlatform() && window.Capacitor.Plugins.GpsService) {
                     window.Capacitor.Plugins.GpsService.getCoords().then(function(res) {
                         var pts = [];
-                        try { pts = JSON.parse(res.coords || '[]'); } catch(e) {}
-                        _ripristinaConPunti(pts);
-                    }).catch(function() { _ripristinaConPunti([]); });
+                        try { pts = JSON.parse(res.coords || '[]'); } catch(e2) {}
+                        if (pts.length > 1) {
+                            _avviaConPunti(pts);
+                        } else {
+                            // Fallback checkpoint JS
+                            var snap = _gpsCheckpointRestore(); _gpsCheckpointClear();
+                            if (snap && snap.pts && snap.pts.length > 1) {
+                                _avviaConPunti(snap.pts);
+                            } else {
+                                _ripristinaForm();
+                                setTimeout(function(){ apriM('modalTurno'); }, 500);
+                            }
+                        }
+                    }).catch(function() {
+                        var snap = _gpsCheckpointRestore(); _gpsCheckpointClear();
+                        if (snap && snap.pts && snap.pts.length > 1) _avviaConPunti(snap.pts);
+                        else { _ripristinaForm(); setTimeout(function(){ apriM('modalTurno'); }, 500); }
+                    });
                 } else {
-                    _ripristinaConPunti([]);
+                    var snap = _gpsCheckpointRestore(); _gpsCheckpointClear();
+                    if (snap && snap.pts && snap.pts.length > 1) _avviaConPunti(snap.pts);
+                    else { _ripristinaForm(); setTimeout(function(){ apriM('modalTurno'); }, 500); }
                 }
-            } catch(e) { _ripristinaConPunti([]); }
+            } catch(e) {
+                var snap2 = _gpsCheckpointRestore(); _gpsCheckpointClear();
+                if (snap2 && snap2.pts && snap2.pts.length > 1) _avviaConPunti(snap2.pts);
+                else { _ripristinaForm(); setTimeout(function(){ apriM('modalTurno'); }, 500); }
+            }
         }
     })();
 
     // ── Ripristino timer manuale interrotto da background ──
     (function() {
         var manualTStart = parseInt(localStorage.getItem('turno_manual_tStart') || '0');
-        if (manualTStart) {
+        if (manualTStart && !localStorage.getItem('gps_session_active')) {
             _turnoTimerStart = manualTStart;
             setTimeout(function() {
                 var btn = document.getElementById('btnIniziaTurno');
@@ -5106,27 +5116,12 @@ window.onload = function() {
                     btn.style.background = 'var(--accent)';
                     btn.style.color = '#fff';
                 }
-                // Ripristina campi form e riapri modale
-                var snap = localStorage.getItem('turno_form_snap');
-                if (snap) {
-                    try {
-                        var s = JSON.parse(snap);
-                        if (s.tL) document.getElementById('tL').value = s.tL;
-                        if (s.tO) document.getElementById('tO').value = s.tO;
-                        if (s.tK) document.getElementById('tK').value = s.tK;
-                        if (s.tC) document.getElementById('tC').value = s.tC;
-                        if (s.tMezzo) { document.getElementById('tMezzo').value = s.tMezzo; var lm=document.getElementById('labelMezzo'); if(lm) lm.innerText=_getMezzoLabel(s.tMezzo); }
-                        if (s.tCarburante) document.getElementById('tCarburante').value = s.tCarburante;
-                        if (s.tOStart) { document.getElementById('tOStart').value = s.tOStart; var los=document.getElementById('labelOraStart'); if(los) los.innerText=s.tOStart; }
-                        if (s.dateTD) document.getElementById('dateTD').value = s.dateTD;
-                        if (s.dateTM) document.getElementById('dateTM').value = s.dateTM;
-                        if (s.dateTY) document.getElementById('dateTY').value = s.dateTY;
-                    } catch(e) {}
-                }
+                var fsnap = localStorage.getItem('turno_form_snap');
+                if (fsnap) { try { var fs=JSON.parse(fsnap); if(fs.tL)document.getElementById('tL').value=fs.tL; if(fs.tMezzo){document.getElementById('tMezzo').value=fs.tMezzo;var lm=document.getElementById('labelMezzo');if(lm)lm.innerText=_getMezzoLabel(fs.tMezzo);} if(fs.tOStart){document.getElementById('tOStart').value=fs.tOStart;var los=document.getElementById('labelOraStart');if(los)los.innerText=fs.tOStart;} if(fs.dateTD)document.getElementById('dateTD').value=fs.dateTD; if(fs.dateTM)document.getElementById('dateTM').value=fs.dateTM; if(fs.dateTY)document.getElementById('dateTY').value=fs.dateTY; } catch(e){} }
                 var kmTmp = localStorage.getItem(_kmPartenzaKey());
                 if (kmTmp) document.getElementById('tKStart').value = kmTmp;
-                apriM('modalTurno');
                 aggTurnoAttivoBlink();
+                apriM('modalTurno');
             }, 500);
         }
     })();
@@ -5191,8 +5186,6 @@ window.onload = function() {
 
     if (ultimoAvviso !== meseCorrente || checkMeseBackup) {
         setTimeout(() => {
-            // Se c'e' un mese specifico da controllare (dopo import backup), usa quello
-            // altrimenti usa il mese precedente normale
             var meseDaControllare;
             if (checkMeseBackup) {
                 meseDaControllare = checkMeseBackup;
@@ -6231,45 +6224,6 @@ function _spdColor(k){return k<3?'#ff4d4d':k<30?'#00CCBC':k<60?'#4ade80':k<90?'#
 function gpsDot(s){var e=document.getElementById('gpsDot');if(e)e.className='gps-dot'+(s?' '+s:'');}
 function gpsLbl(t){var e=document.getElementById('gpsLbl');if(e)e.innerText=t;}
 
-function gpsAvviaConRipristino(ptsPrec, tStartPrec) {
-    if(!navigator.geolocation) return;
-    GPS.active=true;
-    GPS.pts = ptsPrec || [];
-    GPS.soste = [];
-    GPS.km = 0;
-    // Ricalcola km dai punti precedenti
-    for (var i=1; i<GPS.pts.length; i++) {
-        var a=GPS.pts[i-1], b=GPS.pts[i];
-        var R=6371, dLat=(b.la-a.la)*Math.PI/180, dLon=(b.lo-a.lo)*Math.PI/180;
-        var s=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(a.la*Math.PI/180)*Math.cos(b.la*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
-        var d=R*2*Math.atan2(Math.sqrt(s),Math.sqrt(1-s));
-        if(d>0.000001&&d<2) GPS.km+=d;
-    }
-    GPS.vmax=0; GPS.tStart=tStartPrec||Date.now(); GPS.inSosta=false; GPS.sostaT=null;
-    GPS.completed=false; GPS.cancelMode=false;
-    _kalmanReset();
-    localStorage.setItem('gps_session_active', '1');
-    localStorage.setItem('gps_session_tStart', String(GPS.tStart));
-    aggTurnoAttivoBlink();
-    try { if (window.Capacitor && window.Capacitor.isNativePlatform()) window.Capacitor.Plugins.GpsService.start().catch(function(){}); } catch(e) {}
-    var bar=document.getElementById('gpsLiveBar'); if(bar) bar.classList.add('visible');
-    var lbl=document.getElementById('lblGpsSection'); if(lbl) lbl.style.display='none';
-    document.getElementById('gpsBtnGo').disabled=true;
-    document.getElementById('gpsBtnStop').disabled=false;
-    gpsDot('on'); gpsLbl('Ripristino sessione...');
-    GPS.tempoTimer=setInterval(function(){
-        if(!GPS.tStart)return;
-        var el=document.getElementById('gpsTempo');
-        if(el)el.innerText=_fmtDur((Date.now()-GPS.tStart)/1000);
-    },1000);
-    GPS.checkpointTimer=setInterval(function(){ _gpsCheckpointSave(); },30000);
-    GPS.watchId=navigator.geolocation.watchPosition(
-        function(pos){ if(GPS.active) _gpsOnPos(pos); },
-        function(e){ if(GPS.active && e.code===3) gpsLbl('Segnale debole...'); },
-        {enableHighAccuracy:true,maximumAge:2000,timeout:10000}
-    );
-}
-
 function gpsAvvia(){
     var _vaCheck = getVeicoloAttivo();
     if (!_vaCheck) {
@@ -6289,7 +6243,6 @@ function gpsAvvia(){
     // Persisti stato GPS su localStorage (sopravvive al background)
     localStorage.setItem('gps_session_active', '1');
     localStorage.setItem('gps_session_tStart', String(GPS.tStart));
-    // Salva stato form per ripristino dopo chiusura app
     localStorage.setItem('turno_form_snap', JSON.stringify({
         tL: document.getElementById('tL').value,
         tO: document.getElementById('tO').value,
@@ -6303,7 +6256,6 @@ function gpsAvvia(){
         dateTY: document.getElementById('dateTY').value
     }));
     aggTurnoAttivoBlink();
-    // Avvia foreground service per mantenere GPS attivo anche con app chiusa
     try { if (window.Capacitor && window.Capacitor.isNativePlatform()) window.Capacitor.Plugins.GpsService.start().catch(function(){}); } catch(e) {}
 
     var bar=document.getElementById('gpsLiveBar');
@@ -6537,9 +6489,8 @@ function gpsTermina(){
     localStorage.removeItem('gps_session_active');
     localStorage.removeItem('gps_session_tStart');
     localStorage.removeItem('turno_form_snap');
-    aggTurnoAttivoBlink();
-    // Ferma foreground service
     try { if (window.Capacitor && window.Capacitor.isNativePlatform()) window.Capacitor.Plugins.GpsService.stop().catch(function(){}); } catch(e) {}
+    aggTurnoAttivoBlink();
     gpsLbl('✅ '+GPS.km.toFixed(2)+' km · '+GPS.soste.length+' soste');
 }
 
@@ -6547,6 +6498,7 @@ function gpsResetUI(){
     gpsDot('');gpsLbl('GPS · Pronto');
     localStorage.removeItem('gps_session_active');
     localStorage.removeItem('gps_session_tStart');
+    localStorage.removeItem('turno_form_snap');
     try { if (window.Capacitor && window.Capacitor.isNativePlatform()) window.Capacitor.Plugins.GpsService.stop().catch(function(){}); } catch(e) {}
     _wakeLockRelease();
     _gpsNotifClear();
