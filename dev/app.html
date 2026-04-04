@@ -3577,7 +3577,7 @@ function gpsAvviaConRipristino(ptsPrec, tStartPrec) {
     },1000);
     GPS.checkpointTimer=setInterval(function(){ _gpsCheckpointSave(); },30000);
     GPS.watchId=navigator.geolocation.watchPosition(
-        function(pos){ if(GPS.active) _gpsOnPos(pos); },
+        function(pos){ if(GPS.active) _gpsPos(pos); },
         function(err){ if(GPS.active && err.code===3) gpsLbl('Segnale debole...'); },
         {enableHighAccuracy:true, maximumAge:2000, timeout:10000}
     );
