@@ -2354,21 +2354,19 @@ function confermaReset() {
     const tag = `${(n.getMonth()+1).toString().padStart(2,'0')}/${n.getFullYear()}`;
     const turniMese = db.turni.filter(t => t.data.endsWith(tag));
 
-    const taxPerc = (db.tax !== null && db.tax !== undefined) ? db.tax : 0;
-
     let lordoA = turniMese.reduce((a,b)=>a+b.lordo, 0);
     let ore = turniMese.reduce((a,b)=>a+b.ore, 0);
     let km = turniMese.reduce((a,b)=>a+b.km, 0);
+    // Tassazione per turno (retrocompatibile: usa db.tax se il turno non ha tax salvata)
+    let tassazioneTotale = turniMese.reduce((a,t)=>a+(t.lordo*(getTaxPerc(t)/100)),0);
 
     let costoB_Turni = 0;
     turniMese.forEach(t => {
         const quantita = t.km * (t.cons / 100);
         let costo = quantita * (t.prezzo || 0);
-
         if (t.tipoCarburante === 'miscela' && t.percMiscela && t.prezzoOlio) {
             costo += (quantita * (t.percMiscela / 100)) * t.prezzoOlio;
         }
-
         costoB_Turni += costo;
     });
 
@@ -2380,7 +2378,7 @@ function confermaReset() {
     let spesaExtraTot = extraMese.reduce((a,b)=>a+(b.importo||0), 0);
     const riportoMese = (db.riportoNegativo && db.riportoNegativo[tag]) ? db.riportoNegativo[tag] : 0;
 
-    let nettoA = lordoA - (lordoA * (taxPerc/100)) - spesaBCalcolo - spesaExtraTot - riportoMese;
+    let nettoA = lordoA - tassazioneTotale - spesaBCalcolo - spesaExtraTot - riportoMese;
 
     document.getElementById('lordo').innerText =
     currencySymbol() + roundCurrency(safeNumber(fromEuro(lordoA)));
@@ -2450,7 +2448,7 @@ document.getElementById('kml').innerText = roundConsumption(safeNumber(mediaCons
 
     document.getElementById('spesaB').innerText = currencySymbol() + roundCurrency(safeNumber(fromEuro(spesaBCalcolo)));
 
-    let nettoLavoro = lordoA - (lordoA * (taxPerc / 100)) - spesaBCalcolo - spesaExtraTot;
+    let nettoLavoro = lordoA - tassazioneTotale - spesaBCalcolo - spesaExtraTot;
     let mediaO = ore > 0 ? (nettoLavoro / ore) : 0;
     document.getElementById('mediaOraria').innerText =
     t('average') + ' ' +
@@ -2463,6 +2461,8 @@ document.getElementById('kml').innerText = roundConsumption(safeNumber(mediaCons
     document.getElementById('taxIn').value = (db.tax !== null && db.tax !== undefined) ? db.tax : "";
 
     const tNettoEur = (tNetto !== null && tNetto !== undefined) ? toEuro(tNetto) : 0;
+    // Per le proiezioni future uso la tax attuale impostata
+    const taxPerc = (db.tax !== null && db.tax !== undefined) ? db.tax : 0;
     let lordoNecessario = (tNettoEur + spesaBCalcolo + spesaExtraTot + riportoMese) / (1 - (taxPerc/100));
     let mancaL = lordoNecessario - lordoA;
     document.getElementById('mancante').innerText = currencySymbol() + (mancaL > 0 ? roundCurrency(safeNumber(fromEuro(mancaL))) : "0.00");
@@ -2669,8 +2669,6 @@ function apriStorico() {
     const now = new Date();
     const meseCorrenteKey = `${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()}`;
 
-    const taxPerc = (db.tax !== null && db.tax !== undefined) ? db.tax : 0;
-
     let htmlCorrente = "";
     let gruppiPassati = {};
     let ordineMesi = [];
@@ -2680,15 +2678,12 @@ function apriStorico() {
 
     db.turni.forEach(t => {
         if (t.data.substring(3) === meseCorrenteKey) {
-
             let quantita = t.km * (t.cons / 100);
             let costo = quantita * (t.prezzo || 0);
-
             if (t.tipoCarburante === 'miscela' && t.percMiscela && t.prezzoOlio) {
                 costo += (quantita * (t.percMiscela / 100)) * t.prezzoOlio;
             }
-
-            nettoTotMese += (t.lordo - (t.lordo * (taxPerc / 100)) - costo);
+            nettoTotMese += (t.lordo - (t.lordo * (getTaxPerc(t) / 100)) - costo);
             oreTotMese += t.ore;
         }
     });
@@ -2696,7 +2691,6 @@ function apriStorico() {
     let mediaOraMese = oreTotMese > 0 ? nettoTotMese / oreTotMese : 0;
     if (mediaOraMese < 0) mediaOraMese = 0;
 
-    // Mappa delle medie per mese (usata per badge nei mesi archiviati)
     const _mediaPerMese = {};
     const _meseCorr = `${(new Date().getMonth()+1).toString().padStart(2,'0')}/${new Date().getFullYear()}`;
     _mediaPerMese[_meseCorr] = mediaOraMese;
@@ -2709,7 +2703,7 @@ function apriStorico() {
             const _q = t.km * (t.cons / 100);
             let _c = _q * (t.prezzo || 0);
             if (t.tipoCarburante === 'miscela' && t.percMiscela && t.prezzoOlio) _c += (_q * (t.percMiscela / 100)) * t.prezzoOlio;
-            _lT += t.lordo - (t.lordo * (taxPerc / 100)) - _c;
+            _lT += t.lordo - (t.lordo * (getTaxPerc(t) / 100)) - _c;
             _oT += t.ore;
         });
         _mediaPerMese[_mk] = _oT > 0 ? Math.max(_lT / _oT, 0) : 0;
@@ -2743,7 +2737,7 @@ function apriStorico() {
                 }
 
                 gruppiPassati[key].lordo += i.lordo;
-                gruppiPassati[key].netto += (i.lordo - (i.lordo * (taxPerc / 100)) - costo);
+                gruppiPassati[key].netto += (i.lordo - (i.lordo * (getTaxPerc(i) / 100)) - costo);
                 gruppiPassati[key].ore += i.ore;
             }
         }
@@ -2905,8 +2899,7 @@ function generaHtmlItem(i, mediaOraMese) {
             costo += (quantita * (i.percMiscela / 100)) * i.prezzoOlio;
         }
 
-        const _taxPerc = (db.tax !== null && db.tax !== undefined) ? db.tax : 0;
-        let netto = i.lordo - (i.lordo * (_taxPerc / 100)) - costo;
+        let netto = i.lordo - (i.lordo * (getTaxPerc(i) / 100)) - costo;
         let euroOra = i.ore > 0 ? (netto / i.ore).toFixed(2) : '0.00';
 
         let colore = '#bbb';
@@ -3100,12 +3093,11 @@ function apriReport(meseKey) {
         const iconaC = getIconaCarburante(t.tipoCarburante);
         const nomeC = getNomeCarburante(t.tipoCarburante);
 
-        const taxPerc = (db.tax !== null && db.tax !== undefined) ? db.tax : 0;
-const netto = t.lordo - (t.lordo * (taxPerc / 100)) - costoB;
+        const netto = t.lordo - (t.lordo * (getTaxPerc(t) / 100)) - costoB;
 
         lordoTot += t.lordo;
         spesaBTot += costoB;
-        tassazioneTot += (t.lordo * (taxPerc / 100));
+        tassazioneTot += (t.lordo * (getTaxPerc(t) / 100));
         tK += t.km;
         tO += t.ore;
 
@@ -3380,8 +3372,6 @@ function disegnaGraficoResa(){
 
     const labels = dati.map(t => t.data.substring(0,5));
 
-    const _taxPercResa = (db.tax !== null && db.tax !== undefined) ? db.tax : 0;
-
     const valsOra = dati.map(t => {
         if(t.ore <= 0) return 0;
         const q = t.km * (t.cons / 100);
@@ -3389,7 +3379,7 @@ function disegnaGraficoResa(){
         if(t.tipoCarburante === 'miscela' && t.percMiscela && t.prezzoOlio){
             costoB += (q * (t.percMiscela / 100)) * t.prezzoOlio;
         }
-        const netto = t.lordo - (t.lordo * (_taxPercResa / 100)) - costoB;
+        const netto = t.lordo - (t.lordo * (getTaxPerc(t) / 100)) - costoB;
         return fromEuro(netto / t.ore);
     });
 
@@ -3400,7 +3390,7 @@ function disegnaGraficoResa(){
         if(t.tipoCarburante === 'miscela' && t.percMiscela && t.prezzoOlio){
             costoB += (q * (t.percMiscela / 100)) * t.prezzoOlio;
         }
-        const netto = t.lordo - (t.lordo * (_taxPercResa / 100)) - costoB;
+        const netto = t.lordo - (t.lordo * (getTaxPerc(t) / 100)) - costoB;
         const distanza = fromKm(t.km);
         return distanza > 0 ? fromEuro(netto / distanza) : 0;
     });
@@ -4199,6 +4189,12 @@ function aggiornaSuggerimentoConsumo(tipoCarburante) {
     hint.innerText = `~media da ${result.numRif} ${_rWord} · ${result.numTurni} ${_tWord}`;
 }
 
+// Restituisce la tassazione applicata a un turno (quella salvata nel turno o quella globale per retrocompatibilità)
+function getTaxPerc(turno) {
+    if (turno && turno.tax !== undefined && turno.tax !== null) return turno.tax;
+    return (db.tax !== null && db.tax !== undefined) ? db.tax : 0;
+}
+
 function effettuaSalvataggioTurno(prezzo, rif) {
     const dataCompleta = `${document.getElementById('dateTD').value.padStart(2,'0')}/${document.getElementById('dateTM').value.padStart(2,'0')}/${document.getElementById('dateTY').value}`;
 
@@ -4217,7 +4213,8 @@ function effettuaSalvataggioTurno(prezzo, rif) {
  km: toKm(parseFloat(document.getElementById('tK').value) || 0),
         cons: consDisplayToL100km(consInput),
         prezzo: prezzo,
-        tipoCarburante: document.getElementById('tCarburante').value
+        tipoCarburante: document.getElementById('tCarburante').value,
+        tax: (db.tax !== null && db.tax !== undefined) ? db.tax : 0
     };
 
     if (obj.tipoCarburante === 'miscela' && rif) {
@@ -4784,18 +4781,18 @@ function controllaRiportoDopoInserimento(dataSalvata) {
     d.setDate(0);
     const mesePrecedente = `${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`;
     if (meseDato !== mesePrecedente) return;
-    const taxP = (db.tax !== null && db.tax !== undefined) ? db.tax : 0;
     const turniPrec = db.turni.filter(t => t.data.endsWith(mesePrecedente));
     const rifPrec = db.rifornimenti.filter(r => r.data.endsWith(mesePrecedente));
     const extraPrec = (db.extraKm || []).filter(e => e.data.endsWith(mesePrecedente));
     const lordoP = turniPrec.reduce((a,b) => a+b.lordo, 0);
     let costoTP = 0;
     turniPrec.forEach(t => { const q = t.km*(t.cons/100); let c = q*(t.prezzo||0); if(t.tipoCarburante==='miscela'&&t.percMiscela&&t.prezzoOlio) c+=(q*(t.percMiscela/100))*t.prezzoOlio; costoTP+=c; });
+    const tassazionePrec = turniPrec.reduce((a,t) => a+(t.lordo*(getTaxPerc(t)/100)), 0);
     const spesaRP = rifPrec.reduce((a,b) => a+b.euro, 0);
     const spesaBC = spesaRP;
     const spesaEP = extraPrec.reduce((a,b) => a+(b.importo||0), 0);
     const riportoPrec = (db.riportoNegativo[mesePrecedente]) ? db.riportoNegativo[mesePrecedente] : 0;
-    const nettoP = lordoP - (lordoP*(taxP/100)) - spesaBC - spesaEP - riportoPrec;
+    const nettoP = lordoP - tassazionePrec - spesaBC - spesaEP - riportoPrec;
     if (nettoP < 0) {
         const currSym = currencySymbol();
         document.getElementById('modalRiportoTitle').innerText = t('carry_over_title');
@@ -5285,15 +5282,15 @@ window.onload = function() {
             const turniPrec = db.turni.filter(t => t.data.endsWith(mesePrecedente));
             const rifPrec = db.rifornimenti.filter(r => r.data.endsWith(mesePrecedente));
             const extraPrec = (db.extraKm || []).filter(e => e.data.endsWith(mesePrecedente));
-            const taxP = (db.tax !== null && db.tax !== undefined) ? db.tax : 0;
             const lordoP = turniPrec.reduce((a,b)=>a+b.lordo, 0);
             let costoTP = 0;
             turniPrec.forEach(t => { const q = t.km*(t.cons/100); let c = q*(t.prezzo||0); if(t.tipoCarburante==='miscela'&&t.percMiscela&&t.prezzoOlio) c+=(q*(t.percMiscela/100))*t.prezzoOlio; costoTP+=c; });
+            const tassazionePrecBack = turniPrec.reduce((a,t)=>a+(t.lordo*(getTaxPerc(t)/100)),0);
             const spesaRP = rifPrec.reduce((a,b)=>a+b.euro, 0);
             const spesaBC = spesaRP;
             const spesaEP = extraPrec.reduce((a,b)=>a+(b.importo||0), 0);
             const riportoPrec = (db.riportoNegativo && db.riportoNegativo[mesePrecedente]) ? db.riportoNegativo[mesePrecedente] : 0;
-            const nettoP = lordoP - (lordoP*(taxP/100)) - spesaBC - spesaEP - riportoPrec;
+            const nettoP = lordoP - tassazionePrecBack - spesaBC - spesaEP - riportoPrec;
             localStorage.setItem('ultimo_avviso_fine_mese', meseCorrente);
             window._alertMesePrecedente = mesePrecedente;
             if (nettoP < 0 && (turniPrec.length > 0 || rifPrec.length > 0 || extraPrec.length > 0)) {
@@ -6623,11 +6620,7 @@ function _buildLeafletMap(rotta) {
 function apriDettaglioTurno(turnoId){
     var turno=db.turni.find(function(x){return String(x.id)===String(turnoId);});
     if(!turno){return;}
-    var taxPerc=(db.tax!==null&&db.tax!==undefined)?db.tax:0;
-    var q=turno.km*(turno.cons/100);
-    var costoB=q*(turno.prezzo||0);
-    if(turno.tipoCarburante==='miscela'&&turno.percMiscela&&turno.prezzoOlio)costoB+=(q*(turno.percMiscela/100))*turno.prezzoOlio;
-    var netto=turno.lordo-(turno.lordo*(taxPerc/100))-costoB;
+    var netto=turno.lordo-(turno.lordo*(getTaxPerc(turno)/100))-costoB;
     var euroOra=turno.ore>0?(netto/turno.ore):0;
     document.getElementById('detTitle').innerText='📊 Turno del '+turno.data;
     document.getElementById('detSub').innerText=(turno.veicoloNome||'')+(turno.tipoCarburante&&turno.tipoCarburante!=='nessuno'?' · '+getNomeCarburante(turno.tipoCarburante):'');
@@ -6728,11 +6721,9 @@ function _dmapInit(){} function _dmapDraw(){} function _dc(){}
 ════════════════════════════════════════════════════ */
 function buildRepVeicoli(turniMese, rifMese) {
     var vv = getVeicoli();
-    var taxPerc = (db.tax !== null && db.tax !== undefined) ? db.tax : 0;
     var el = document.getElementById('repVeicoliSection');
     if (!el) return;
     if (vv.length === 0) { el.innerHTML = ''; return; }
-    // Raggruppa turni per veicolo
     var gruppi = {};
     turniMese.forEach(function(t) {
         var vid = t.veicoloId || 'sconosciuto';
@@ -6740,7 +6731,7 @@ function buildRepVeicoli(turniMese, rifMese) {
         gruppi[vid].turni.push(t);
         var q=t.km*(t.cons/100), cB=q*(t.prezzo||0);
         if(t.tipoCarburante==='miscela'&&t.percMiscela&&t.prezzoOlio)cB+=(q*(t.percMiscela/100))*t.prezzoOlio;
-        var n=t.lordo-(t.lordo*(taxPerc/100))-cB;
+        var n=t.lordo-(t.lordo*(getTaxPerc(t)/100))-cB;
         gruppi[vid].km+=t.km; gruppi[vid].ore+=t.ore;
         gruppi[vid].lordo+=t.lordo; gruppi[vid].netto+=n; gruppi[vid].costoB+=cB;
     });
