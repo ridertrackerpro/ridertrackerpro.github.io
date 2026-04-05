@@ -768,6 +768,7 @@ body {
     <div class="card">
         <div class="label" data-translate="avg_consumption">MEDIA CONSUMI</div>
         <div class="val" id="kml">0.0</div>
+        <div style="font-size:9px; color:var(--dim); font-weight:700; text-transform:uppercase; letter-spacing:0.5px; margin-top:2px;" id="kmlUnit">km/L</div>
     </div>
 
     <div class="card">
@@ -969,14 +970,10 @@ body {
             <i class="fas fa-chevron-down"></i>
         </div>
         <input type="hidden" id="bTipo" value="benzina">
-        <div style="display:flex; align-items:center; background:#252525; border:1px solid #444; border-radius:10px; margin-bottom:14px; padding:0 14px;">
-            <span style="color:var(--dim); font-size:13px; font-weight:700; flex-shrink:0;">€</span>
-            <input type="number" id="bE" style="text-align:center; flex:1; background:transparent; border:none; outline:none; color:#fff; padding:11px 0; font-size:16px;" data-translate-placeholder="ph_spent" step="0.01" inputmode="decimal" autocomplete="off">
-        </div>
-        <div style="display:flex; align-items:center; background:#252525; border:1px solid #444; border-radius:10px; margin-bottom:14px; padding:0 14px;">
-            <span style="color:var(--dim); font-size:13px; font-weight:700; flex-shrink:0;">€/L</span>
-            <input type="text" id="bP" style="text-align:center; flex:1; background:transparent; border:none; outline:none; color:#fff; padding:11px 0; font-size:16px;" data-translate-placeholder="insert_ph" inputmode="decimal" oninput="formattaPrezzo(this)" autocomplete="off">
-        </div>
+        <div style="font-size:9px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.8px; text-align:center; margin-bottom:2px;" id="lblBenzaSpeso">EURO SPESI</div>
+        <input type="number" id="bE" style="text-align:center; margin-bottom:14px;" data-translate-placeholder="ph_spent" step="0.01" inputmode="decimal" autocomplete="off">
+        <div style="font-size:9px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.8px; text-align:center; margin-bottom:2px;" id="lblBenzaPrezzo">COSTO €/L</div>
+        <input type="text" id="bP" style="text-align:center; margin-bottom:14px;" data-translate-placeholder="insert_ph" inputmode="decimal" oninput="formattaPrezzo(this)" autocomplete="off">
         <div id="campiMiscela" style="display:none;">
             <p style="font-size:11px; color:var(--dim); margin:0 0 10px; text-transform:uppercase; letter-spacing:0.5px;" data-translate="mix_data">DATI MISCELA</p>
             <input type="number" id="bPercMiscela" style="text-align:center; margin-bottom:14px;" data-translate-placeholder="ph_mix_pct" step="0.1">
@@ -1073,10 +1070,8 @@ body {
             <i class="fas fa-chevron-down"></i>
         </div>
         <input type="hidden" id="extraCategoriaKey" value="">
-        <div style="display:flex; align-items:center; background:#252525; border:1px solid #444; border-radius:10px; margin-bottom:14px; padding:0 14px;">
-            <span style="color:var(--dim); font-size:13px; font-weight:700; flex-shrink:0;">€</span>
-            <input type="number" id="extraImportoInput" style="text-align:center; flex:1; background:transparent; border:none; outline:none; color:#fff; padding:11px 0; font-size:16px;" data-translate-placeholder="ph_extra_amount" step="0.01" inputmode="decimal" autocomplete="off">
-        </div>
+        <div style="font-size:9px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.8px; text-align:center; margin-bottom:2px;">IMPORTO SPESA (€)</div>
+        <input type="number" id="extraImportoInput" style="text-align:center; margin-bottom:14px;" data-translate-placeholder="ph_extra_amount" step="0.01" inputmode="decimal" autocomplete="off">
         <div id="extraAltroWrap" style="display:none;">
             <input type="text" id="extraDescInput" style="text-align:center; margin-bottom:14px;" data-translate-placeholder="ph_extra_reason" autocomplete="off">
         </div>
@@ -1894,6 +1889,9 @@ function updateInterface() {
         el.placeholder = t(chiave);
     });
 
+    var _kmlU = document.getElementById('kmlUnit');
+    if (_kmlU) _kmlU.innerText = userSettings.consumption === 'km_l' ? 'km/L' : 'L/100km';
+
     const tLInput = document.getElementById('tL');
     if (tLInput) {
         const lorLabel = currentLang === 'en' ? 'Gross' : 'Lordo';
@@ -1927,9 +1925,13 @@ if (bPInput) {
 
     const thConsumoTurni = document.getElementById('thConsumoTurni');
     if (thConsumoTurni) {
-        thConsumoTurni.innerText = userSettings.distance === 'miles'
-            ? 'C/100MI'
-            : 'C/100KM';
+        if (userSettings.consumption === 'km_l') {
+            thConsumoTurni.innerText = userSettings.distance === 'miles' ? 'MI/L' : 'KM/L';
+        } else if (userSettings.distance === 'miles') {
+            thConsumoTurni.innerText = 'C/100MI';
+        } else {
+            thConsumoTurni.innerText = 'L/100KM';
+        }
     }
 
     /* --- PLACEHOLDER DINAMICI TURNO --- */
@@ -2386,11 +2388,14 @@ function confermaReset() {
     document.getElementById('ore').innerText = ore.toFixed(1);
 
     const consumiPerTipo = {};
+    const kmPerTipo = {};
     turniMese.forEach(t => {
         const tipo = t.tipoCarburante || 'benzina';
         const q = t.km * (t.cons / 100);
         if (!consumiPerTipo[tipo]) consumiPerTipo[tipo] = 0;
+        if (!kmPerTipo[tipo]) kmPerTipo[tipo] = 0;
         consumiPerTipo[tipo] += q;
+        kmPerTipo[tipo] += t.km;
     });
 
     const tipiCarb = Object.keys(consumiPerTipo);
@@ -2409,27 +2414,25 @@ function confermaReset() {
 
         const totQ = consumiPerTipo[tipo];
         let mediaConsumo = 0;
+        const isMetanoTipo = tipo === 'metano';
 
-if (totQ > 0) {
-
-    if (userSettings.distance === 'miles') {
-
-        const miles = fromKm(km);
-
-        if (userSettings.volume === 'gallons_us') {
-            mediaConsumo = miles / (fromLiters(totQ));
-        } else if (userSettings.volume === 'gallons_uk') {
-            mediaConsumo = miles / (fromLiters(totQ));
-        } else {
-            mediaConsumo = miles / totQ;
-        }
-
-    } else {
+if (totQ > 0 && km > 0) {
+    if (userSettings.consumption === 'km_l') {
+        // km per unità: km / quantità
         mediaConsumo = km / totQ;
+    } else {
+        // unità per 100km: quantità / km * 100
+        mediaConsumo = totQ / km * 100;
     }
 }
 
 document.getElementById('kml').innerText = roundConsumption(safeNumber(mediaConsumo));
+        var _kmlU = document.getElementById('kmlUnit');
+        if (_kmlU) {
+            var _kmlUnitStr = getConsUnit(tipo);
+            _kmlU.innerText = _kmlUnitStr;
+            _kmlU.style.display = '';
+        }
         document.getElementById('kml').classList.remove('clickable');
         document.getElementById('kml').onclick = null;
     } else if (tipiCarb.length > 1) {
@@ -2441,7 +2444,8 @@ document.getElementById('kml').innerText = roundConsumption(safeNumber(mediaCons
         document.getElementById('kml').innerText = t('multi');
         document.getElementById('kml').classList.add('clickable');
         document.getElementById('kml').onclick = () => apriMulti('efficienza');
-        multiSnapshot.efficienza = { consumiPerTipo: { ...consumiPerTipo }, kmTotali: km };
+        multiSnapshot.efficienza = { consumiPerTipo: { ...consumiPerTipo }, kmPerTipo: { ...kmPerTipo }, kmTotali: km };
+        var _kmlUm = document.getElementById('kmlUnit'); if (_kmlUm) _kmlUm.style.display = 'none';
     }
 
     document.getElementById('spesaB').innerText = currencySymbol() + roundCurrency(safeNumber(fromEuro(spesaBCalcolo)));
@@ -2635,6 +2639,8 @@ function apriM(id) {
         const ultimoCarb = localStorage.getItem('ultimo_carburante_benza_' + currentLang) || 'benzina';
         document.getElementById('bTipo').value = ultimoCarb;
         document.getElementById('labelCarburante').innerText = getIconaCarburante(ultimoCarb) + ' ' + getNomeCarburante(ultimoCarb);
+        var _lblP = document.getElementById('lblBenzaPrezzo');
+        if (_lblP) _lblP.innerText = ultimoCarb === 'metano' ? 'COSTO €/' + getMetanoUnit().toUpperCase() : 'COSTO €/L';
     }
 
     if (id === 'modalExtra') {
@@ -3036,16 +3042,28 @@ function apriMulti(tipo) {
     Object.keys(snap.consumiPerTipo).forEach(tipoC => {
         const unita = getUnitaCarburante(tipoC);
         const litriRaw = snap.consumiPerTipo[tipoC];
-        const vol = tipoC === 'metano' ? fromKgMetano(litriRaw) : fromLiters(litriRaw);
-        const massUnit = userSettings.mass === 'lbs' ? 'lb' : 'kg';
         const unitaDisplay = tipoC === 'metano' ? getMetanoUnit() : unita;
         const distUnit = userSettings.distance === 'miles' ? 'mi' : 'km';
         let val;
         if (tipo === 'consumo') {
+            const vol = tipoC === 'metano' ? litriRaw : fromLiters(litriRaw);
             val = vol.toFixed(2) + unitaDisplay;
         } else {
-            const distDisplay = fromKm(snap.kmTotali);
-            val = litriRaw > 0 ? (distDisplay / vol).toFixed(1) + ' ' + distUnit + '/' + unitaDisplay : '0.0';
+            // Usa i km percorsi con quel carburante specifico
+            const kmTipoRaw = (snap.kmPerTipo && snap.kmPerTipo[tipoC]) ? snap.kmPerTipo[tipoC] : snap.kmTotali;
+            const kmDisplay = userSettings.distance === 'miles' ? fromKm(kmTipoRaw) : kmTipoRaw;
+            const consUnit = getConsUnit(tipoC);
+            if (litriRaw > 0 && kmTipoRaw > 0) {
+                let media;
+                if (userSettings.consumption === 'km_l') {
+                    media = kmTipoRaw / litriRaw;
+                } else {
+                    media = litriRaw / kmTipoRaw * 100;
+                }
+                val = media.toFixed(1) + ' ' + consUnit;
+            } else {
+                val = '0.0 ' + consUnit;
+            }
         }
         html += `<div style="margin-bottom:8px;">${getIconaCarburante(tipoC)} ${getNomeCarburante(tipoC)}: <strong>${val}</strong></div>`;
     });
@@ -3261,9 +3279,9 @@ if (thDistanzaTurni) {
 
 const thConsumoTurni = document.getElementById('thConsumoTurni');
 if (thConsumoTurni) {
-
-    if (userSettings.distance === 'miles') {
-
+    if (userSettings.consumption === 'km_l') {
+        thConsumoTurni.innerText = userSettings.distance === 'miles' ? 'MI/L' : 'KM/L';
+    } else if (userSettings.distance === 'miles') {
         if (userSettings.volume === 'gallons_us') {
             thConsumoTurni.innerText = 'MPG (US)';
         } else if (userSettings.volume === 'gallons_uk') {
@@ -3271,9 +3289,8 @@ if (thConsumoTurni) {
         } else {
             thConsumoTurni.innerText = 'C/100MI';
         }
-
     } else {
-        thConsumoTurni.innerText = 'C/100KM';
+        thConsumoTurni.innerText = 'L/100KM';
     }
 }
     document.getElementById('histView').style.display = 'none';
@@ -3451,16 +3468,21 @@ const gridColor = 'rgba(255,255,255,0.08)';
 function selezionaCarburante(tipo, testo) {
     document.getElementById('bTipo').value = tipo;
     document.getElementById('labelCarburante').innerText = getIconaCarburante(tipo) + ' ' + getNomeCarburante(tipo);
+    var _unitLabel;
     const bP = document.getElementById('bP');
     if (tipo === 'metano') {
-        bP.placeholder = userSettings.volume === 'gallons_us'
-            ? currencySymbol() + '/GGE'
-            : currencySymbol() + '/kg';
+        var _mu = userSettings.volume === 'gallons_us' ? 'GGE' : 'kg';
+        bP.placeholder = currencySymbol() + '/' + _mu;
+        _unitLabel = 'COSTO €/' + _mu;
     } else if (userSettings.volume === 'gallons_us' || userSettings.volume === 'gallons_uk') {
         bP.placeholder = currencySymbol() + '/gal';
+        _unitLabel = 'COSTO €/GAL';
     } else {
         bP.placeholder = currencySymbol() + '/L';
+        _unitLabel = 'COSTO €/L';
     }
+    var _lblP = document.getElementById('lblBenzaPrezzo');
+    if (_lblP) _lblP.innerText = _unitLabel;
     document.getElementById('campiMiscela').style.display = tipo === 'miscela' ? 'block' : 'none';
     localStorage.setItem('ultimo_carburante_benza_' + currentLang, tipo);
     document.getElementById('modalSelectCarburante').style.display = 'none';
@@ -3482,6 +3504,20 @@ function getUnitaCarburante(tipo) {
     if (userSettings.volume === 'gallons_us') return 'gal';
     if (userSettings.volume === 'gallons_uk') return 'gal(UK)';
     return 'L';
+}
+
+// Restituisce l'unità di consumo display per un dato carburante
+function getConsUnit(tipo) {
+    if (tipo === 'metano') {
+        var mu = getMetanoUnit();
+        return userSettings.consumption === 'km_l'
+            ? 'km/' + mu
+            : mu + '/100km';
+    }
+    if (tipo === 'elettrico' || tipo === 'nessuno') return '';
+    // benzina, diesel, gpl, miscela, ibrido, bifuel
+    if (userSettings.consumption === 'km_l') return 'km/L';
+    return 'L/100km';
 }
 
 function getNomeCarburante(tipo) {
@@ -3661,9 +3697,6 @@ function iniziaTurno() {
         aggTurnoAttivoBlink();
     } else {
         // ── FINE TIMER ──
-        var elapsed = (Date.now() - _turnoTimerStart) / 1000 / 60 / 60;
-        var oreArrotondate = Math.round(elapsed * 10) / 10;
-        document.getElementById('tO').value = oreArrotondate > 0 ? oreArrotondate : '';
         var now2 = new Date();
         var hh2 = String(now2.getHours()).padStart(2,'0');
         var mm2 = String(now2.getMinutes()).padStart(2,'0');
@@ -3672,6 +3705,14 @@ function iniziaTurno() {
             document.getElementById('tOEnd').value = oraFine;
             document.getElementById('labelOraEnd').innerText = oraFine;
             _pickerOraH = now2.getHours(); _pickerOraM = now2.getMinutes();
+        }
+        // Calcola ore da orari inizio/fine
+        if (document.getElementById('tOStart').value && document.getElementById('tOEnd').value) {
+            calcolaOreDaOrari();
+        } else {
+            var elapsed = (Date.now() - _turnoTimerStart) / 1000 / 60 / 60;
+            var oreArrotondate = Math.round(elapsed * 10) / 10;
+            document.getElementById('tO').value = oreArrotondate > 0 ? oreArrotondate : '';
         }
         _turnoTimerStart = null;
         localStorage.removeItem('turno_manual_tStart');
@@ -5649,6 +5690,8 @@ function salvaSettingsEChiudi() {
     const k = document.getElementById('settingsConsumption');
     if (k) userSettings.consumption = k.value;
     salvaUserSettings();
+    var _kmlU = document.getElementById('kmlUnit');
+    if (_kmlU) _kmlU.innerText = userSettings.consumption === 'km_l' ? 'km/L' : 'L/100km';
     chiudiModalSettings();
 }
 
@@ -5959,12 +6002,6 @@ function apriFormVeicolo(id) {
     var _consVal = v ? (v.consMedio || null) : null;
     var _consDisp = _consVal ? consL100kmToDisplayValue(_consVal) : '';
     document.getElementById('vehConsMedio').value = _consDisp;
-    // Aggiorna label e placeholder consumo
-    var _consUnit = userSettings.consumption === 'km_l' ? 'km/L' : userSettings.consumption === 'mpg_us' ? 'MPG (US)' : userSettings.consumption === 'mpg_uk' ? 'MPG (UK)' : 'L/100km';
-    var _lbl = document.getElementById('lblVehConsMedio');
-    if (_lbl) _lbl.innerText = 'Consumo medio (' + _consUnit + ')';
-    var _inp = document.getElementById('vehConsMedio');
-    if (_inp) _inp.placeholder = 'es. ' + (userSettings.consumption === 'km_l' ? '30' : userSettings.consumption === 'mpg_us' ? '65' : userSettings.consumption === 'mpg_uk' ? '78' : '3.5');
     document.getElementById('vehCarburante').value = v ? (v.carburante || 'benzina') : 'benzina';
     // bifuel extra
     var s2el = document.getElementById('vehSerbatoio2');
@@ -6020,6 +6057,8 @@ function setVeicoloAttivo(id) {
     salvaVeicoli(vv);
     renderVehList();
     _syncVeicoloAttivo();
+    // Forza ricalcolo homepage con nuovo veicolo attivo
+    if (typeof calcola === 'function') setTimeout(calcola, 50);
 }
 
 function eliminaVeicolo(id) {
@@ -6639,10 +6678,12 @@ function apriDettaglioTurno(turnoId){
         veicoloSection.style.display='block';
         var va=getVeicoli().find(function(v){return v.id===turno.veicoloId;});
         var consMedioReale=va?getConsMedioRealeVeicolo(va.id):null;
+        var _consRUnit = userSettings.consumption === 'km_l' ? 'km/L' : 'L/100';
+        var _consRDisp = consMedioReale ? consL100kmToDisplayValue(consMedioReale) : null;
         veicoloInfo.innerHTML=
             '<div class="det-kpi"><div class="det-kpi-l">Veicolo</div><div class="det-kpi-v" style="font-size:11px;">'+turno.veicoloNome+'</div></div>'+
             (va&&va.targa?'<div class="det-kpi"><div class="det-kpi-l">Targa</div><div class="det-kpi-v" style="font-size:11px;">'+va.targa+'</div></div>':'')+
-            (consMedioReale?'<div class="det-kpi"><div class="det-kpi-l">Cons. reale</div><div class="det-kpi-v">'+consMedioReale.toFixed(1)+' L/100</div></div>':'')+
+            (consMedioReale?'<div class="det-kpi"><div class="det-kpi-l">Cons. reale</div><div class="det-kpi-v">'+_consRDisp+' '+_consRUnit+'</div></div>':'')+
             '';
     } else { veicoloSection.style.display='none'; }
     var modal=document.getElementById('modalDettaglioTurno');
@@ -6845,21 +6886,8 @@ function vehOnCarbChange() {
     }
 
     // Unità consumo dalle preferenze
-    var consUnit = 'km/L';
-    if (userSettings.consumption === 'l_100km') consUnit = 'L/100km';
-    else if (userSettings.consumption === 'mpg_us') consUnit = 'MPG (US)';
-    else if (userSettings.consumption === 'mpg_uk') consUnit = 'MPG (UK)';
-    if (userSettings.distance === 'miles') {
-        if (userSettings.consumption === 'l_100km') consUnit = 'L/100mi';
-        else if (userSettings.consumption === 'km_l') consUnit = 'mi/L';
-    }
-
-    // Unità specifica metano (kg, lb o GGE)
-    var metanoUnit = getMetanoUnit();
-    var distLabel = userSettings.distance === 'miles' ? '100mi' : '100km';
-    var consUnitMetano = userSettings.consumption === 'l_100km'
-        ? metanoUnit + '/' + distLabel
-        : (userSettings.distance === 'miles' ? 'mi' : 'km') + '/' + metanoUnit;
+    var consUnit = getConsUnit(carb);
+    var consUnitMetano = getConsUnit('metano');
 
     var isBf = _isBifuel(carb);
     if (isBf) {
@@ -6874,19 +6902,36 @@ function vehOnCarbChange() {
             }
         }
         // Placeholder bifuel: 1° benzina, 2° GPL/Metano
-        var lbl2Carb = carb === 'bifuel_benzina_gpl' ? 'GPL' : (isEN ? 'CNG' : 'Metano');
-        var cons2Unit = carb === 'bifuel_benzina_metano' ? consUnitMetano : consUnit;
-        var lblBenz = isEN ? 'Gasoline' : 'Benzina';
+        var lbl2Carb = carb === 'bifuel_benzina_gpl' ? 'GPL' : 'Metano';
+        var cons1Unit = getConsUnit('benzina');
+        var cons2Unit = carb === 'bifuel_benzina_metano' ? getConsUnit('metano') : getConsUnit('benzina');
+        var lblBenz = 'Benzina';
         var c1 = document.getElementById('vehConsMedio');
         var c2 = document.getElementById('vehConsMedio2');
-        if (c1) c1.placeholder = (isEN ? 'Consumption ' : 'Consumo ') + lblBenz + ' (' + consUnit + ')';
-        if (c2) c2.placeholder = (isEN ? 'Consumption ' : 'Consumo ') + lbl2Carb + ' (' + cons2Unit + ')';
+        if (c1) c1.placeholder = 'Consumo ' + lblBenz + ' (' + cons1Unit + ')';
+        if (c2) c2.placeholder = 'Consumo ' + lbl2Carb + ' (' + cons2Unit + ')';
+        // Aggiorna label sopra le caselle
+        var _lbl1 = document.getElementById('lblVehConsMedio');
+        if (_lbl1) _lbl1.innerText = 'CONSUMO BENZINA (' + cons1Unit.toUpperCase() + ')';
+        var _lbl2 = document.getElementById('vehConsMedio2Wrap');
+        if (_lbl2) {
+            var _existLbl = _lbl2.querySelector('label');
+            if (!_existLbl) {
+                _existLbl = document.createElement('label');
+                _existLbl.id = 'lblVehConsMedio2';
+                _existLbl.style.cssText = 'font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:5px;';
+                _lbl2.insertBefore(_existLbl, _lbl2.firstChild);
+            }
+            _existLbl.innerText = 'CONSUMO ' + lbl2Carb.toUpperCase() + ' (' + cons2Unit.toUpperCase() + ')';
+        }
     } else {
         if (bifuelSec) bifuelSec.style.display = 'none';
         if (cons2Wrap) cons2Wrap.style.display = 'none';
         var c1 = document.getElementById('vehConsMedio');
         var unitForThis = carb === 'metano' ? consUnitMetano : consUnit;
         if (c1) c1.placeholder = (isEN ? 'Avg consumption' : 'Consumo medio') + ' (' + unitForThis + ')';
+        var _lbl = document.getElementById('lblVehConsMedio');
+        if (_lbl) _lbl.innerText = 'CONSUMO MEDIO (' + unitForThis.toUpperCase() + ')';
     }
 
     // Dim carburante select if noCons
@@ -7050,12 +7095,21 @@ _syncVeicoloAttivo = function() {
     var mezzoEl = document.getElementById('tMezzo');
     if (mezzoEl) mezzoEl.value = va.tipo || 'auto';
 
-    if (fieldCons) fieldCons.value = va.consMedio ? va.consMedio : '';
+    if (fieldCons) fieldCons.value = va.consMedio ? consL100kmToDisplayValue(va.consMedio) : '';
 
     var lblBenza = document.getElementById('labelCarburante');
     if (lblBenza) lblBenza.innerText = getIconaCarburante(useCarb) + ' ' + getNomeCarburante(useCarb);
     var hidBenza = document.getElementById('tCarburanteBenza');
     if (hidBenza) hidBenza.value = useCarb;
+
+    // Aggiorna label benza prezzo in base al carburante veicolo attivo
+    var _lblBP = document.getElementById('lblBenzaPrezzo');
+    if (_lblBP) _lblBP.innerText = useCarb === 'metano' ? 'COSTO €/' + getMetanoUnit().toUpperCase() : 'COSTO €/L';
+    // Aggiorna label lblTC consumo modale turno
+    var _lblTC2 = document.getElementById('lblTC');
+    if (_lblTC2) _lblTC2.innerText = 'CONSUMO (' + getConsUnit(useCarb).toUpperCase() + ')';
+    // Ricalcola homepage
+    if (typeof calcola === 'function') setTimeout(calcola, 0);
 };
 
 function _carbLabelShort(carb, it) {
@@ -7122,6 +7176,12 @@ selezionaCarburanteTurno = function(carb, label) {
         localStorage.setItem('last_carb_' + va.id, carb);
         _aggiornaSelectorCarburante(_bifuelCarbs(va.carburante));
     }
+    // Aggiorna label consumo modale turno e ricalcola homepage
+    var _lblTC2 = document.getElementById('lblTC');
+    if (_lblTC2) _lblTC2.innerText = 'CONSUMO (' + getConsUnit(carb).toUpperCase() + ')';
+    var _kmlU2 = document.getElementById('kmlUnit');
+    if (_kmlU2) _kmlU2.innerText = getConsUnit(carb);
+    if (typeof calcola === 'function') setTimeout(calcola, 0);
 };
 
 /* ── aggiornaTestiTurnoModal: sezioni GPS/manuale bilingue ── */
