@@ -6620,6 +6620,9 @@ function _buildLeafletMap(rotta) {
 function apriDettaglioTurno(turnoId){
     var turno=db.turni.find(function(x){return String(x.id)===String(turnoId);});
     if(!turno){return;}
+    var q=turno.km*(turno.cons/100);
+    var costoB=q*(turno.prezzo||0);
+    if(turno.tipoCarburante==='miscela'&&turno.percMiscela&&turno.prezzoOlio)costoB+=(q*(turno.percMiscela/100))*turno.prezzoOlio;
     var netto=turno.lordo-(turno.lordo*(getTaxPerc(turno)/100))-costoB;
     var euroOra=turno.ore>0?(netto/turno.ore):0;
     document.getElementById('detTitle').innerText='📊 Turno del '+turno.data;
