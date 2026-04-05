@@ -873,7 +873,7 @@ body {
         <div id="consHint" style="font-size:10px; color:var(--primary); margin:0 0 6px 2px; min-height:0; font-style:italic; line-height:1.2;"></div>
 
         <!-- ── ORE LAVORATE + LORDO affiancati ── -->
-        <div style="display:flex; gap:8px; margin-bottom:2px; padding-top:20px;">
+        <div style="display:flex; gap:8px; margin-bottom:2px; padding-top:8px;">
             <div style="flex:1; min-width:0; text-align:center; font-size:9px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.8px;">ORE LAVORATE</div>
             <div style="flex:1; min-width:0; text-align:center; font-size:9px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.8px;" id="lblTL">LORDO (€)</div>
         </div>
@@ -4153,9 +4153,9 @@ function aggiornaSuggerimentoConsumo(tipoCarburante) {
     }
     campo.value = consL100kmToDisplayValue(result.consL100km);
     hint.style.color = 'var(--primary)';
-    hint.innerText = currentLang === 'it'
-        ? `~media da ${result.numRif} riforniment. · ${result.numTurni} turni`
-        : `~avg from ${result.numRif} refuel(s) · ${result.numTurni} shifts`;
+    var _rWord = result.numRif === 1 ? 'rifornimento' : 'rifornimenti';
+    var _tWord = result.numTurni === 1 ? 'turno' : 'turni';
+    hint.innerText = `~media da ${result.numRif} ${_rWord} · ${result.numTurni} ${_tWord}`;
 }
 
 function effettuaSalvataggioTurno(prezzo, rif) {
