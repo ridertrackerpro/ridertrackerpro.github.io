@@ -2448,7 +2448,7 @@ document.getElementById('kml').innerText = roundConsumption(safeNumber(mediaCons
 
     document.getElementById('spesaB').innerText = currencySymbol() + roundCurrency(safeNumber(fromEuro(spesaBCalcolo)));
 
-    let nettoLavoro = lordoA - tassazioneTotale - spesaBCalcolo - spesaExtraTot;
+    let nettoLavoro = lordoA - tassazioneTotale - spesaBCalcolo;
     let mediaO = ore > 0 ? (nettoLavoro / ore) : 0;
     document.getElementById('mediaOraria').innerText =
     t('average') + ' ' +
