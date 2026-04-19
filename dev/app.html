@@ -6094,7 +6094,7 @@ var GPS = {
     watchId:null, active:false,
     pts:[], soste:[], km:0, vmax:0,
     tStart:null, inSosta:false, sostaT:null,
-    tempoTimer:null, checkpointTimer:null, swPingTimer:null,
+    tempoTimer:null, checkpointTimer:null, swPingTimer:null, serviceTimer:null,
     STOP_KMH:1, STOP_MIN_S:20,
     cancelMode:false, completed:false
 };
@@ -6114,8 +6114,53 @@ function _wakeLockRelease() {
 document.addEventListener('visibilitychange', function() {
     if (document.visibilityState === 'visible' && GPS.active) {
         _wakeLockAcquire();
+        // Recupera punti raccolti dal GpsService Java durante lo schermo spento
+        _gpsIntegrateServicePoints();
     }
 });
+
+// Capacitor App resume — più affidabile di visibilitychange su Android
+if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+    try {
+        window.Capacitor.Plugins.App.addListener('appStateChange', function(state) {
+            if (state.isActive && GPS.active) {
+                _wakeLockAcquire();
+                _gpsIntegrateServicePoints();
+            }
+        });
+    } catch(e) {}
+}
+
+// Integra i punti del GpsService Java in GPS.pts, evitando duplicati
+function _gpsIntegrateServicePoints() {
+    if (!GPS.active) return;
+    if (!window.Capacitor || !window.Capacitor.isNativePlatform()) return;
+    try {
+        window.Capacitor.Plugins.GpsService.getCoords().then(function(res) {
+            if (!res || !res.coords || !res.coords.length) return;
+            var lastTs = GPS.pts.length ? GPS.pts[GPS.pts.length-1].ts : 0;
+            var added = 0;
+            for (var i = 0; i < res.coords.length; i++) {
+                var pt = res.coords[i];
+                if (!pt || !pt.ts || pt.ts <= lastTs) continue;
+                // Applica stesso filtro acc del watchPosition
+                if ((pt.acc || 0) > 150) continue;
+                _gpsPos({
+                    coords: {
+                        latitude: pt.la,
+                        longitude: pt.lo,
+                        accuracy: pt.acc || 20,
+                        speed: (pt.spd || 0) / 3.6
+                    },
+                    timestamp: pt.ts
+                });
+                lastTs = pt.ts;
+                added++;
+            }
+            if (added > 0) gpsLbl('Registrazione attiva (+' + added + ' punti recuperati)');
+        }).catch(function(){});
+    } catch(e) {}
+}
 
 /* ── NOTIFICA PERSISTENTE: mantiene il browser "sveglio" su Android ── */
 var _gpsNotifId = null;
@@ -6323,28 +6368,15 @@ function gpsAvvia(){
         if(el) el.innerText=_fmtDur((Date.now()-GPS.tStart)/1000);
     },5000);
 
-    // Usa BackgroundGeolocation se disponibile (Capacitor), altrimenti fallback browser
-    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-        try {
-            const { BackgroundGeolocation } = window.Capacitor.Plugins;
-            BackgroundGeolocation.addWatcher({
-                backgroundMessage: 'GPS turno in corso',
-                backgroundTitle: '🛰️ Rider Tracker',
-                requestPermissions: true,
-                stale: false,
-                distanceFilter: 5
-            }, function(pos, err) {
-                if (err) { _gpsErr(err); return; }
-                _gpsPos({ coords: pos, timestamp: pos.time || Date.now() });
-            }).then(function(id) { GPS.watchId = id; GPS.useBgGeo = true; });
-        } catch(e) {
-            GPS.watchId = navigator.geolocation.watchPosition(_gpsPos, _gpsErr, {enableHighAccuracy:true, timeout:60000, maximumAge:2000});
-            GPS.useBgGeo = false;
-        }
-    } else {
-        GPS.watchId = navigator.geolocation.watchPosition(_gpsPos, _gpsErr, {enableHighAccuracy:true, timeout:60000, maximumAge:2000});
-        GPS.useBgGeo = false;
-    }
+    // watchPosition del browser come fonte principale (schermo acceso)
+    // GpsService Java raccoglie in autonomia quando schermo spento
+    // I punti Java vengono integrati al resume tramite _gpsIntegrateServicePoints()
+    GPS.watchId = navigator.geolocation.watchPosition(_gpsPos, _gpsErr, {
+        enableHighAccuracy: true,
+        timeout: 60000,
+        maximumAge: 0
+    });
+    GPS.useBgGeo = false;
 
     // Wake Lock: impedisce spegnimento schermo
     _wakeLockAcquire();
@@ -6379,7 +6411,7 @@ function _gpsPos(pos){
     var la=pos.coords.latitude,lo=pos.coords.longitude;
     var spd=pos.coords.speed ? pos.coords.speed*3.6 : 0;
     var acc=Math.round(pos.coords.accuracy),ts=pos.timestamp||Date.now();
-    if(acc>100){gpsLbl('⚠️ Segnale debole ±'+acc+'m');return;}
+    if(acc>150){gpsLbl('⚠️ Segnale debole ±'+acc+'m');return;}
     document.getElementById('gpsAcc').innerText='±'+acc+'m';
 
     // Applica il filtro Kalman: corregge il rumore GPS smussando la posizione
@@ -6401,9 +6433,9 @@ function _gpsPos(pos){
         // Filtro adattivo: soglia spike basata sulla media mobile ultimi 10 punti
         var avgSpd = _gpsAvgSpeed();
         var spikeThresh;
-        if (avgSpd < 10) { spikeThresh = 15; }       // pedone
-        else if (avgSpd < 30) { spikeThresh = 40; }   // transizione
-        else { spikeThresh = 80; }                     // veicolo
+        if (avgSpd < 10) { spikeThresh = 40; }        // fermo/pedone: soglia generosa
+        else if (avgSpd < 40) { spikeThresh = 80; }   // scooter/moto in città
+        else { spikeThresh = 150; }                    // veicolo veloce
 
         // Se il chip dice più della soglia adattiva ma lo spostamento reale è molto inferiore, usa spostamento
         if (dt > 0.5 && spd > spikeThresh && spdCalc < avgSpd + 5) {
@@ -6455,7 +6487,7 @@ function _gpsErr(e){
         setTimeout(function() {
             if (!GPS.active) return;
             gpsDot('on'); gpsLbl('Acquisizione segnale...');
-            GPS.watchId = navigator.geolocation.watchPosition(_gpsPos, _gpsErr, {enableHighAccuracy:true, timeout:60000, maximumAge:2000});
+            GPS.watchId = navigator.geolocation.watchPosition(_gpsPos, _gpsErr, {enableHighAccuracy:true, timeout:60000, maximumAge:0});
         }, 3000);
     }
 }
@@ -6463,20 +6495,12 @@ function _gpsErr(e){
 function gpsTermina(){
     if(!GPS.active)return;
     if(GPS.watchId!==null){
-        if (GPS.useBgGeo && window.Capacitor && window.Capacitor.isNativePlatform()) {
-            try {
-                const { BackgroundGeolocation } = window.Capacitor.Plugins;
-                BackgroundGeolocation.removeWatcher({ id: GPS.watchId });
-            } catch(e) {}
-        } else {
-            navigator.geolocation.clearWatch(GPS.watchId);
-        }
+        navigator.geolocation.clearWatch(GPS.watchId);
         GPS.watchId=null;
         GPS.useBgGeo=false;
     }
     if(GPS.tempoTimer){clearInterval(GPS.tempoTimer);GPS.tempoTimer=null;}
     if(GPS.checkpointTimer){clearInterval(GPS.checkpointTimer);GPS.checkpointTimer=null;}
-    if(GPS.swPingTimer){clearInterval(GPS.swPingTimer);GPS.swPingTimer=null;}
     if(GPS.swPingTimer){clearInterval(GPS.swPingTimer);GPS.swPingTimer=null;}
     _wakeLockRelease();
     _gpsNotifClear();
