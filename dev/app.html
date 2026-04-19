@@ -3725,6 +3725,7 @@ function tornaAlTurno() {
 
 function _resetCampiTurno() {
     GPS.completed = false;
+    editingId = null; editingCat = null;
     ['tL','tO','tK','tC','tKStart','tKEnd'].forEach(function(id){
         var e=document.getElementById(id); if(e) e.value='';
     });
@@ -4241,7 +4242,17 @@ function effettuaSalvataggioTurno(prezzo, rif) {
 
     if (editingId !== null && editingCat === 'turni') {
         const idx = db.turni.findIndex(x => x.id === editingId);
-        if (idx !== -1) { obj.id = editingId; db.turni[idx] = obj; }
+        if (idx !== -1) {
+            // Preserva la rotta GPS originale se non c'è una nuova sessione GPS
+            var _origTurno = db.turni[idx];
+            if (!obj.gpsRoute && _origTurno.gpsRoute) {
+                obj.gpsRoute = _origTurno.gpsRoute;
+                obj.gpsKm    = _origTurno.gpsKm;
+                obj.gpsVmax  = _origTurno.gpsVmax;
+            }
+            obj.id = editingId;
+            db.turni[idx] = obj;
+        }
         else { db.turni.push(obj); }
         editingId = null; editingCat = null;
     } else {
@@ -4557,7 +4568,6 @@ function chiudiModali() {
     document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
     var mc = document.getElementById('mainContainer');
     if (mc) mc.scrollTop = 0;
-    editingId = null; editingCat = null;
     if (window._playIntroOnHome) {
         window._playIntroOnHome = false;
         setTimeout(function() { _meterSweepIntro(); }, 300);
