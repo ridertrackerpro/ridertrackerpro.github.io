@@ -6106,7 +6106,7 @@ var GPS = {
     tStart:null, inSosta:false, sostaT:null,
     tempoTimer:null, checkpointTimer:null, swPingTimer:null, serviceTimer:null,
     _lastServiceTs:0,
-    STOP_KMH:1, STOP_MIN_S:20,
+    STOP_KMH:1, STOP_MIN_S:60,
     cancelMode:false, completed:false
 };
 
@@ -6148,20 +6148,17 @@ function _gpsIntegrateServicePoints() {
     if (!window.Capacitor || !window.Capacitor.isNativePlatform()) return;
     try {
         window.Capacitor.Plugins.GpsService.getCoords().then(function(res) {
-            if (!res || !res.coords || !res.coords.length) return;
+            if (!res || !res.coords) return;
+            var pts2 = typeof res.coords === 'string' ? JSON.parse(res.coords) : res.coords;
+            if (!pts2 || !pts2.length) return;
             var added = 0;
-            for (var i = 0; i < res.coords.length; i++) {
-                var pt = res.coords[i];
+            for (var i = 0; i < pts2.length; i++) {
+                var pt = pts2[i];
                 if (!pt || !pt.ts || pt.ts <= GPS._lastServiceTs) continue;
                 GPS._lastServiceTs = pt.ts;
                 if ((pt.acc || 0) > 150) continue;
                 _gpsPos({
-                    coords: {
-                        latitude:  pt.la,
-                        longitude: pt.lo,
-                        accuracy:  pt.acc || 20,
-                        speed:     (pt.spd > 0) ? pt.spd / 3.6 : null
-                    },
+                    coords: { latitude: pt.la, longitude: pt.lo, accuracy: pt.acc || 20, speed: (pt.spd > 0) ? pt.spd / 3.6 : null },
                     timestamp: pt.ts
                 });
                 added++;
@@ -6390,8 +6387,9 @@ function gpsAvvia(){
             if (!GPS.active) return;
             try {
                 window.Capacitor.Plugins.GpsService.getCoords().then(function(res) {
-                    if (!res || !res.coords || !res.coords.length) return;
-                    var pts = res.coords;
+                    if (!res || !res.coords) return;
+                    var pts = typeof res.coords === 'string' ? JSON.parse(res.coords) : res.coords;
+                    if (!pts || !pts.length) return;
                     for (var i = 0; i < pts.length; i++) {
                         var pt = pts[i];
                         if (!pt || !pt.ts || pt.ts <= GPS._lastServiceTs) continue;
@@ -6449,38 +6447,52 @@ function _gpsAvgSpeed() {
 
 function _gpsPos(pos){
     var la=pos.coords.latitude,lo=pos.coords.longitude;
-    var spd=pos.coords.speed && pos.coords.speed > 0 ? pos.coords.speed*3.6 : 0;
+    var spd=pos.coords.speed ? pos.coords.speed*3.6 : 0;
     var acc=Math.round(pos.coords.accuracy||20),ts=pos.timestamp||Date.now();
-    if(acc>150){gpsLbl('⚠️ Segnale debole ±'+acc+'m');return;}
+    if(acc>100){gpsLbl('⚠️ Segnale debole ±'+acc+'m');return;}
     document.getElementById('gpsAcc').innerText='±'+acc+'m';
+
+    // Filtro Kalman: smussa la posizione riducendo il rumore GPS
+    var filtered = _kalmanFilter(la, lo, acc, ts, spd);
+    var fla = filtered.la, flo = filtered.lo;
 
     if(GPS.pts.length>0){
         var last=GPS.pts[GPS.pts.length-1];
-        // Usa posizione RAW per il calcolo distanza (Kalman over-smoothes slow movement)
-        var d=_hvs(last.la,last.lo,la,lo);
+        var d=_hvs(last.la,last.lo,fla,flo);
         var dt=(ts-last.ts)/1000;
-        if(dt<=0)return; // stesso timestamp, scarta
-        // Filtro spike: >500m in <3s
+        if(dt<=0)return;
+        // Filtro spike: scarta spostamento >500m in meno di 3 secondi
         if(d>0.5 && dt<3){return;}
-        // Filtro velocità assurda
+        // Filtro spike: scarta velocità GPS superiore a 250 km/h
         if(spd>250){return;}
-        var spdCalc = dt > 0 ? (d/dt)*3600 : 0;
-        // Filtro adattivo spike
-        var avgSpd=_gpsAvgSpeed();
-        var spikeThresh = avgSpd<10 ? 60 : avgSpd<40 ? 100 : 180;
-        if(spdCalc>spikeThresh && spd>spikeThresh){return;}
-        // Accumula km con posizione raw
-        if(d>0.000001 && d<1) GPS.km+=d;
-        // Velocità: usa spdCalc se GPS non riporta
-        if(spd===0 && d>0.000001 && dt>0.5) spd=Math.min(spdCalc,200);
+
+        // Velocità calcolata dallo spostamento reale
+        var spdCalc = (dt > 0.5) ? (d / dt) * 3600 : spd;
+
+        // Filtro adattivo: soglia spike basata sulla media mobile ultimi 10 punti
+        var avgSpd = _gpsAvgSpeed();
+        var spikeThresh;
+        if (avgSpd < 10) { spikeThresh = 15; }       // pedone
+        else if (avgSpd < 30) { spikeThresh = 40; }   // bici/scooter lento
+        else { spikeThresh = 80; }                     // scooter/auto
+
+        // Se il chip dice più della soglia ma lo spostamento reale è molto inferiore, usa spostamento
+        if (dt > 0.5 && spd > spikeThresh && spdCalc < avgSpd + 5) {
+            spd = spdCalc;
+        }
+        // Se la velocità calcolata supera la soglia e il chip concorda, è uno spike GPS
+        if (spdCalc > spikeThresh * 2 && spd > spikeThresh * 2) { return; }
+
+        if(d>0.000001 && d<2) GPS.km+=d;
+        // Fallback: se il chip GPS non riporta velocità, calcolala dalla posizione
+        if(spd===0 && d>0.000001){
+            if(dt>0.5) spd=Math.min(spdCalc, 200);
+        }
     } else {
         spd=0;
     }
-
-    // Kalman solo per la mappa (posizione smussata visivamente)
-    var filtered=_kalmanFilter(la,lo,acc,ts,spd);
-
-    GPS.pts.push({la:filtered.la,lo:filtered.lo,ts:ts,spd:spd,acc:acc});
+    // Salva posizione filtrata
+    GPS.pts.push({la:fla,lo:flo,ts:ts,spd:spd,acc:acc});
     if(spd>GPS.vmax) GPS.vmax=spd;
     // soste
     if(spd<GPS.STOP_KMH){
