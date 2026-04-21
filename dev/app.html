@@ -6748,8 +6748,15 @@ function toggleGpsLiveMap() {
     _liveMap.open = !_liveMap.open;
     wrap.style.display = _liveMap.open ? 'block' : 'none';
     if (_liveMap.open) {
+        // Reset instance se il container è stato rimosso dal DOM
+        if (_liveMap.instance) {
+            try { _liveMap.instance.remove(); } catch(e) {}
+            _liveMap.instance = null;
+            _liveMap.polyline = null;
+            _liveMap.marker = null;
+        }
         _loadLeaflet(function() {
-            setTimeout(function() { _initLiveMap(); }, 100);
+            setTimeout(function() { _initLiveMap(); }, 150);
         });
     }
 }
@@ -6798,11 +6805,11 @@ function _loadLeaflet(cb) {
     if (!document.getElementById('leaflet-css')) {
         var lc = document.createElement('link');
         lc.id = 'leaflet-css'; lc.rel = 'stylesheet';
-        lc.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        lc.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
         document.head.appendChild(lc);
     }
     var ls = document.createElement('script');
-    ls.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    ls.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
     ls.onload = function() { cb(); };
     ls.onerror = function() {
         var el = document.getElementById('detMapLoading');
