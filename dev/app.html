@@ -8,12 +8,10 @@
     <meta name="theme-color" content="#0f0f0f">
     <title>RIDER TRACKER PRO V 3.0</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
     <link rel="manifest" href="manifest.json">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
     <script>
         window.onerror = function(message, source, lineno, colno, error) {
     alert("JS ERROR:\n\n" + message + "\nLine: " + lineno);
@@ -909,10 +907,10 @@ body {
                     <div class="gls"><div class="gls-l" id="gpsLblSoste">Soste</div><div class="gls-v" id="gpsSoste">0</div></div>
                     <div class="gls"><div class="gls-l" id="gpsLblTempo">Tempo</div><div class="gls-v" id="gpsTempo">0m</div></div>
                 </div>
-                <!-- Mappa live espandibile - Leaflet con CartoDB -->
-                <div id="gpsLiveMapWrap" style="display:none; margin-top:8px; border-radius:10px; overflow:hidden; height:200px; position:relative;">
-                    <div id="gpsLiveMapEl" style="width:100%; height:100%;"></div>
-                    <div style="position:absolute; bottom:6px; right:6px; z-index:999; background:rgba(0,0,0,0.7); border-radius:6px; padding:3px 7px; font-size:9px; color:#00CCBC; font-weight:900;" id="gpsLiveMapPts">0 pt</div>
+                <!-- Mappa live espandibile - Canvas offline -->
+                <div id="gpsLiveMapWrap" style="display:none; margin-top:8px; border-radius:10px; overflow:hidden; height:200px; position:relative; background:#0a1410;">
+                    <canvas id="gpsLiveCanvas" style="width:100%; height:100%;"></canvas>
+                    <div style="position:absolute; bottom:6px; right:6px; z-index:2; background:rgba(0,0,0,0.7); border-radius:6px; padding:3px 7px; font-size:9px; color:#00CCBC; font-weight:900;" id="gpsLiveMapPts">0 pt</div>
                 </div>
             </div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
@@ -6741,61 +6739,69 @@ function gpsResetUI(){
 ════════════════════════════════════════════════════ */
 var LMAP = { instance: null, rotta: null };
 
-// ── MAPPA LIVE GPS ──
-var _liveMap = { instance: null, polyline: null, marker: null, open: false };
+// ── MAPPA LIVE GPS (Canvas offline) ──
+var _liveMap = { open: false };
 
 function toggleGpsLiveMap() {
     var wrap = document.getElementById('gpsLiveMapWrap');
     if (!wrap) return;
     _liveMap.open = !_liveMap.open;
     wrap.style.display = _liveMap.open ? 'block' : 'none';
-    if (_liveMap.open) {
-        if (_liveMap.instance) {
-            try { _liveMap.instance.remove(); } catch(e) {}
-            _liveMap.instance = null;
-            _liveMap.polyline = null;
-            _liveMap.marker = null;
-        }
-        setTimeout(function() { _initLiveMap(); }, 150);
-    }
+    if (_liveMap.open) _drawLiveCanvas();
 }
 
-function _initLiveMap() {
-    if (!_leafletLoaded()) return;
-    var el = document.getElementById('gpsLiveMapEl');
-    if (!el) return;
-    _liveMap.instance = L.map(el, { zoomControl: false, attributionControl: false });
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        maxZoom: 19, subdomains: 'abcd'
-    }).addTo(_liveMap.instance);
-    _liveMap.polyline = L.polyline([], { color: '#00CCBC', weight: 3 }).addTo(_liveMap.instance);
-    var icon = L.divIcon({ className: '', html: '<div style="width:12px;height:12px;border-radius:50%;background:#00CCBC;border:2px solid #fff;box-shadow:0 0 6px #00CCBC;"></div>', iconSize: [12,12], iconAnchor: [6,6] });
-    _liveMap.marker = L.marker([0,0], { icon: icon });
-    _updateLiveMap();
+function _drawLiveCanvas() {
+    var wrap = document.getElementById('gpsLiveMapWrap');
+    var canvas = document.getElementById('gpsLiveCanvas');
+    if (!canvas || !wrap) return;
+    var pts = GPS.pts;
+    var el = document.getElementById('gpsLiveMapPts');
+    if (el) el.innerText = pts.length + ' pt';
+    canvas.width = wrap.offsetWidth || 320;
+    canvas.height = wrap.offsetHeight || 200;
+    var W = canvas.width, H = canvas.height;
+    var ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#0a1410';
+    ctx.fillRect(0, 0, W, H);
+    if (pts.length < 2) {
+        ctx.fillStyle = '#2a5a50';
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(pts.length === 0 ? 'In attesa segnale GPS...' : 'Acquisizione posizione...', W/2, H/2);
+        return;
+    }
+    var minLa=pts[0].la, maxLa=pts[0].la, minLo=pts[0].lo, maxLo=pts[0].lo;
+    for (var i=1; i<pts.length; i++) {
+        if(pts[i].la<minLa)minLa=pts[i].la; if(pts[i].la>maxLa)maxLa=pts[i].la;
+        if(pts[i].lo<minLo)minLo=pts[i].lo; if(pts[i].lo>maxLo)maxLo=pts[i].lo;
+    }
+    var pad=20, dLa=maxLa-minLa||0.001, dLo=maxLo-minLo||0.001;
+    var scale=Math.min((W-pad*2)/dLo,(H-pad*2)/dLa);
+    var offX=(W-dLo*scale)/2, offY=(H-dLa*scale)/2;
+    function toXY(la,lo){return{x:offX+(lo-minLo)*scale,y:offY+(maxLa-la)*scale};}
+    for (var i=1; i<pts.length; i++) {
+        var pa=toXY(pts[i-1].la,pts[i-1].lo), pb=toXY(pts[i].la,pts[i].lo);
+        var spd=pts[i].spd||0;
+        ctx.beginPath(); ctx.moveTo(pa.x,pa.y); ctx.lineTo(pb.x,pb.y);
+        ctx.strokeStyle=spd<3?'#ff4d4d':spd<30?'#00CCBC':spd<60?'#4ade80':'#3b82f6';
+        ctx.lineWidth=2.5; ctx.stroke();
+    }
+    var ps=toXY(pts[0].la,pts[0].lo);
+    ctx.beginPath(); ctx.arc(ps.x,ps.y,5,0,Math.PI*2); ctx.fillStyle='#4ade80'; ctx.fill();
+    var pl=toXY(pts[pts.length-1].la,pts[pts.length-1].lo);
+    ctx.beginPath(); ctx.arc(pl.x,pl.y,6,0,Math.PI*2); ctx.fillStyle='#00CCBC'; ctx.fill();
 }
 
 function _updateLiveMap() {
-    if (!_liveMap.open || !_liveMap.instance || !GPS.pts.length) return;
-    var pts = GPS.pts.map(function(p){ return [p.la, p.lo]; });
-    _liveMap.polyline.setLatLngs(pts);
-    var last = GPS.pts[GPS.pts.length - 1];
-    if (!_liveMap.marker._map) _liveMap.marker.addTo(_liveMap.instance);
-    _liveMap.marker.setLatLng([last.la, last.lo]);
-    _liveMap.instance.setView([last.la, last.lo], _liveMap.instance.getZoom() < 15 ? 15 : _liveMap.instance.getZoom());
-    var el = document.getElementById('gpsLiveMapPts');
-    if (el) el.innerText = GPS.pts.length + ' pt';
+    if (!_liveMap.open) return;
+    _drawLiveCanvas();
 }
 
 function _resetLiveMap() {
     _liveMap.open = false;
     var wrap = document.getElementById('gpsLiveMapWrap');
     if (wrap) wrap.style.display = 'none';
-    if (_liveMap.instance) {
-        try { _liveMap.instance.remove(); } catch(e) {}
-        _liveMap.instance = null;
-        _liveMap.polyline = null;
-        _liveMap.marker = null;
-    }
 }
 
 function _leafletLoaded() { return typeof L !== 'undefined'; }
