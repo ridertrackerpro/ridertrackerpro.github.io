@@ -899,12 +899,18 @@ body {
                     <div class="gps-dot" id="gpsDot"></div>
                     <span class="gps-live-lbl" id="gpsLbl">Acquisizione...</span>
                     <span class="gps-live-acc" id="gpsAcc"></span>
+                    <span onclick="toggleGpsLiveMap()" style="margin-left:auto; font-size:9px; font-weight:900; color:var(--primary); cursor:pointer; padding:2px 6px; border:1px solid var(--primary); border-radius:6px; white-space:nowrap;" id="btnToggleLiveMap">🗺 MAPPA</span>
                 </div>
                 <div class="gps-live-stats">
                     <div class="gls"><div class="gls-l">KM</div><div class="gls-v" id="gpsKm">0.0</div></div>
                     <div class="gls"><div class="gls-l">km/h</div><div class="gls-v" id="gpsSpd">0</div></div>
                     <div class="gls"><div class="gls-l" id="gpsLblSoste">Soste</div><div class="gls-v" id="gpsSoste">0</div></div>
                     <div class="gls"><div class="gls-l" id="gpsLblTempo">Tempo</div><div class="gls-v" id="gpsTempo">0m</div></div>
+                </div>
+                <!-- Mappa live espandibile -->
+                <div id="gpsLiveMapWrap" style="display:none; margin-top:8px; border-radius:10px; overflow:hidden; height:200px; position:relative;">
+                    <div id="gpsLiveMapEl" style="width:100%; height:100%;"></div>
+                    <div style="position:absolute; bottom:6px; right:6px; z-index:999; background:rgba(0,0,0,0.7); border-radius:6px; padding:3px 7px; font-size:9px; color:#00CCBC; font-weight:900;" id="gpsLiveMapPts">0 pt</div>
                 </div>
             </div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
@@ -6617,6 +6623,8 @@ function _gpsPos(pos){
     document.getElementById('gpsSpd').innerText=Math.round(spd);
     document.getElementById('gpsSoste').innerText=GPS.soste.length;
     gpsDot('on'); gpsLbl('Registrazione attiva');
+    // Aggiorna mappa live se aperta
+    _updateLiveMap();
 }
 function _gpsErr(e){
     var it=(typeof currentLang==='undefined'||currentLang!=='en');
@@ -6708,6 +6716,7 @@ function gpsTermina(){
 
 function gpsResetUI(){
     gpsDot('');gpsLbl('GPS · Pronto');
+    _resetLiveMap();
     localStorage.removeItem('gps_session_active');
     localStorage.removeItem('gps_session_tStart');
     localStorage.removeItem('turno_form_snap');
@@ -6729,6 +6738,58 @@ function gpsResetUI(){
    DETTAGLIO TURNO GPS — Leaflet Map (lazy load)
 ════════════════════════════════════════════════════ */
 var LMAP = { instance: null, rotta: null };
+
+// ── MAPPA LIVE GPS ──
+var _liveMap = { instance: null, polyline: null, marker: null, open: false };
+
+function toggleGpsLiveMap() {
+    var wrap = document.getElementById('gpsLiveMapWrap');
+    if (!wrap) return;
+    _liveMap.open = !_liveMap.open;
+    wrap.style.display = _liveMap.open ? 'block' : 'none';
+    if (_liveMap.open) {
+        _loadLeaflet(function() {
+            setTimeout(function() { _initLiveMap(); }, 100);
+        });
+    }
+}
+
+function _initLiveMap() {
+    var el = document.getElementById('gpsLiveMapEl');
+    if (!el) return;
+    if (!_liveMap.instance) {
+        _liveMap.instance = L.map(el, { zoomControl: true, attributionControl: false });
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(_liveMap.instance);
+        _liveMap.polyline = L.polyline([], { color: '#00CCBC', weight: 3 }).addTo(_liveMap.instance);
+        var icon = L.divIcon({ className: '', html: '<div style="width:12px;height:12px;border-radius:50%;background:#00CCBC;border:2px solid #fff;box-shadow:0 0 6px #00CCBC;"></div>', iconSize: [12,12], iconAnchor: [6,6] });
+        _liveMap.marker = L.marker([0,0], { icon: icon });
+    }
+    _updateLiveMap();
+}
+
+function _updateLiveMap() {
+    if (!_liveMap.open || !_liveMap.instance || !GPS.pts.length) return;
+    var pts = GPS.pts.map(function(p){ return [p.la, p.lo]; });
+    _liveMap.polyline.setLatLngs(pts);
+    var last = GPS.pts[GPS.pts.length - 1];
+    if (!_liveMap.marker._map) _liveMap.marker.addTo(_liveMap.instance);
+    _liveMap.marker.setLatLng([last.la, last.lo]);
+    _liveMap.instance.setView([last.la, last.lo], _liveMap.instance.getZoom() < 15 ? 15 : _liveMap.instance.getZoom());
+    var el = document.getElementById('gpsLiveMapPts');
+    if (el) el.innerText = GPS.pts.length + ' pt';
+}
+
+function _resetLiveMap() {
+    _liveMap.open = false;
+    var wrap = document.getElementById('gpsLiveMapWrap');
+    if (wrap) wrap.style.display = 'none';
+    if (_liveMap.instance) {
+        _liveMap.instance.remove();
+        _liveMap.instance = null;
+        _liveMap.polyline = null;
+        _liveMap.marker = null;
+    }
+}
 
 function _leafletLoaded() { return typeof L !== 'undefined'; }
 
