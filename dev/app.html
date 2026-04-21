@@ -873,14 +873,20 @@ body {
         </div>
         <div id="consHint" style="font-size:10px; color:var(--primary); margin:0 0 6px 2px; min-height:0; font-style:italic; line-height:1.2;"></div>
 
-        <!-- ── ORE LAVORATE + LORDO affiancati ── -->
-        <div style="display:flex; gap:8px; margin-bottom:2px; padding-top:8px;">
+        <!-- ── ORE LAVORATE + LORDO + SOLO VIAGGIO affiancati ── -->
+        <div id="rowOreLbls" style="display:flex; gap:8px; margin-bottom:2px; padding-top:8px;">
             <div style="flex:1; min-width:0; text-align:center; font-size:9px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.8px;">ORE LAVORATE</div>
             <div style="flex:1; min-width:0; text-align:center; font-size:9px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.8px;" id="lblTL">LORDO (€)</div>
+            <div style="flex:0 0 72px; text-align:center; font-size:9px; font-weight:900; color:#aaa; text-transform:uppercase; letter-spacing:0.8px;">🗺️ VIAGGIO</div>
         </div>
         <div id="rowOre" style="display:flex; gap:8px; margin-bottom:6px; margin-top:0; padding-top:0;">
             <input type="number" id="tO" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" data-translate-placeholder="ph_ore_short" step="0.1" inputmode="decimal" autocomplete="off">
             <input type="number" id="tL" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" data-translate-placeholder="ph_lordo_short" inputmode="decimal" autocomplete="off">
+            <div onclick="toggleSoloViaggio()" style="flex:0 0 72px; display:flex; align-items:center; justify-content:center; background:#252525; border:1px solid #444; border-radius:10px; cursor:pointer; padding:0 8px;">
+                <div id="soloViaggioToggle" style="width:38px; height:22px; border-radius:11px; background:#333; position:relative; transition:background .2s; flex-shrink:0;">
+                    <div id="soloViaggioKnob" style="width:18px; height:18px; border-radius:50%; background:#fff; position:absolute; top:2px; left:2px; transition:left .2s;"></div>
+                </div>
+            </div>
         </div>
 
         <!-- ── CELLA GPS ── -->
@@ -2354,14 +2360,14 @@ function confermaReset() {
     const tag = `${(n.getMonth()+1).toString().padStart(2,'0')}/${n.getFullYear()}`;
     const turniMese = db.turni.filter(t => t.data.endsWith(tag));
 
-    let lordoA = turniMese.reduce((a,b)=>a+b.lordo, 0);
-    let ore = turniMese.reduce((a,b)=>a+b.ore, 0);
+    let lordoA = turniMese.reduce((a,b)=>a+(b.soloViaggio?0:b.lordo), 0);
+    let ore = turniMese.reduce((a,b)=>a+(b.soloViaggio?0:b.ore), 0);
     let km = turniMese.reduce((a,b)=>a+b.km, 0);
-    // Tassazione per turno (retrocompatibile: usa db.tax se il turno non ha tax salvata)
-    let tassazioneTotale = turniMese.reduce((a,t)=>a+(t.lordo*(getTaxPerc(t)/100)),0);
+    let tassazioneTotale = turniMese.reduce((a,t)=>a+(t.soloViaggio?0:(t.lordo*(getTaxPerc(t)/100))),0);
 
     let costoB_Turni = 0;
     turniMese.forEach(t => {
+        if (t.soloViaggio) return;
         const quantita = t.km * (t.cons / 100);
         let costo = quantita * (t.prezzo || 0);
         if (t.tipoCarburante === 'miscela' && t.percMiscela && t.prezzoOlio) {
@@ -2677,7 +2683,7 @@ function apriStorico() {
     let oreTotMese = 0;
 
     db.turni.forEach(t => {
-        if (t.data.substring(3) === meseCorrenteKey) {
+        if (t.data.substring(3) === meseCorrenteKey && !t.soloViaggio) {
             let quantita = t.km * (t.cons / 100);
             let costo = quantita * (t.prezzo || 0);
             if (t.tipoCarburante === 'miscela' && t.percMiscela && t.prezzoOlio) {
@@ -2700,6 +2706,7 @@ function apriStorico() {
         if (_mk === _meseCorr) return;
         let _lT = 0, _oT = 0;
         _allTurni.filter(t => t.data.substring(3) === _mk).forEach(t => {
+            if (t.soloViaggio) return;
             const _q = t.km * (t.cons / 100);
             let _c = _q * (t.prezzo || 0);
             if (t.tipoCarburante === 'miscela' && t.percMiscela && t.prezzoOlio) _c += (_q * (t.percMiscela / 100)) * t.prezzoOlio;
@@ -2727,7 +2734,7 @@ function apriStorico() {
 
             gruppiPassati[key].items.push(html);
 
-            if (i.tipo === 'T') {
+            if (i.tipo === 'T' && !i.soloViaggio) {
 
                 let quantita = i.km * (i.cons / 100);
                 let costo = quantita * (i.prezzo || 0);
@@ -2893,6 +2900,33 @@ function generaHtmlItem(i, mediaOraMese) {
     let html = `<div class="storico-item" style="border-left-color:${itemColor}; border-right-color:${itemColor};"><div class="storico-info">`;
 
     if (i.tipo === 'T') {
+        // Turno SOLO VIAGGIO — mostra solo km e consumi
+        if (i.soloViaggio) {
+            const kmDisplay = fromKm(i.km);
+            const distUnit = userSettings.distance === 'miles' ? 'mi' : 'km';
+            const isNoCons = va_noCons(i);
+            const iconaC = getIconaCarburante(i.tipoCarburante);
+            html += `<div class="tipo-label" style="color:#aaa;">
+                🗺️ SOLO VIAGGIO • ${(function(){ var _vi=getVeicoli().find(function(v){return v.id===i.veicoloId;}); return _getMezzoLabel(_vi?_vi.tipo:i.mezzo); })()}
+            </div>
+            <div class="storico-date-row">
+                <span>${i.data.substring(0, 5)}</span>
+                <span class="storico-hour">${i.oraStart || i.ora || ''}</span>
+            </div>
+            <div class="storico-main"><span style="color:#aaa;">${kmDisplay.toFixed(1)} ${distUnit}</span></div>
+            <div class="storico-sub">${isNoCons ? '' : formatConsumption(i.km, i.km * (i.cons / 100)) + ' ' + iconaC}</div>`;
+            html += '</div>';
+            // Pulsanti azione
+            html += `<div class="storico-azioni">`;
+            if (i.gpsRoute && i.gpsRoute.coords && i.gpsRoute.coords.length > 1) {
+                html += `<button class="btn-azione" onclick="apriDettaglioTurno(${i.id})"><i class="fas fa-map-marked-alt"></i></button>`;
+            }
+            html += `<button class="btn-azione" onclick="modificaVoce('turni',${i.id})"><i class="fas fa-pencil-alt"></i></button>
+                <button class="btn-azione btn-azione-del" onclick="eliminaConferma('turni',${i.id})"><i class="fas fa-trash"></i></button>
+            </div></div>`;
+            return html;
+        }
+
         let quantita = i.km * (i.cons / 100);
         let costo = quantita * (i.prezzo || 0);
         if (i.tipoCarburante === 'miscela') {
@@ -3568,6 +3602,36 @@ function vehOnTipoChange() {
     vehOnCarbChange();
 }
 
+var _soloViaggio = false;
+
+function toggleSoloViaggio() {
+    _soloViaggio = !_soloViaggio;
+    var toggle = document.getElementById('soloViaggioToggle');
+    var knob = document.getElementById('soloViaggioKnob');
+    var tO = document.getElementById('tO');
+    var tL = document.getElementById('tL');
+    var lblTL = document.getElementById('lblTL');
+    var rowOreLbls = document.getElementById('rowOreLbls');
+    if (_soloViaggio) {
+        toggle.style.background = 'var(--primary)';
+        knob.style.left = '18px';
+        if (tO) { tO.style.visibility = 'hidden'; tO.value = ''; }
+        if (tL) { tL.style.visibility = 'hidden'; tL.value = ''; }
+        // Aggiorna label ore
+        var lblOre = rowOreLbls ? rowOreLbls.children[0] : null;
+        if (lblOre) lblOre.style.visibility = 'hidden';
+        if (lblTL) lblTL.style.visibility = 'hidden';
+    } else {
+        toggle.style.background = '#333';
+        knob.style.left = '2px';
+        if (tO) tO.style.visibility = '';
+        if (tL) tL.style.visibility = '';
+        var lblOre = rowOreLbls ? rowOreLbls.children[0] : null;
+        if (lblOre) lblOre.style.visibility = '';
+        if (lblTL) lblTL.style.visibility = '';
+    }
+}
+
 function calcolaOreDaOrari() {
     var start = document.getElementById('tOStart').value;
     var end = document.getElementById('tOEnd').value;
@@ -3748,6 +3812,20 @@ function tornaAlTurno() {
 function _resetCampiTurno() {
     GPS.completed = false;
     editingId = null; editingCat = null;
+    // Reset solo viaggio
+    _soloViaggio = false;
+    var toggle = document.getElementById('soloViaggioToggle');
+    var knob = document.getElementById('soloViaggioKnob');
+    var tO = document.getElementById('tO');
+    var tL = document.getElementById('tL');
+    var lblTL = document.getElementById('lblTL');
+    var rowOreLbls = document.getElementById('rowOreLbls');
+    if (toggle) toggle.style.background = '#333';
+    if (knob) knob.style.left = '2px';
+    if (tO) tO.style.visibility = '';
+    if (tL) tL.style.visibility = '';
+    if (lblTL) lblTL.style.visibility = '';
+    if (rowOreLbls && rowOreLbls.children[0]) rowOreLbls.children[0].style.visibility = '';
     ['tL','tO','tK','tC','tKStart','tKEnd'].forEach(function(id){
         var e=document.getElementById(id); if(e) e.value='';
     });
@@ -4231,13 +4309,14 @@ function effettuaSalvataggioTurno(prezzo, rif) {
         oraStart: _oraStartVal || null,
         oraEnd:   _oraEndVal   || null,
         mezzo: document.getElementById('tMezzo').value,
-        lordo: toEuro(parseFloat(document.getElementById('tL').value) || 0),
-        ore: parseFloat(document.getElementById('tO').value) || 0,
- km: toKm(parseFloat(document.getElementById('tK').value) || 0),
+        lordo: _soloViaggio ? 0 : toEuro(parseFloat(document.getElementById('tL').value) || 0),
+        ore: _soloViaggio ? 0 : (parseFloat(document.getElementById('tO').value) || 0),
+        km: toKm(parseFloat(document.getElementById('tK').value) || 0),
         cons: consDisplayToL100km(consInput),
         prezzo: prezzo,
         tipoCarburante: document.getElementById('tCarburante').value,
-        tax: (db.tax !== null && db.tax !== undefined) ? db.tax : 0
+        tax: (db.tax !== null && db.tax !== undefined) ? db.tax : 0,
+        soloViaggio: _soloViaggio || false
     };
 
     if (obj.tipoCarburante === 'miscela' && rif) {
@@ -4617,6 +4696,11 @@ function modificaVoce(categoria, id) {
         document.getElementById('tO').value = item.ore;
         document.getElementById('tK').value = fromKm(item.km).toFixed(1);
         document.getElementById('tC').value = consL100kmToDisplayValue(item.cons);
+        // Ripristina solo viaggio se era flaggato
+        if (item.soloViaggio) {
+            _soloViaggio = false;
+            toggleSoloViaggio();
+        }
         // Ripristina orari
         if (item.oraStart) {
             document.getElementById('tOStart').value = item.oraStart;
@@ -6601,12 +6685,14 @@ function gpsTermina(){
         if(diffMin<0)diffMin+=1440;
         document.getElementById('tO').value=(diffMin/60).toFixed(2);
     }
-    // Modale con istruzioni (Fix1: non mostrare se si sta annullando)
-    if (!GPS.cancelMode) {
+    // Modale con istruzioni (non mostrare se si sta annullando o se è solo viaggio)
+    if (!GPS.cancelMode && !_soloViaggio) {
         GPS.completed = true;
         mostraAlertApp(currentLang==='en'
             ? '✅ GPS tracking complete!\n\nKM recorded: '+GPS.km.toFixed(2)+'\nStops: '+GPS.soste.length+'\n\nTo save the shift:\n• Fill in GROSS EARNED (required)\n• Fill in fuel consumption (optional)\n\nThen press SAVE SHIFT.'
             : '✅ Rilevamento GPS completato!\n\nKM registrati: '+GPS.km.toFixed(2)+'\nSoste: '+GPS.soste.length+'\n\nPer salvare il turno:\n• Compila LORDO GUADAGNATO (obbligatorio)\n• Compila il consumo carburante (facoltativo)\n\nPoi premi SALVA TURNO.');
+    } else if (!GPS.cancelMode && _soloViaggio) {
+        GPS.completed = true;
     }
     GPS.cancelMode = false;
     document.getElementById('gpsBtnGo').disabled=false;
