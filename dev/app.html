@@ -909,7 +909,7 @@ body {
                     <div class="gls"><div class="gls-l" id="gpsLblSoste">Soste</div><div class="gls-v" id="gpsSoste">0</div></div>
                     <div class="gls"><div class="gls-l" id="gpsLblTempo">Tempo</div><div class="gls-v" id="gpsTempo">0m</div></div>
                 </div>
-                <!-- Mappa live espandibile -->
+                <!-- Mappa live espandibile - Leaflet con CartoDB -->
                 <div id="gpsLiveMapWrap" style="display:none; margin-top:8px; border-radius:10px; overflow:hidden; height:200px; position:relative;">
                     <div id="gpsLiveMapEl" style="width:100%; height:100%;"></div>
                     <div style="position:absolute; bottom:6px; right:6px; z-index:999; background:rgba(0,0,0,0.7); border-radius:6px; padding:3px 7px; font-size:9px; color:#00CCBC; font-weight:900;" id="gpsLiveMapPts">0 pt</div>
@@ -6750,29 +6750,27 @@ function toggleGpsLiveMap() {
     _liveMap.open = !_liveMap.open;
     wrap.style.display = _liveMap.open ? 'block' : 'none';
     if (_liveMap.open) {
-        // Reset instance se il container è stato rimosso dal DOM
         if (_liveMap.instance) {
             try { _liveMap.instance.remove(); } catch(e) {}
             _liveMap.instance = null;
             _liveMap.polyline = null;
             _liveMap.marker = null;
         }
-        _loadLeaflet(function() {
-            setTimeout(function() { _initLiveMap(); }, 150);
-        });
+        setTimeout(function() { _initLiveMap(); }, 150);
     }
 }
 
 function _initLiveMap() {
+    if (!_leafletLoaded()) return;
     var el = document.getElementById('gpsLiveMapEl');
     if (!el) return;
-    if (!_liveMap.instance) {
-        _liveMap.instance = L.map(el, { zoomControl: true, attributionControl: false });
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(_liveMap.instance);
-        _liveMap.polyline = L.polyline([], { color: '#00CCBC', weight: 3 }).addTo(_liveMap.instance);
-        var icon = L.divIcon({ className: '', html: '<div style="width:12px;height:12px;border-radius:50%;background:#00CCBC;border:2px solid #fff;box-shadow:0 0 6px #00CCBC;"></div>', iconSize: [12,12], iconAnchor: [6,6] });
-        _liveMap.marker = L.marker([0,0], { icon: icon });
-    }
+    _liveMap.instance = L.map(el, { zoomControl: false, attributionControl: false });
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19, subdomains: 'abcd'
+    }).addTo(_liveMap.instance);
+    _liveMap.polyline = L.polyline([], { color: '#00CCBC', weight: 3 }).addTo(_liveMap.instance);
+    var icon = L.divIcon({ className: '', html: '<div style="width:12px;height:12px;border-radius:50%;background:#00CCBC;border:2px solid #fff;box-shadow:0 0 6px #00CCBC;"></div>', iconSize: [12,12], iconAnchor: [6,6] });
+    _liveMap.marker = L.marker([0,0], { icon: icon });
     _updateLiveMap();
 }
 
@@ -6793,7 +6791,7 @@ function _resetLiveMap() {
     var wrap = document.getElementById('gpsLiveMapWrap');
     if (wrap) wrap.style.display = 'none';
     if (_liveMap.instance) {
-        _liveMap.instance.remove();
+        try { _liveMap.instance.remove(); } catch(e) {}
         _liveMap.instance = null;
         _liveMap.polyline = null;
         _liveMap.marker = null;
@@ -6828,8 +6826,8 @@ function _buildLeafletMap(rotta) {
     if (loading) loading.style.display = 'none';
     var map = L.map('detLeafletMap', { zoomControl: true, attributionControl: false });
     LMAP.instance = map;
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19, attribution: '© OpenStreetMap'
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19, subdomains: 'abcd', attribution: '© CartoDB'
     }).addTo(map);
     var pts = rotta.coords;
     var bounds = [];
