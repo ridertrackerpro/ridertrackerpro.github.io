@@ -4415,16 +4415,13 @@ function aggiornaSuggerimentoConsumo(tipoCarburante) {
         hint.style.color = 'var(--dim)';
         return;
     }
-    // Mostra solo il suggerimento nell hint, NON sovrascrive il campo
-    // se il campo ha gia un valore impostato dal veicolo attivo
+    // Usa il consumo reale calcolato come valore principale
     hint.style.color = 'var(--primary)';
     var _rWord = result.numRif === 1 ? 'rifornimento' : 'rifornimenti';
     var _tWord = result.numTurni === 1 ? 'turno' : 'turni';
-    hint.innerText = '~media da ' + result.numRif + ' ' + _rWord + ' · ' + result.numTurni + ' ' + _tWord + ' (' + consL100kmToDisplayValue(result.consL100km) + ' ' + (userSettings && userSettings.consumption === 'km_l' ? 'km/L' : 'L/100km') + ')';
-    // Compila il campo solo se vuoto
-    if (!campo.value) {
-        campo.value = consL100kmToDisplayValue(result.consL100km);
-    }
+    hint.innerText = '~media da ' + result.numRif + ' ' + _rWord + ' · ' + result.numTurni + ' ' + _tWord;
+    // Sovrascrive sempre con il consumo reale calcolato
+    campo.value = consL100kmToDisplayValue(result.consL100km);
 }
 
 // Restituisce la tassazione applicata a un turno (quella salvata nel turno o quella globale per retrocompatibilità)
