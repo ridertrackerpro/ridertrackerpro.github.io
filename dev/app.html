@@ -1611,7 +1611,7 @@ vehicle_scooter: 'Scooter',
         alert_euro_required: 'Il campo "Speso" è obbligatorio per registrare il rifornimento.',
         alert_use_last_price: 'Prezzo per litro non inserito: verrà utilizzato il costo dell\'ultimo rifornimento effettuato.',
         alert_km_end_required: 'I KM di arrivo odometro sono obbligatori per il calcolo del consumo reale.',
-        alert_km_start_required: 'E il primo turno: inserisci i KM di partenza odometro.',
+        alert_km_start_required: 'È il primo turno: inserisci i KM di partenza odometro.',
         btn_reset_time: 'AZZERA',
         btn_back_to_shift: 'TORNA AL TURNO',
         ph_lordo_short: 'Lordo €',
@@ -4463,7 +4463,7 @@ let prezzo = toEuro(prezzoInput);
     }
     var kmInput = parseFloat(document.getElementById('bKm').value) || 0;
     if (kmInput <= 0) {
-        mostraAlertApp('Il campo KM Odometro e' obbligatorio.');
+        mostraAlertApp('Il campo KM Odometro è obbligatorio.');
         return;
     }
     var litriInput = parseFloat(document.getElementById('bLitri').value) || 0;
