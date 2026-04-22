@@ -571,6 +571,9 @@ html, body { touch-action: pan-x pan-y; }
 .gps-dot.on  { background:#4ade80; box-shadow:0 0 6px #4ade80; animation:gpsBlink 1.2s infinite; }
 .gps-dot.done{ background:#00CCBC; box-shadow:0 0 5px #00CCBC; }
 .gps-dot.err { background:#ff4d4d; }
+        @keyframes archiviopulse { 0%,100%{opacity:1; border-color:#f39c12;} 50%{opacity:0.6; border-color:#c07800;} }
+        #archivioBar { animation: archiviopulse 1.5s infinite; }
+.gps-dot.err { background:#ff4d4d; }
 #gpsLiveMap .leaflet-pane { z-index: 400; }
 #gpsLiveMap .leaflet-control { z-index: 800; }
 #gpsLiveMap .leaflet-top, #gpsLiveMap .leaflet-bottom { z-index: 800; }
@@ -807,6 +810,11 @@ body {
     <span class="meteo-temp" id="meteoTemp">--°C</span>
     <span class="meteo-desc" id="meteoDesc">Caricamento...</span>
     <span class="meteo-city" id="meteoCity"></span>
+</div>
+<div id="archivioBar" onclick="tornaAlMeseCorrente()" style="display:none; background:#1a1200; border:1.5px solid #f39c12; border-radius:10px; padding:7px 12px; margin-bottom:8px; cursor:pointer; text-align:center;">
+    <span style="font-size:10px; font-weight:900; color:#f39c12; letter-spacing:0.8px;">📅 ARCHIVIO</span>
+    <span id="archivioBarMese" style="font-size:10px; font-weight:900; color:#f39c12; margin:0 6px;"></span>
+    <span style="font-size:9px; color:#aaa;">— tocca per tornare al mese corrente</span>
 </div>
 <div id="modalTurno" class="modal no-print">
     <div class="modal-content" style="border-color:var(--primary); padding:16px 18px; max-height:96dvh; max-height:96vh; overflow-y:auto;">
@@ -1412,7 +1420,7 @@ body {
 <button class="btn-rep-uniform btn-black" onclick="stampaPagina()">
 <i class="fas fa-print"></i> <span data-translate="print">STAMPA</span>
 </button>
-<button class="btn-rep-uniform btn-grey-dark" onclick="document.getElementById('reportView').style.display='none'">
+<button class="btn-rep-uniform btn-grey-dark" onclick="document.getElementById('reportView').style.display='none'; reportMeseKey=null; aggiornaArchivioBar();">
 <i class="fas fa-times"></i> <span data-translate="close">CHIUDI</span>
 </button>
 </div>
@@ -3148,6 +3156,7 @@ function apriMulti(tipo) {
 }
 function apriReport(meseKey) {
     reportMeseKey = meseKey;
+    aggiornaArchivioBar();
     const tag = meseKey || `${(new Date().getMonth()+1).toString().padStart(2,'0')}/${new Date().getFullYear()}`;
     
     aggiornaLabelKmReport();
@@ -3446,14 +3455,40 @@ function apriResaView(){
 }
 
 function chiudiResaView(){ 
-    document.getElementById('resaView').style.display = 'none'; 
+    document.getElementById('resaView').style.display = 'none';
+    reportMeseKey = null;
+    aggiornaArchivioBar();
     if (window._resaProvenienza === 'report') {
         document.getElementById('reportView').style.display = 'flex';
     }
 }
 
+function tornaAlMeseCorrente() {
+    reportMeseKey = null;
+    aggiornaArchivioBar();
+    // Aggiorna resa se aperta
+    var rv = document.getElementById('resaView');
+    if (rv && rv.style.display !== 'none') disegnaGraficoResa();
+}
+
+function aggiornaArchivioBar() {
+    var bar = document.getElementById('archivioBar');
+    var meteo = document.getElementById('meteoBar');
+    if (!bar || !meteo) return;
+    var now = new Date();
+    var meseCorrente = (now.getMonth()+1).toString().padStart(2,'0') + '/' + now.getFullYear();
+    var isArchivio = reportMeseKey && reportMeseKey !== meseCorrente;
+    bar.style.display = isArchivio ? 'block' : 'none';
+    meteo.style.display = isArchivio ? 'none' : 'flex';
+    if (isArchivio) {
+        var lbl = document.getElementById('archivioBarMese');
+        if (lbl) lbl.innerText = typeof getNomeMese === 'function' ? getNomeMese(reportMeseKey) : reportMeseKey;
+    }
+}
+
 function disegnaGraficoResa(){
     const tag = reportMeseKey || `${(new Date().getMonth()+1).toString().padStart(2,'0')}/${new Date().getFullYear()}`;
+
     const dati = db.turni.filter(t => t.data.endsWith(tag) && !t.soloViaggio).sort((a,b) => {
         const [da,ma,ya] = a.data.split('/'); const [db2,mb,yb] = b.data.split('/');
         return new Date(ya,ma-1,da) - new Date(yb,mb-1,db2);
