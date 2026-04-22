@@ -3202,7 +3202,7 @@ function apriReport(meseKey) {
         if (t.soloViaggio) {
             // Solo Viaggio: mostra solo km e consumo, economici a trattino
             htmlTurni += `<tr style="opacity:0.65; font-style:italic;">
-                <td style="text-align:center;font-size:14px;">${(function(){ var _rv=getVeicoli().find(function(v){return v.id===t.veicoloId;}); return _getMezzoIcona(_rv?_rv.tipo:t.mezzo); })()}🗺️</td>
+                <td style="text-align:center;font-size:14px;">${(function(){ var _rv=getVeicoli().find(function(v){return v.id===t.veicoloId;}); return _getMezzoIcona(_rv?_rv.tipo:t.mezzo); })()}</td>
                 <td>${t.data}</td>
                 <td>—</td>
                 <td>—</td>
