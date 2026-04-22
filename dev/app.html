@@ -7481,14 +7481,17 @@ document.addEventListener('DOMContentLoaded', function(){
     // Richiedi permessi notifiche + geolocalizzazione subito all'avvio
     if (window.Capacitor && window.Capacitor.isNativePlatform()) {
         try { window.Capacitor.Plugins.LocalNotifications.requestPermissions(); } catch(e) {}
-        // Geolocalizzazione in sequenza (leggero delay per non sovrapporre i dialoghi)
+        // Geolocalizzazione: chiamata dummy getCurrentPosition per forzare
+        // il dialogo permessi di sistema Android subito all'installazione
         setTimeout(function() {
             try {
-                if (window.Capacitor.Plugins.Geolocation) {
-                    window.Capacitor.Plugins.Geolocation.requestPermissions();
-                }
+                navigator.geolocation.getCurrentPosition(
+                    function() {},   // successo: ignora
+                    function() {},   // errore: ignora
+                    { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+                );
             } catch(e) {}
-        }, 800);
+        }, 1000);
     }
 
     // Fix tastiera virtuale Android con Capacitor Keyboard plugin
