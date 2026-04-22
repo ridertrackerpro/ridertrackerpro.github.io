@@ -812,9 +812,7 @@ body {
     <span class="meteo-city" id="meteoCity"></span>
 </div>
 <div id="archivioBar" onclick="tornaAlMeseCorrente()" style="display:none; background:#1a1200; border:1.5px solid #f39c12; border-radius:10px; padding:7px 12px; margin-bottom:8px; cursor:pointer; text-align:center;">
-    <span style="font-size:10px; font-weight:900; color:#f39c12; letter-spacing:0.8px;">📅 ARCHIVIO</span>
-    <span id="archivioBarMese" style="font-size:10px; font-weight:900; color:#f39c12; margin:0 6px;"></span>
-    <span style="font-size:9px; color:#aaa;">— tocca per tornare al mese corrente</span>
+    <span style="font-size:10px; font-weight:900; color:#f39c12; letter-spacing:0.8px;">📅 <span id="archivioBarMese"></span> — tocca per tornare al mese corrente</span>
 </div>
 <div id="modalTurno" class="modal no-print">
     <div class="modal-content" style="border-color:var(--primary); padding:16px 18px; max-height:96dvh; max-height:96vh; overflow-y:auto;">
@@ -1459,7 +1457,7 @@ body {
         <i class="fas fa-history" style="color:#ffffff"></i><span data-translate="btn_history">STORICO</span>
     </div>
    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; grid-column:1 / -1; margin-top:2px;">
-        <button style="height:44px; font-size:11px; font-weight:900; padding:0; background:var(--primary); color:#000; border:none; border-radius:15px; cursor:pointer;" onclick="apriReport()"><i class="fas fa-file-alt" style="margin-right:5px;"></i><span data-translate="btn_monthly_summary">RIEPILOGO MESE</span></button>
+        <button style="height:44px; font-size:11px; font-weight:900; padding:0; background:var(--primary); color:#000; border:none; border-radius:15px; cursor:pointer;" onclick="apriReport(reportMeseKey || null)"><i class="fas fa-file-alt" style="margin-right:5px;"></i><span data-translate="btn_monthly_summary">RIEPILOGO MESE</span></button>
         <button style="height:44px; font-size:11px; font-weight:900; padding:0; background:var(--orange); color:#000; border:none; border-radius:15px; cursor:pointer;" onclick="apriResaView()"><i class="fas fa-chart-line" style="margin-right:5px;"></i><span data-translate="btn_yield_chart">RESA €/ORA</span></button>
     </div>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; grid-column:1 / -1; margin-top:2px;">
@@ -2408,7 +2406,8 @@ function confermaReset() {
     }
     function calcola() {
     const n = new Date();
-    const tag = `${(n.getMonth()+1).toString().padStart(2,'0')}/${n.getFullYear()}`;
+    const _meseCorrente = `${(n.getMonth()+1).toString().padStart(2,'0')}/${n.getFullYear()}`;
+    const tag = (typeof reportMeseKey !== 'undefined' && reportMeseKey) ? reportMeseKey : _meseCorrente;
     const turniMese = db.turni.filter(t => t.data.endsWith(tag));
 
     let lordoA = turniMese.reduce((a,b)=>a+(b.soloViaggio?0:b.lordo), 0);
@@ -2873,7 +2872,7 @@ function apriStorico() {
 
             htmlArchivio += `
             <div class="month-group" style="margin:5px; border-radius:10px;">
-                <div class="month-header" onclick="toggleMese('${meseId}'); reportMeseKey='${key}'; aggiornaArchivioBar();">
+                <div class="month-header" onclick="toggleMese('${meseId}'); reportMeseKey='${key}'; aggiornaArchivioBar(); calcola();">
                     <div>
                         <div class="month-title">${getNomeMese(key)}</div>
                         <div class="month-summary">
@@ -3464,7 +3463,7 @@ function chiudiResaView(){
 function tornaAlMeseCorrente() {
     reportMeseKey = null;
     aggiornaArchivioBar();
-    // Aggiorna resa se aperta
+    if (typeof calcola === 'function') calcola();
     var rv = document.getElementById('resaView');
     if (rv && rv.style.display !== 'none') disegnaGraficoResa();
 }
