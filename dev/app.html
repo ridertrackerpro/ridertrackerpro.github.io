@@ -1155,6 +1155,19 @@ body {
 </div>
 
 
+<div id="modalKmArrivoGps" class="modal no-print" style="z-index:10012;">
+    <div class="modal-content" style="border-color:var(--primary);">
+        <h3 style="color:var(--primary); font-size:15px; margin-bottom:6px;">📍 KM Arrivo Odometro</h3>
+        <p id="modalKmArrivoGpsInfo" style="font-size:12px; color:var(--dim); margin-bottom:14px; line-height:1.5;"></p>
+        <div style="font-size:9px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.8px; text-align:center; margin-bottom:4px;">KM ATTUALI CONTACHILOMETRI <span style="color:#ff4d4d;">*</span></div>
+        <input type="number" id="inputKmArrivoGps" style="text-align:center; margin-bottom:16px;" placeholder="es. 12540" step="1" inputmode="decimal" autocomplete="off">
+        <div class="confirm-buttons">
+            <button class="btn-confirm-cancel" onclick="confermaKmArrivoGps()">CONFERMA</button>
+            <button class="btn-confirm-ok" style="background:#444; color:#aaa;" onclick="saltaKmArrivoGps()">SALTA</button>
+        </div>
+    </div>
+</div>
+
 <div id="modalAnnullaGPS" class="modal no-print" style="z-index:10011;">
     <div class="modal-content" style="border-color:var(--accent);">
         <h3 id="modalAnnullaGPSTitle" style="color:var(--accent); font-size:16px;">Annulla sessione GPS</h3>
@@ -1583,6 +1596,9 @@ vehicle_scooter: 'Scooter',
         alert_lordo_required: 'Il campo "Lordo guadagnato" è obbligatorio per salvare il turno.',
         alert_euro_required: 'Il campo "Speso" è obbligatorio per registrare il rifornimento.',
         alert_use_last_price: 'Prezzo per litro non inserito: verrà utilizzato il costo dell\'ultimo rifornimento effettuato.',
+        alert_km_end_required: 'I KM di arrivo odometro sono obbligatori per il calcolo del consumo reale.',
+        alert_km_start_required: 'È il primo turno: inserisci i KM di partenza odometro.',
+        alert_km_end_gps: 'Inserisci i KM attuali del contachilometri per calcolare il consumo reale.',
         btn_reset_time: 'AZZERA',
         btn_back_to_shift: 'TORNA AL TURNO',
         ph_lordo_short: 'Lordo €',
@@ -2646,7 +2662,11 @@ function apriM(id) {
         })();
 
         var kmTmp = localStorage.getItem(_kmPartenzaKey());
-        if (kmTmp) document.getElementById('tKStart').value = kmTmp;
+        if (kmTmp) {
+                document.getElementById('tKStart').value = kmTmp;
+            } else {
+                precompilaKmPartenza();
+            }
         var oraTmp = localStorage.getItem('ora_inizio_tmp');
         if (oraTmp) {
             document.getElementById('tOStart').value = oraTmp;
@@ -4026,6 +4046,41 @@ function salvaKmPartenzaTmp() {
     var v = document.getElementById('tKStart').value;
     if (v) localStorage.setItem(_kmPartenzaKey(), v);
 }
+// ── KM ODOMETRO PERSISTENTE PER VEICOLO ──
+function _lastKmKey(veicoloId) {
+    return 'last_km_veicolo_' + (veicoloId || 'default');
+}
+function getLastKmVeicolo(veicoloId) {
+    var v = localStorage.getItem(_lastKmKey(veicoloId));
+    return v ? parseFloat(v) : null;
+}
+function setLastKmVeicolo(veicoloId, km) {
+    if (veicoloId && km > 0) localStorage.setItem(_lastKmKey(veicoloId), km);
+}
+function isPrimoTurnoVeicolo(veicoloId) {
+    // Nessun turno salvato con kmOdoEnd per questo veicolo
+    var haTurni = db.turni.filter(function(t) {
+        return t.veicoloId === veicoloId && t.kmOdoEnd;
+    }).length > 0;
+    return !haTurni && getLastKmVeicolo(veicoloId) === null;
+}
+// Pre-compila tKStart con ultimo km arrivo del veicolo
+function precompilaKmPartenza() {
+    var va = getVeicoloAttivo();
+    if (!va) return;
+    var lastKm = getLastKmVeicolo(va.id);
+    var tKS = document.getElementById('tKStart');
+    if (!tKS) return;
+    if (lastKm !== null) {
+        tKS.value = lastKm;
+        tKS.readOnly = false;
+        salvaKmPartenzaTmp();
+        calcolaKmDaOdometro();
+    } else {
+        tKS.value = '';
+        tKS.readOnly = false;
+    }
+}
 
 function calcolaKmDaOdometro() {
     var start = parseFloat(document.getElementById('tKStart').value);
@@ -4161,10 +4216,26 @@ function salvaTurno() {
         return;
     }
 
-    // Validazione coerenza km odometro
+    // Validazione km odometro
     var kStart = document.getElementById('tKStart').value;
     var kEnd = document.getElementById('tKEnd').value;
     var kPercorsi = document.getElementById('tK').value;
+    var _vaTurno = getVeicoloAttivo();
+    var _vIdTurno = _vaTurno ? _vaTurno.id : null;
+    var _mezzoTurnoKm = document.getElementById('tMezzo').value;
+    var _noCons2 = _mezzoTurnoKm === 'bici' || _mezzoTurnoKm === 'escooter';
+    if (!_noCons2) {
+        // KM partenza obbligatorio se e' il primo turno in assoluto
+        if (kStart === '' && isPrimoTurnoVeicolo(_vIdTurno)) {
+            mostraAlertApp(t('alert_km_start_required'));
+            return;
+        }
+        // KM arrivo sempre obbligatorio
+        if (kEnd === '') {
+            mostraAlertApp(t('alert_km_end_required'));
+            return;
+        }
+    }
     if (kStart !== '' && kEnd !== '') {
         var ksF = parseFloat(kStart);
         var keF = parseFloat(kEnd);
@@ -4343,6 +4414,54 @@ function effettuaSalvataggioTurno(prezzo, rif) {
         obj.gpsKm    = window._gpsRotta.km;
         obj.gpsVmax  = window._gpsRotta.vmax;
         window._gpsRotta = null;
+
+function mostraModalKmArrivoGps(kmGps, nSoste) {
+    var info = '✅ GPS completato!
+
+KM GPS: ' + kmGps + ' km  •  Soste: ' + nSoste + '
+
+Inserisci i KM del contachilometri per il calcolo del consumo reale.';
+    var infoEl = document.getElementById('modalKmArrivoGpsInfo');
+    if (infoEl) infoEl.innerText = info;
+    var inp = document.getElementById('inputKmArrivoGps');
+    if (inp) {
+        var va = getVeicoloAttivo();
+        var lastKm = va ? getLastKmVeicolo(va.id) : null;
+        inp.value = lastKm ? Math.round(lastKm + parseFloat(kmGps)) : '';
+        inp.placeholder = 'es. ' + (lastKm ? Math.round(lastKm + parseFloat(kmGps)) : '12540');
+    }
+    document.getElementById('modalKmArrivoGps').style.display = 'flex';
+}
+
+function confermaKmArrivoGps() {
+    var inp = document.getElementById('inputKmArrivoGps');
+    var km = parseFloat(inp ? inp.value : '') || 0;
+    if (km <= 0) {
+        mostraAlertApp(t('alert_km_end_required'));
+        return;
+    }
+    document.getElementById('modalKmArrivoGps').style.display = 'none';
+    // Compila tKEnd nel form turno
+    var tKE = document.getElementById('tKEnd');
+    if (tKE) {
+        tKE.value = km;
+        calcolaKmDaOdometro();
+    }
+    // Aggiorna lastKmVeicolo
+    var va = getVeicoloAttivo();
+    if (va) setLastKmVeicolo(va.id, km);
+    // Mostra alert di completamento
+    mostraAlertApp(currentLang === 'en'
+        ? '✅ GPS tracking complete!\n\nFill in GROSS EARNED and press SAVE SHIFT.'
+        : '✅ Rilevamento GPS completato!\n\nCompila LORDO GUADAGNATO e premi SALVA TURNO.');
+}
+
+function saltaKmArrivoGps() {
+    document.getElementById('modalKmArrivoGps').style.display = 'none';
+    mostraAlertApp(currentLang === 'en'
+        ? '✅ GPS tracking complete!\n\nFill in GROSS EARNED and press SAVE SHIFT.\n\n⚠️ Odometer km not entered: real consumption will not be calculated.'
+        : '✅ Rilevamento GPS completato!\n\nCompila LORDO GUADAGNATO e premi SALVA TURNO.\n\n⚠️ KM odometro non inseriti: il consumo reale non verrà calcolato.');
+}
         setTimeout(gpsResetUI, 80);
     }
     // Veicolo attivo al momento del salvataggio
@@ -4352,7 +4471,11 @@ function effettuaSalvataggioTurno(prezzo, rif) {
     var _kSv = document.getElementById('tKStart').value;
     var _kEv = document.getElementById('tKEnd').value;
     if (_kSv !== '') obj.kmOdoStart = parseFloat(_kSv);
-    if (_kEv !== '') obj.kmOdoEnd = parseFloat(_kEv);
+    if (_kEv !== '') {
+        obj.kmOdoEnd = parseFloat(_kEv);
+        // Aggiorna lastKmVeicolo con km arrivo per pre-compilare il prossimo turno
+        if (_vAtt) setLastKmVeicolo(_vAtt.id, parseFloat(_kEv));
+    }
 
     if (editingId !== null && editingCat === 'turni') {
         const idx = db.turni.findIndex(x => x.id === editingId);
@@ -4973,6 +5096,21 @@ document.getElementById("fileBackup").addEventListener("change", function (e) {
                 var nRif = dbMerged.rifornimenti.length;
                 var nExtra = dbMerged.extraKm.length;
                 ripristinati.push('Storico: ' + nTurni + ' turni, ' + nRif + ' rifornimenti, ' + nExtra + ' extra');
+                // Ripristina lastKmVeicolo dal turno piu recente con kmOdoEnd
+                // Cosi il sistema non chiede km partenza come se fosse il primo turno
+                try {
+                    var turniConKm = dbMerged.turni.filter(function(t) {
+                        return t.kmOdoEnd && t.kmOdoEnd > 0 && t.veicoloId;
+                    }).sort(function(a, b) { return b.id - a.id; });
+                    var veicoliGiaRipristinati = {};
+                    for (var ti = 0; ti < turniConKm.length; ti++) {
+                        var tt = turniConKm[ti];
+                        if (!veicoliGiaRipristinati[tt.veicoloId]) {
+                            localStorage.setItem('last_km_veicolo_' + tt.veicoloId, tt.kmOdoEnd);
+                            veicoliGiaRipristinati[tt.veicoloId] = true;
+                        }
+                    }
+                } catch(eKm) {}
             } else {
                 ignorati.push('Storico (db non trovato nel backup)');
             }
@@ -6701,13 +6839,19 @@ function gpsTermina(){
         document.getElementById('tO').value=(diffMin/60).toFixed(2);
     }
     // Modale con istruzioni (non mostrare se si sta annullando o se è solo viaggio)
-    if (!GPS.cancelMode && !_soloViaggio) {
+    if (!GPS.cancelMode) {
         GPS.completed = true;
-        mostraAlertApp(currentLang==='en'
-            ? '✅ GPS tracking complete!\n\nKM recorded: '+GPS.km.toFixed(2)+'\nStops: '+GPS.soste.length+'\n\nTo save the shift:\n• Fill in GROSS EARNED (required)\n• Fill in fuel consumption (optional)\n\nThen press SAVE SHIFT.'
-            : '✅ Rilevamento GPS completato!\n\nKM registrati: '+GPS.km.toFixed(2)+'\nSoste: '+GPS.soste.length+'\n\nPer salvare il turno:\n• Compila LORDO GUADAGNATO (obbligatorio)\n• Compila il consumo carburante (facoltativo)\n\nPoi premi SALVA TURNO.');
-    } else if (!GPS.cancelMode && _soloViaggio) {
-        GPS.completed = true;
+        // Mostra modale km arrivo odometro (obbligatorio per calcolo consumi)
+        var _vGps = getVeicoloAttivo();
+        var _mezzoGps = document.getElementById('tMezzo').value;
+        var _noConsGps = _mezzoGps === 'bici' || _mezzoGps === 'escooter';
+        if (!_noConsGps && _vGps) {
+            mostraModalKmArrivoGps(GPS.km.toFixed(2), GPS.soste.length);
+        } else {
+            mostraAlertApp(currentLang==='en'
+                ? '✅ GPS tracking complete!\n\nKM recorded: '+GPS.km.toFixed(2)+'\nStops: '+GPS.soste.length+'\n\nFill in GROSS EARNED and press SAVE SHIFT.'
+                : '✅ Rilevamento GPS completato!\n\nKM registrati: '+GPS.km.toFixed(2)+'\nSoste: '+GPS.soste.length+'\n\nCompila LORDO GUADAGNATO e premi SALVA TURNO.');
+        }
     }
     GPS.cancelMode = false;
     document.getElementById('gpsBtnGo').disabled=false;
