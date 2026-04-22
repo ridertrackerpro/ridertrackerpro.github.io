@@ -3437,7 +3437,7 @@ function chiudiResaView(){
 
 function disegnaGraficoResa(){
     const tag = reportMeseKey || `${(new Date().getMonth()+1).toString().padStart(2,'0')}/${new Date().getFullYear()}`;
-    const dati = db.turni.filter(t => t.data.endsWith(tag)).sort((a,b) => {
+    const dati = db.turni.filter(t => t.data.endsWith(tag) && !t.soloViaggio).sort((a,b) => {
         const [da,ma,ya] = a.data.split('/'); const [db2,mb,yb] = b.data.split('/');
         return new Date(ya,ma-1,da) - new Date(yb,mb-1,db2);
     });
