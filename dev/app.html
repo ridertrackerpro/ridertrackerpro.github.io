@@ -2961,14 +2961,16 @@ function generaHtmlItem(i, mediaOraMese) {
             <div class="storico-main"><span style="color:var(--text);">${kmDisplay.toFixed(1)} ${distUnit}</span></div>
             <div class="storico-sub">${isNoCons ? '' : formatConsumption(i.km, i.km * (i.cons / 100)) + ' ' + iconaC}</div>`;
             html += '</div>';
-            // Pulsanti azione — stesso layout turno normale
-            html += `<div class="storico-azioni">`;
+            // Pulsanti azione — stesso layout turni/rifornimenti standard
+            var _detBtnSV = '';
             if (i.gpsRoute && i.gpsRoute.coords && i.gpsRoute.coords.length > 1) {
-                html += `<button class="btn-azione" onclick="apriDettaglioTurno(${i.id})"><i class="fas fa-map-marked-alt"></i></button>`;
+                _detBtnSV = '<div class="btn-det-turno" onclick="apriDettaglioTurno(' + i.id + ')" title="Mappa"><i class="fas fa-map-marked-alt" style="color:#00CCBC;font-size:12px;"></i></div>';
             }
-            html += `<button class="btn-azione" onclick="modificaVoce('turni',${i.id})"><i class="fas fa-pencil-alt"></i></button>
-                <button class="btn-azione btn-azione-del" onclick="eliminaConferma('turni',${i.id})"><i class="fas fa-trash"></i></button>
-            </div></div>`;
+            html += '<div style="display:flex;flex-direction:column;gap:6px;margin-right:8px;">' +
+                _detBtnSV +
+                '<div onclick="modificaVoce(\'turni\',' + i.id + ')" style="padding:7px 9px;cursor:pointer;border:1px solid var(--primary);border-radius:7px;display:flex;align-items:center;"><i class="fas fa-pen" style="color:var(--primary);font-size:12px;"></i></div>' +
+                '<div onclick="elimina(\'turni\',' + i.id + ')" style="padding:7px 9px;cursor:pointer;border:1px solid #444;border-radius:7px;display:flex;align-items:center;"><i class="fas fa-trash" style="color:#888;font-size:12px;"></i></div>' +
+                '</div></div>';
             return html;
         }
 
