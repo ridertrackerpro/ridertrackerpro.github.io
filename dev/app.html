@@ -6215,6 +6215,7 @@ calcola();
     </div>
 
     <button id="btnSalvaVeicolo" class="btn-modal btn-save" onclick="salvaVeicolo()" style="padding:14px; margin-top:4px;">💾 SALVA VEICOLO</button>
+    <button class="btn-modal btn-close" onclick="resetMediaConsumoVeicolo()" style="padding:10px; margin-top:8px; background:#1a1a1a; border:1px solid #444; color:#888; font-size:11px;">🔄 RESET MEDIA CONSUMO</button>
     <button class="btn-modal btn-close" onclick="document.getElementById('modalVeicolo').style.display='none';" style="padding:14px; margin-top:8px;">ANNULLA</button>
   </div>
 </div>
@@ -6284,6 +6285,26 @@ function apriFormVeicolo(id) {
     vehOnTipoChange();
     vehOnCarbChange();
     document.getElementById('modalVeicolo').style.display = 'flex';
+}
+
+function resetMediaConsumoVeicolo() {
+    var va = getVeicoloAttivo();
+    if (!va) return;
+    // Conferma
+    if (!confirm('Resettare la media consumo? Verranno rimossi i rifornimenti senza km odometro e azzerato il consumo storico dei turni di questo veicolo. I dati economici restano intatti.')) return;
+    // Rimuovi rifornimenti senza km odometro di questo veicolo
+    db.rifornimenti = db.rifornimenti.filter(function(r) {
+        if (r.veicoloId !== va.id) return true;
+        return r.km && r.km > 0;
+    });
+    // Azzera cons nei turni di questo veicolo (usa il consMedio del veicolo come fallback)
+    var consDefault = va.consMedio || 0;
+    db.turni.forEach(function(t) {
+        if (t.veicoloId === va.id) t.cons = consDefault;
+    });
+    salvaDB();
+    document.getElementById('modalVeicolo').style.display = 'none';
+    mostraAlertApp('Reset completato. La media consumo ripartirà dai prossimi rifornimenti.');
 }
 
 function salvaVeicolo() {
