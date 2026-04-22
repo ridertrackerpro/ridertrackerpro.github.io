@@ -2943,23 +2943,25 @@ function generaHtmlItem(i, mediaOraMese) {
     let html = `<div class="storico-item" style="border-left-color:${itemColor}; border-right-color:${itemColor};"><div class="storico-info">`;
 
     if (i.tipo === 'T') {
-        // Turno SOLO VIAGGIO — mostra solo km e consumi
+        // Turno SOLO VIAGGIO
         if (i.soloViaggio) {
             const kmDisplay = fromKm(i.km);
             const distUnit = userSettings.distance === 'miles' ? 'mi' : 'km';
             const isNoCons = va_noCons(i);
             const iconaC = getIconaCarburante(i.tipoCarburante);
-            html += `<div class="tipo-label" style="color:#aaa;">
+            // Sovrascrivi colore bordo con viola per solo viaggio
+            html = html.replace('border-left-color:var(--primary); border-right-color:var(--primary);', 'border-left-color:#8e44ad; border-right-color:#8e44ad;');
+            html += `<div class="tipo-label" style="color:#8e44ad;">
                 🗺️ SOLO VIAGGIO • ${(function(){ var _vi=getVeicoli().find(function(v){return v.id===i.veicoloId;}); return _getMezzoLabel(_vi?_vi.tipo:i.mezzo); })()}
             </div>
             <div class="storico-date-row">
                 <span>${i.data.substring(0, 5)}</span>
                 <span class="storico-hour">${i.oraStart || i.ora || ''}</span>
             </div>
-            <div class="storico-main"><span style="color:#aaa;">${kmDisplay.toFixed(1)} ${distUnit}</span></div>
+            <div class="storico-main"><span style="color:var(--text);">${kmDisplay.toFixed(1)} ${distUnit}</span></div>
             <div class="storico-sub">${isNoCons ? '' : formatConsumption(i.km, i.km * (i.cons / 100)) + ' ' + iconaC}</div>`;
             html += '</div>';
-            // Pulsanti azione
+            // Pulsanti azione — stesso layout turno normale
             html += `<div class="storico-azioni">`;
             if (i.gpsRoute && i.gpsRoute.coords && i.gpsRoute.coords.length > 1) {
                 html += `<button class="btn-azione" onclick="apriDettaglioTurno(${i.id})"><i class="fas fa-map-marked-alt"></i></button>`;
