@@ -1420,7 +1420,7 @@ body {
 <button class="btn-rep-uniform btn-black" onclick="stampaPagina()">
 <i class="fas fa-print"></i> <span data-translate="print">STAMPA</span>
 </button>
-<button class="btn-rep-uniform btn-grey-dark" onclick="document.getElementById('reportView').style.display='none'; reportMeseKey=null; aggiornaArchivioBar();">
+<button class="btn-rep-uniform btn-grey-dark" onclick="document.getElementById('reportView').style.display='none';">
 <i class="fas fa-times"></i> <span data-translate="close">CHIUDI</span>
 </button>
 </div>
@@ -3456,8 +3456,6 @@ function apriResaView(){
 
 function chiudiResaView(){ 
     document.getElementById('resaView').style.display = 'none';
-    reportMeseKey = null;
-    aggiornaArchivioBar();
     if (window._resaProvenienza === 'report') {
         document.getElementById('reportView').style.display = 'flex';
     }
