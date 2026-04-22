@@ -3200,7 +3200,7 @@ function apriReport(meseKey) {
             <td>${currencySymbol()}${fromEuro(netto).toFixed(2)}</td>
             <td>${t.ore.toFixed(1)}</td>
           <td>${fromKm(t.km).toFixed(2)} ${userSettings.distance === 'miles' ? 'mi' : 'km'}</td>
-            <td>${isNoCons ? '—' : t.cons.toFixed(1)}</td>
+            <td>${isNoCons ? '—' : consL100kmToDisplayValue(t.cons)}</td>
             <td class="tipo-abbrev-mi">${isNoCons ? '—' : iconaC}</td>
             <td>${qCellDisplay}</td>
         </tr>`;
