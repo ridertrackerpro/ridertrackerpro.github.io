@@ -2405,7 +2405,7 @@ function confermaReset() {
 
     let lordoA = turniMese.reduce((a,b)=>a+(b.soloViaggio?0:b.lordo), 0);
     let ore = turniMese.reduce((a,b)=>a+(b.soloViaggio?0:b.ore), 0);
-    let km = turniMese.reduce((a,b)=>a+b.km, 0);
+    let km = turniMese.reduce((a,b)=>a+(b.soloViaggio?0:b.km), 0);
     let tassazioneTotale = turniMese.reduce((a,t)=>a+(t.soloViaggio?0:(t.lordo*(getTaxPerc(t)/100))),0);
 
     let costoB_Turni = 0;
@@ -3176,11 +3176,13 @@ function apriReport(meseKey) {
 
         const netto = t.lordo - (t.lordo * (getTaxPerc(t) / 100)) - costoB;
 
-        lordoTot += t.lordo;
-        spesaBTot += costoB;
-        tassazioneTot += (t.lordo * (getTaxPerc(t) / 100));
-        tK += t.km;
-        tO += t.ore;
+        if (!t.soloViaggio) {
+            lordoTot += t.lordo;
+            spesaBTot += costoB;
+            tassazioneTot += (t.lordo * (getTaxPerc(t) / 100));
+            tK += t.km;
+            tO += t.ore;
+        }
 
         const massUnit = userSettings.mass === 'lbs' ? 'lb' : 'kg';
         const isNoCons = va_noCons(t);
@@ -3377,7 +3379,7 @@ if (thConsumoTurni) {
 function calcolaPeriodiConsumo(turni, tax) {
     const _tax = (tax !== null && tax !== undefined) ? tax : 0;
     const gruppi = {};
-    turni.forEach(t => {
+    turni.filter(function(t){ return !t.soloViaggio; }).forEach(t => {
         const settimana = Math.ceil(parseInt(t.data.substring(0,2)) / 7);
         const chiave = `S${settimana}`;
         if (!gruppi[chiave]) gruppi[chiave] = [];
