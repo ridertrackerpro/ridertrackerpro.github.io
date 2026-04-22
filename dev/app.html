@@ -2873,7 +2873,7 @@ function apriStorico() {
 
             htmlArchivio += `
             <div class="month-group" style="margin:5px; border-radius:10px;">
-                <div class="month-header" onclick="toggleMese('${meseId}')">
+                <div class="month-header" onclick="toggleMese('${meseId}'); reportMeseKey='${key}'; aggiornaArchivioBar();">
                     <div>
                         <div class="month-title">${getNomeMese(key)}</div>
                         <div class="month-summary">
