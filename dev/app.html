@@ -6033,12 +6033,12 @@ calcola();
         </div>
       </div>
       <div class="det-legend" id="detLegend">
-        <div class="det-leg-item"><div class="det-leg-dot" style="background:#ff4d4d"></div>Fermo</div>
-        <div class="det-leg-item"><div class="det-leg-dot" style="background:#00CCBC"></div>&lt;30</div>
-        <div class="det-leg-item"><div class="det-leg-dot" style="background:#4ade80"></div>30-60</div>
-        <div class="det-leg-item"><div class="det-leg-dot" style="background:#3b82f6"></div>60-90</div>
-        <div class="det-leg-item"><div class="det-leg-dot" style="background:#ffa500"></div>&gt;90 km/h</div>
-        <div class="det-leg-item"><div class="det-leg-dot" style="background:#4ade80;border:1.5px solid #fff;width:9px;height:9px"></div>Start</div>
+        <div class="det-leg-item"><div class="det-leg-dot" style="background:#8e44ad"></div>Fermo</div>
+        <div class="det-leg-item"><div class="det-leg-dot" style="background:#e67e22"></div>&lt;30</div>
+        <div class="det-leg-item"><div class="det-leg-dot" style="background:#27ae60"></div>30-60</div>
+        <div class="det-leg-item"><div class="det-leg-dot" style="background:#2471a3"></div>60-90</div>
+        <div class="det-leg-item"><div class="det-leg-dot" style="background:#e74c3c"></div>&gt;90 km/h</div>
+        <div class="det-leg-item"><div class="det-leg-dot" style="background:#27ae60;border:1.5px solid #fff;width:9px;height:9px"></div>Start</div>
         <div class="det-leg-item"><div class="det-leg-dot" style="background:#ffffff;border:1.5px solid #fff;width:9px;height:9px"></div>Fine</div>
         <div class="det-leg-item"><div class="det-leg-dot" style="background:#a855f7;border:1.5px solid #fff;width:7px;height:7px"></div>Sosta</div>
       </div>
@@ -6537,7 +6537,7 @@ function _fmtDur(s){
     return h>0 ? h+'h '+m+'m' : m+'m';
 }
 function _ts2hm(ts){if(!ts)return'';var d=new Date(ts);return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');}
-function _spdColor(k){return k<3?'#ff4d4d':k<30?'#00CCBC':k<60?'#4ade80':k<90?'#3b82f6':'#ffa500';}
+function _spdColor(k){return k<3?'#8e44ad':k<30?'#e67e22':k<60?'#27ae60':k<90?'#2471a3':'#e74c3c';}
 
 function gpsDot(s){var e=document.getElementById('gpsDot');if(e)e.className='gps-dot'+(s?' '+s:'');}
 function gpsLbl(t){var e=document.getElementById('gpsLbl');if(e)e.innerText=t;}
@@ -7741,7 +7741,7 @@ function _initLiveMap() {
     _liveMap.instance = map;
     // Traccia GPS
     _liveMap.track = L.polyline([], {
-        color: '#00CCBC', weight: 4, opacity: 0.9
+        color: '#e67e22', weight: 2.5, opacity: 0.9
     }).addTo(map);
     // Marker posizione attuale
     var dotIcon = L.divIcon({
@@ -7862,7 +7862,7 @@ function _initLiveMap() {
     var map = L.map(container, { center: [startLat, startLon], zoom: startZoom, zoomControl: true, attributionControl: false });
     new _TileCacheLayer('', { minZoom: 13, maxZoom: 18 }).addTo(map);
     _liveMap.instance = map;
-    _liveMap.track = L.polyline([], { color: '#00CCBC', weight: 4, opacity: 0.9 }).addTo(map);
+    _liveMap.track = L.polyline([], { color: '#e67e22', weight: 2.5, opacity: 0.9 }).addTo(map);
     var dotIcon = L.divIcon({ html: '<div style="width:14px;height:14px;border-radius:50%;background:#00CCBC;border:3px solid #fff;box-shadow:0 0 6px rgba(0,204,188,0.7);"></div>', className: '', iconSize: [14,14], iconAnchor: [7,7] });
     _liveMap.marker = L.marker([startLat, startLon], { icon: dotIcon, zIndexOffset: 1000 }).addTo(map);
     if (GPS.pts && GPS.pts.length > 0) {
