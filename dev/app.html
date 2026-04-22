@@ -4207,7 +4207,8 @@ function salvaTurno() {
         return;
     }
     var lordoVal = parseFloat(document.getElementById('tL').value) || 0;
-    if (lordoVal <= 0) {
+    var _isSoloViaggio = _soloViaggio || false;
+    if (lordoVal <= 0 && !_isSoloViaggio) {
         mostraAlertApp(t('alert_lordo_required'));
         return;
     }
