@@ -14,6 +14,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
     <script>
         window.onerror = function(message, source, lineno, colno, error) {
     alert("JS ERROR:\n\n" + message + "\nLine: " + lineno);
@@ -568,6 +570,9 @@ html, body { touch-action: pan-x pan-y; }
 .gps-dot.on  { background:#4ade80; box-shadow:0 0 6px #4ade80; animation:gpsBlink 1.2s infinite; }
 .gps-dot.done{ background:#00CCBC; box-shadow:0 0 5px #00CCBC; }
 .gps-dot.err { background:#ff4d4d; }
+#gpsLiveMap .leaflet-pane { z-index: 400; }
+#gpsLiveMap .leaflet-control { z-index: 800; }
+#gpsLiveMap .leaflet-top, #gpsLiveMap .leaflet-bottom { z-index: 800; }
 /* Fix Leaflet z-index nel modale */
 #gpsLiveMap .leaflet-pane { z-index: 400; }
 #gpsLiveMap .leaflet-control { z-index: 800; }
@@ -919,6 +924,11 @@ body {
                     <div style="position:absolute; bottom:6px; right:6px; z-index:1000; background:rgba(255,255,255,0.9); border-radius:6px; padding:3px 7px; font-size:9px; color:#00a89e; font-weight:900; pointer-events:none;" id="gpsLiveMapPts">0 pt</div>
                     <div onclick="_liveMapResetView()" style="position:absolute; bottom:6px; left:6px; z-index:1000; background:rgba(255,255,255,0.9); border-radius:6px; padding:3px 7px; font-size:9px; color:#00a89e; font-weight:900; cursor:pointer;">⊙ CENTRA</div>
                 </div>
+                <div id="gpsLiveMapWrap" style="display:none; margin-top:8px; border-radius:10px; overflow:hidden; height:260px; position:relative; background:#e8eaed;">
+                    <div id="gpsLiveMap" style="width:100%; height:100%;"></div>
+                    <div style="position:absolute; bottom:6px; right:6px; z-index:1000; background:rgba(255,255,255,0.9); border-radius:6px; padding:3px 7px; font-size:9px; color:#00a89e; font-weight:900; pointer-events:none;" id="gpsLiveMapPts">0 pt</div>
+                    <div onclick="_liveMapResetView()" style="position:absolute; bottom:6px; left:6px; z-index:1000; background:rgba(255,255,255,0.9); border-radius:6px; padding:3px 7px; font-size:9px; color:#00a89e; font-weight:900; cursor:pointer;">⊙ CENTRA</div>
+                </div>
             </div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
                 <button class="turno-btn turno-btn-gps-go" id="gpsBtnGo" onclick="gpsAvvia()" style="white-space:nowrap; line-height:1.2;">
@@ -993,6 +1003,10 @@ body {
         <input type="number" id="bE" style="text-align:center; margin-bottom:14px;" data-translate-placeholder="ph_spent" step="0.01" inputmode="decimal" autocomplete="off">
         <div style="font-size:9px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.8px; text-align:center; margin-bottom:2px;" id="lblBenzaPrezzo">COSTO €/L</div>
         <input type="text" id="bP" style="text-align:center; margin-bottom:14px;" data-translate-placeholder="insert_ph" inputmode="decimal" oninput="formattaPrezzo(this)" autocomplete="off">
+        <div style="font-size:9px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.8px; text-align:center; margin-bottom:2px;">KM ODOMETRO <span style="color:#ff4d4d;">*</span></div>
+        <input type="number" id="bKm" style="text-align:center; margin-bottom:14px;" placeholder="es. 12500" step="1" inputmode="decimal" autocomplete="off">
+        <div style="font-size:9px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.8px; text-align:center; margin-bottom:2px;">LITRI INSERITI <span style="color:#888; font-weight:400;">(opzionale)</span></div>
+        <input type="number" id="bLitri" style="text-align:center; margin-bottom:14px;" placeholder="es. 4.5" step="0.01" inputmode="decimal" autocomplete="off">
         <div id="campiMiscela" style="display:none;">
             <p style="font-size:11px; color:var(--dim); margin:0 0 10px; text-transform:uppercase; letter-spacing:0.5px;" data-translate="mix_data">DATI MISCELA</p>
             <input type="number" id="bPercMiscela" style="text-align:center; margin-bottom:14px;" data-translate-placeholder="ph_mix_pct" step="0.1">
@@ -1597,8 +1611,7 @@ vehicle_scooter: 'Scooter',
         alert_euro_required: 'Il campo "Speso" è obbligatorio per registrare il rifornimento.',
         alert_use_last_price: 'Prezzo per litro non inserito: verrà utilizzato il costo dell\'ultimo rifornimento effettuato.',
         alert_km_end_required: 'I KM di arrivo odometro sono obbligatori per il calcolo del consumo reale.',
-        alert_km_start_required: 'È il primo turno: inserisci i KM di partenza odometro.',
-        alert_km_end_gps: 'Inserisci i KM attuali del contachilometri per calcolare il consumo reale.',
+        alert_km_start_required: 'E il primo turno: inserisci i KM di partenza odometro.',
         btn_reset_time: 'AZZERA',
         btn_back_to_shift: 'TORNA AL TURNO',
         ph_lordo_short: 'Lordo €',
@@ -2662,11 +2675,7 @@ function apriM(id) {
         })();
 
         var kmTmp = localStorage.getItem(_kmPartenzaKey());
-        if (kmTmp) {
-                document.getElementById('tKStart').value = kmTmp;
-            } else {
-                precompilaKmPartenza();
-            }
+        if (kmTmp) { document.getElementById('tKStart').value = kmTmp; } else { precompilaKmPartenza(); }
         var oraTmp = localStorage.getItem('ora_inizio_tmp');
         if (oraTmp) {
             document.getElementById('tOStart').value = oraTmp;
@@ -4046,10 +4055,7 @@ function salvaKmPartenzaTmp() {
     var v = document.getElementById('tKStart').value;
     if (v) localStorage.setItem(_kmPartenzaKey(), v);
 }
-// ── KM ODOMETRO PERSISTENTE PER VEICOLO ──
-function _lastKmKey(veicoloId) {
-    return 'last_km_veicolo_' + (veicoloId || 'default');
-}
+function _lastKmKey(veicoloId) { return 'last_km_veicolo_' + (veicoloId || 'default'); }
 function getLastKmVeicolo(veicoloId) {
     var v = localStorage.getItem(_lastKmKey(veicoloId));
     return v ? parseFloat(v) : null;
@@ -4058,28 +4064,17 @@ function setLastKmVeicolo(veicoloId, km) {
     if (veicoloId && km > 0) localStorage.setItem(_lastKmKey(veicoloId), km);
 }
 function isPrimoTurnoVeicolo(veicoloId) {
-    // Nessun turno salvato con kmOdoEnd per questo veicolo
-    var haTurni = db.turni.filter(function(t) {
-        return t.veicoloId === veicoloId && t.kmOdoEnd;
-    }).length > 0;
+    var haTurni = db.turni.filter(function(t) { return t.veicoloId === veicoloId && t.kmOdoEnd; }).length > 0;
     return !haTurni && getLastKmVeicolo(veicoloId) === null;
 }
-// Pre-compila tKStart con ultimo km arrivo del veicolo
 function precompilaKmPartenza() {
     var va = getVeicoloAttivo();
     if (!va) return;
     var lastKm = getLastKmVeicolo(va.id);
     var tKS = document.getElementById('tKStart');
     if (!tKS) return;
-    if (lastKm !== null) {
-        tKS.value = lastKm;
-        tKS.readOnly = false;
-        salvaKmPartenzaTmp();
-        calcolaKmDaOdometro();
-    } else {
-        tKS.value = '';
-        tKS.readOnly = false;
-    }
+    if (lastKm !== null) { tKS.value = lastKm; salvaKmPartenzaTmp(); calcolaKmDaOdometro(); }
+    else { tKS.value = ''; }
 }
 
 function calcolaKmDaOdometro() {
@@ -4225,12 +4220,10 @@ function salvaTurno() {
     var _mezzoTurnoKm = document.getElementById('tMezzo').value;
     var _noCons2 = _mezzoTurnoKm === 'bici' || _mezzoTurnoKm === 'escooter';
     if (!_noCons2) {
-        // KM partenza obbligatorio se e' il primo turno in assoluto
         if (kStart === '' && isPrimoTurnoVeicolo(_vIdTurno)) {
             mostraAlertApp(t('alert_km_start_required'));
             return;
         }
-        // KM arrivo sempre obbligatorio
         if (kEnd === '') {
             mostraAlertApp(t('alert_km_end_required'));
             return;
@@ -4414,54 +4407,6 @@ function effettuaSalvataggioTurno(prezzo, rif) {
         obj.gpsKm    = window._gpsRotta.km;
         obj.gpsVmax  = window._gpsRotta.vmax;
         window._gpsRotta = null;
-
-function mostraModalKmArrivoGps(kmGps, nSoste) {
-    var info = '✅ GPS completato!
-
-KM GPS: ' + kmGps + ' km  •  Soste: ' + nSoste + '
-
-Inserisci i KM del contachilometri per il calcolo del consumo reale.';
-    var infoEl = document.getElementById('modalKmArrivoGpsInfo');
-    if (infoEl) infoEl.innerText = info;
-    var inp = document.getElementById('inputKmArrivoGps');
-    if (inp) {
-        var va = getVeicoloAttivo();
-        var lastKm = va ? getLastKmVeicolo(va.id) : null;
-        inp.value = lastKm ? Math.round(lastKm + parseFloat(kmGps)) : '';
-        inp.placeholder = 'es. ' + (lastKm ? Math.round(lastKm + parseFloat(kmGps)) : '12540');
-    }
-    document.getElementById('modalKmArrivoGps').style.display = 'flex';
-}
-
-function confermaKmArrivoGps() {
-    var inp = document.getElementById('inputKmArrivoGps');
-    var km = parseFloat(inp ? inp.value : '') || 0;
-    if (km <= 0) {
-        mostraAlertApp(t('alert_km_end_required'));
-        return;
-    }
-    document.getElementById('modalKmArrivoGps').style.display = 'none';
-    // Compila tKEnd nel form turno
-    var tKE = document.getElementById('tKEnd');
-    if (tKE) {
-        tKE.value = km;
-        calcolaKmDaOdometro();
-    }
-    // Aggiorna lastKmVeicolo
-    var va = getVeicoloAttivo();
-    if (va) setLastKmVeicolo(va.id, km);
-    // Mostra alert di completamento
-    mostraAlertApp(currentLang === 'en'
-        ? '✅ GPS tracking complete!\n\nFill in GROSS EARNED and press SAVE SHIFT.'
-        : '✅ Rilevamento GPS completato!\n\nCompila LORDO GUADAGNATO e premi SALVA TURNO.');
-}
-
-function saltaKmArrivoGps() {
-    document.getElementById('modalKmArrivoGps').style.display = 'none';
-    mostraAlertApp(currentLang === 'en'
-        ? '✅ GPS tracking complete!\n\nFill in GROSS EARNED and press SAVE SHIFT.\n\n⚠️ Odometer km not entered: real consumption will not be calculated.'
-        : '✅ Rilevamento GPS completato!\n\nCompila LORDO GUADAGNATO e premi SALVA TURNO.\n\n⚠️ KM odometro non inseriti: il consumo reale non verrà calcolato.');
-}
         setTimeout(gpsResetUI, 80);
     }
     // Veicolo attivo al momento del salvataggio
@@ -4473,7 +4418,6 @@ function saltaKmArrivoGps() {
     if (_kSv !== '') obj.kmOdoStart = parseFloat(_kSv);
     if (_kEv !== '') {
         obj.kmOdoEnd = parseFloat(_kEv);
-        // Aggiorna lastKmVeicolo con km arrivo per pre-compilare il prossimo turno
         if (_vAtt) setLastKmVeicolo(_vAtt.id, parseFloat(_kEv));
     }
 
@@ -4517,6 +4461,12 @@ let prezzo = toEuro(prezzoInput);
         mostraAlertApp(t('alert_euro_required'));
         return;
     }
+    var kmInput = parseFloat(document.getElementById('bKm').value) || 0;
+    if (kmInput <= 0) {
+        mostraAlertApp('Il campo KM Odometro e' obbligatorio.');
+        return;
+    }
+    var litriInput = parseFloat(document.getElementById('bLitri').value) || 0;
 
     let _prezzoGiaInterno = false;
 
@@ -4551,12 +4501,18 @@ if (!_prezzoGiaInterno) {
         return;
     }
 
+    var litriCalcolati = litriInput > 0 ? litriInput : (prezzo > 0 ? euro / prezzo : 0);
+    var veicoloAttivo = getVeicoloAttivo();
     const obj = {
         id: Date.now(),
         data: `${document.getElementById('dateBD').value.padStart(2,'0')}/${document.getElementById('dateBM').value.padStart(2,'0')}/${document.getElementById('dateBY').value}`,
         tipo: document.getElementById('bTipo').value,
         euro: euro,
-        prezzo: prezzo
+        prezzo: prezzo,
+        km: kmInput,
+        litri: litriCalcolati,
+        veicoloId: veicoloAttivo ? veicoloAttivo.id : null,
+        veicoloNome: veicoloAttivo ? (veicoloAttivo.marca + ' ' + veicoloAttivo.modello) : null
     };
 
     if (obj.tipo === 'miscela') {
@@ -4578,6 +4534,8 @@ if (!_prezzoGiaInterno) {
     salvaDB();
     document.getElementById('bE').value = '';
     document.getElementById('bP').value = '';
+    document.getElementById('bKm').value = '';
+    document.getElementById('bLitri').value = '';
     document.getElementById('bPercMiscela').value = '';
     document.getElementById('bPrezzoOlio').value = '';
 
@@ -5096,19 +5054,12 @@ document.getElementById("fileBackup").addEventListener("change", function (e) {
                 var nRif = dbMerged.rifornimenti.length;
                 var nExtra = dbMerged.extraKm.length;
                 ripristinati.push('Storico: ' + nTurni + ' turni, ' + nRif + ' rifornimenti, ' + nExtra + ' extra');
-                // Ripristina lastKmVeicolo dal turno piu recente con kmOdoEnd
-                // Cosi il sistema non chiede km partenza come se fosse il primo turno
                 try {
-                    var turniConKm = dbMerged.turni.filter(function(t) {
-                        return t.kmOdoEnd && t.kmOdoEnd > 0 && t.veicoloId;
-                    }).sort(function(a, b) { return b.id - a.id; });
-                    var veicoliGiaRipristinati = {};
+                    var turniConKm = dbMerged.turni.filter(function(t) { return t.kmOdoEnd && t.kmOdoEnd > 0 && t.veicoloId; }).sort(function(a,b){ return b.id - a.id; });
+                    var _viaGia = {};
                     for (var ti = 0; ti < turniConKm.length; ti++) {
                         var tt = turniConKm[ti];
-                        if (!veicoliGiaRipristinati[tt.veicoloId]) {
-                            localStorage.setItem('last_km_veicolo_' + tt.veicoloId, tt.kmOdoEnd);
-                            veicoliGiaRipristinati[tt.veicoloId] = true;
-                        }
+                        if (!_viaGia[tt.veicoloId]) { localStorage.setItem('last_km_veicolo_' + tt.veicoloId, tt.kmOdoEnd); _viaGia[tt.veicoloId] = true; }
                     }
                 } catch(eKm) {}
             } else {
@@ -6345,13 +6296,25 @@ function _syncVeicoloAttivo() {
     }
 }
 
-// Calcola consumo medio reale del veicolo da storico rifornimenti+turni
+// Calcola consumo medio reale del veicolo da storico rifornimenti con km odometro
 function getConsMedioRealeVeicolo(veicoloId) {
-    var turniV = db.turni.filter(function(t){ return t.veicoloId === veicoloId && t.km > 0 && t.cons > 0; });
-    if (turniV.length < 2) return null;
-    var totKm = turniV.reduce(function(a,t){ return a + t.km; }, 0);
+    var rifs = db.rifornimenti.filter(function(r) {
+        return r.veicoloId === veicoloId && r.km > 0 && r.litri > 0;
+    }).sort(function(a, b) { return a.km - b.km; });
+    if (rifs.length >= 2) {
+        var totKm = 0, totLitri = 0;
+        for (var i = 1; i < rifs.length; i++) {
+            var kmP = rifs[i].km - rifs[i-1].km;
+            if (kmP > 0) { totKm += kmP; totLitri += rifs[i].litri; }
+        }
+        if (totKm > 0 && totLitri > 0) return (totLitri / totKm) * 100;
+    }
+    // Fallback: media ponderata consumi turni
+    var turniV = db.turni.filter(function(t) { return t.veicoloId === veicoloId && t.km > 0 && t.cons > 0; });
+    if (turniV.length < 1) return null;
+    var totKm2 = turniV.reduce(function(a,t){ return a + t.km; }, 0);
     var totCons = turniV.reduce(function(a,t){ return a + (t.km * t.cons / 100); }, 0);
-    return totKm > 0 ? (totCons / totKm * 100) : null;
+    return totKm2 > 0 ? (totCons / totKm2 * 100) : null;
 }
 
 /* ════════════════════════════════════════════════════
@@ -6790,6 +6753,7 @@ function _gpsErr(e){
 function gpsTermina(){
     if(!GPS.active)return;
     _resetLiveMap();
+    _resetLiveMap();
     if(GPS.watchId!==null){
         navigator.geolocation.clearWatch(GPS.watchId);
         GPS.watchId=null;
@@ -6841,16 +6805,13 @@ function gpsTermina(){
     // Modale con istruzioni (non mostrare se si sta annullando o se è solo viaggio)
     if (!GPS.cancelMode) {
         GPS.completed = true;
-        // Mostra modale km arrivo odometro (obbligatorio per calcolo consumi)
         var _vGps = getVeicoloAttivo();
         var _mezzoGps = document.getElementById('tMezzo').value;
         var _noConsGps = _mezzoGps === 'bici' || _mezzoGps === 'escooter';
         if (!_noConsGps && _vGps) {
             mostraModalKmArrivoGps(GPS.km.toFixed(2), GPS.soste.length);
         } else {
-            mostraAlertApp(currentLang==='en'
-                ? '✅ GPS tracking complete!\n\nKM recorded: '+GPS.km.toFixed(2)+'\nStops: '+GPS.soste.length+'\n\nFill in GROSS EARNED and press SAVE SHIFT.'
-                : '✅ Rilevamento GPS completato!\n\nKM registrati: '+GPS.km.toFixed(2)+'\nSoste: '+GPS.soste.length+'\n\nCompila LORDO GUADAGNATO e premi SALVA TURNO.');
+            mostraAlertApp('Rilevamento GPS completato! KM: ' + GPS.km.toFixed(2) + ' - Soste: ' + GPS.soste.length + '. Compila LORDO GUADAGNATO e premi SALVA TURNO.');
         }
     }
     GPS.cancelMode = false;
@@ -7844,5 +7805,128 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
+
+<script>
+var _liveMap = { instance: null, open: false, track: null, marker: null, followMode: true };
+
+var _TileCacheLayer = L.TileLayer.extend({
+    createTile: function(coords, done) {
+        var tile = document.createElement('img');
+        var key = 'tc_' + coords.z + '_' + coords.x + '_' + coords.y;
+        var url = 'https://' + ['a','b','c','d'][Math.floor(Math.random()*4)] + '.basemaps.cartocdn.com/light_all/' + coords.z + '/' + coords.x + '/' + coords.y + '.png';
+        try {
+            var cached = localStorage.getItem(key);
+            if (cached) { tile.src = cached; setTimeout(function() { done(null, tile); }, 0); return tile; }
+        } catch(e) {}
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', url, true);
+        xhr.responseType = 'blob';
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                var reader = new FileReader();
+                reader.onloadend = function() {
+                    var b64 = reader.result;
+                    try { localStorage.setItem(key, b64); } catch(e) {}
+                    tile.src = b64; done(null, tile);
+                };
+                reader.readAsDataURL(xhr.response);
+            } else { tile.src = url; done(null, tile); }
+        };
+        xhr.onerror = function() { tile.src = url; done(null, tile); };
+        xhr.send();
+        return tile;
+    }
+});
+
+function toggleGpsLiveMap() {
+    var wrap = document.getElementById('gpsLiveMapWrap');
+    if (!wrap) return;
+    _liveMap.open = !_liveMap.open;
+    wrap.style.display = _liveMap.open ? 'block' : 'none';
+    if (_liveMap.open) setTimeout(function() { _initLiveMap(); }, 100);
+}
+
+function _initLiveMap() {
+    if (_liveMap.instance) { _liveMap.instance.invalidateSize(); _updateLiveMap(); return; }
+    if (typeof L === 'undefined') return;
+    var container = document.getElementById('gpsLiveMap');
+    if (!container) return;
+    var startLat = 46.155130, startLon = 12.218218, startZoom = 16;
+    if (GPS.pts && GPS.pts.length > 0) { var last = GPS.pts[GPS.pts.length-1]; startLat = last.la; startLon = last.lo; startZoom = 18; }
+    var map = L.map(container, { center: [startLat, startLon], zoom: startZoom, zoomControl: true, attributionControl: false });
+    new _TileCacheLayer('', { minZoom: 13, maxZoom: 18 }).addTo(map);
+    _liveMap.instance = map;
+    _liveMap.track = L.polyline([], { color: '#00CCBC', weight: 4, opacity: 0.9 }).addTo(map);
+    var dotIcon = L.divIcon({ html: '<div style="width:14px;height:14px;border-radius:50%;background:#00CCBC;border:3px solid #fff;box-shadow:0 0 6px rgba(0,204,188,0.7);"></div>', className: '', iconSize: [14,14], iconAnchor: [7,7] });
+    _liveMap.marker = L.marker([startLat, startLon], { icon: dotIcon, zIndexOffset: 1000 }).addTo(map);
+    if (GPS.pts && GPS.pts.length > 0) {
+        var latlngs = [];
+        for (var i = 0; i < GPS.pts.length; i++) latlngs.push([GPS.pts[i].la, GPS.pts[i].lo]);
+        _liveMap.track.setLatLngs(latlngs);
+        var last2 = GPS.pts[GPS.pts.length-1];
+        _liveMap.marker.setLatLng([last2.la, last2.lo]);
+    }
+    map.on('dragstart', function() { _liveMap.followMode = false; });
+    setTimeout(function() { map.invalidateSize(); }, 200);
+}
+
+function _updateLiveMap() {
+    if (!_liveMap.open || !_liveMap.instance) return;
+    var pts = GPS.pts;
+    if (!pts || pts.length === 0) return;
+    var el = document.getElementById('gpsLiveMapPts');
+    if (el) el.innerText = pts.length + ' pt';
+    var last = pts[pts.length-1];
+    var latlngs = _liveMap.track.getLatLngs();
+    latlngs.push([last.la, last.lo]);
+    _liveMap.track.setLatLngs(latlngs);
+    _liveMap.marker.setLatLng([last.la, last.lo]);
+    if (_liveMap.followMode) _liveMap.instance.setView([last.la, last.lo], Math.max(_liveMap.instance.getZoom(), 17), { animate: true });
+}
+
+function _liveMapResetView() {
+    if (!_liveMap.instance) return;
+    _liveMap.followMode = true;
+    var pts = GPS.pts;
+    if (pts && pts.length > 0) { var last = pts[pts.length-1]; _liveMap.instance.setView([last.la, last.lo], 18, { animate: true }); }
+}
+
+function _resetLiveMap() {
+    _liveMap.open = false; _liveMap.followMode = true;
+    var wrap = document.getElementById('gpsLiveMapWrap');
+    if (wrap) wrap.style.display = 'none';
+    if (_liveMap.instance && _liveMap.track) _liveMap.track.setLatLngs([]);
+}
+
+function mostraModalKmArrivoGps(kmGps, nSoste) {
+    var infoEl = document.getElementById('modalKmArrivoGpsInfo');
+    if (infoEl) infoEl.innerText = 'GPS completato! KM: ' + kmGps + ' - Soste: ' + nSoste + '. Inserisci i KM del contachilometri per il calcolo del consumo reale.';
+    var inp = document.getElementById('inputKmArrivoGps');
+    if (inp) {
+        var va = getVeicoloAttivo();
+        var lastKm = va ? getLastKmVeicolo(va.id) : null;
+        inp.value = lastKm ? Math.round(lastKm + parseFloat(kmGps)) : '';
+        inp.placeholder = lastKm ? Math.round(lastKm + parseFloat(kmGps)) : '12540';
+    }
+    document.getElementById('modalKmArrivoGps').style.display = 'flex';
+}
+
+function confermaKmArrivoGps() {
+    var inp = document.getElementById('inputKmArrivoGps');
+    var km = parseFloat(inp ? inp.value : '') || 0;
+    if (km <= 0) { mostraAlertApp(t('alert_km_end_required')); return; }
+    document.getElementById('modalKmArrivoGps').style.display = 'none';
+    var tKE = document.getElementById('tKEnd');
+    if (tKE) { tKE.value = km; calcolaKmDaOdometro(); }
+    var va = getVeicoloAttivo();
+    if (va) setLastKmVeicolo(va.id, km);
+    mostraAlertApp('Rilevamento GPS completato! Compila LORDO GUADAGNATO e premi SALVA TURNO.');
+}
+
+function saltaKmArrivoGps() {
+    document.getElementById('modalKmArrivoGps').style.display = 'none';
+    mostraAlertApp('Rilevamento GPS completato! Compila LORDO GUADAGNATO e premi SALVA TURNO. Attenzione: KM odometro non inseriti, il consumo reale non verra calcolato.');
+}
+</script>
 </body>
 </html>
