@@ -1200,17 +1200,6 @@ body {
     </div>
 </div>
 
-<div id="modalResetMediaConsumo" class="modal no-print" style="z-index:10011;">
-    <div class="modal-content" style="border-color: var(--accent);">
-        <h3 style="color: var(--accent); font-size: 16px;">🔄 RESET MEDIA CONSUMO</h3>
-        <p style="font-size: 13px; color: var(--text); margin: 15px 0; line-height: 1.5;">Verranno rimossi i rifornimenti senza km odometro e azzerato il consumo storico dei turni di questo veicolo.<br><span style="color:var(--dim); font-size:12px;">I dati economici restano intatti.</span></p>
-        <div class="confirm-buttons">
-            <button class="btn-confirm-cancel" onclick="document.getElementById('modalResetMediaConsumo').style.display='none'">ANNULLA</button>
-            <button class="btn-confirm-ok" style="background: var(--accent); color: #fff;" onclick="eseguiResetMediaConsumo()">RESET</button>
-        </div>
-    </div>
-</div>
-
 <div id="modalAlertApp" class="modal no-print" style="z-index:10010;">
     <div class="modal-content" style="border-color: var(--primary);">
         <p id="modalAlertAppMsg" style="font-size:14px; color:var(--text); margin:10px 0 20px; line-height:1.5;"></p>
@@ -4418,22 +4407,21 @@ function aggiornaSuggerimentoConsumo(tipoCarburante) {
         hint.innerText = '';
         return;
     }
-    var va = getVeicoloAttivo();
-    var consReale = va ? getConsMedioRealeVeicolo(va.id) : null;
-    if (consReale !== null && consReale > 0) {
-        campo.value = consL100kmToDisplayValue(consReale);
-        hint.style.color = 'var(--primary)';
-        var nRif = db.rifornimenti.filter(function(r) {
-            return va && r.veicoloId === va.id && r.km > 0 && r.litri > 0;
-        }).length;
-        var _rWord = nRif === 1 ? 'rifornimento' : 'rifornimenti';
-        hint.innerText = '~consumo reale da ' + nRif + ' ' + _rWord + ' (odometro)';
+    const result = calcolaMediaConsumoDaStorico(tipoCarburante);
+    if (!result) {
+        hint.innerText = currentLang === 'it'
+            ? '(dati insufficienti per calcolare la media — inserisci valore o attendi il calcolo automatico dopo alcuni turni inseriti)'
+            : '(insufficient data to calculate the average — enter value or wait automatic calculation after a few work shifts)';
+        hint.style.color = 'var(--dim)';
         return;
     }
-    hint.style.color = 'var(--dim)';
-    hint.innerText = currentLang === 'it'
-        ? '(inserisci rifornimenti con km odometro per il calcolo reale)'
-        : '(add refuels with odometer km for real consumption)';
+    // Usa il consumo reale calcolato come valore principale
+    hint.style.color = 'var(--primary)';
+    var _rWord = result.numRif === 1 ? 'rifornimento' : 'rifornimenti';
+    var _tWord = result.numTurni === 1 ? 'turno' : 'turni';
+    hint.innerText = '~media da ' + result.numRif + ' ' + _rWord + ' · ' + result.numTurni + ' ' + _tWord;
+    // Sovrascrive sempre con il consumo reale calcolato
+    campo.value = consL100kmToDisplayValue(result.consL100km);
 }
 
 // Restituisce la tassazione applicata a un turno (quella salvata nel turno o quella globale per retrocompatibilità)
@@ -4487,7 +4475,11 @@ function effettuaSalvataggioTurno(prezzo, rif) {
     if (_kSv !== '') obj.kmOdoStart = parseFloat(_kSv);
     if (_kEv !== '') {
         obj.kmOdoEnd = parseFloat(_kEv);
-        if (_vAtt) setLastKmVeicolo(_vAtt.id, parseFloat(_kEv));
+        if (_vAtt) {
+            setLastKmVeicolo(_vAtt.id, parseFloat(_kEv));
+            // Rimuovi il tmp così il turno successivo legge last_km_veicolo (km fine) e non il km inizio di questo turno
+            localStorage.removeItem(_kmPartenzaKey());
+        }
     }
 
     if (editingId !== null && editingCat === 'turni') {
@@ -6302,13 +6294,8 @@ function apriFormVeicolo(id) {
 function resetMediaConsumoVeicolo() {
     var va = getVeicoloAttivo();
     if (!va) return;
-    document.getElementById('modalResetMediaConsumo').style.display = 'flex';
-}
-
-function eseguiResetMediaConsumo() {
-    document.getElementById('modalResetMediaConsumo').style.display = 'none';
-    var va = getVeicoloAttivo();
-    if (!va) return;
+    // Conferma
+    if (!confirm('Resettare la media consumo? Verranno rimossi i rifornimenti senza km odometro e azzerato il consumo storico dei turni di questo veicolo. I dati economici restano intatti.')) return;
     // Rimuovi rifornimenti senza km odometro di questo veicolo
     db.rifornimenti = db.rifornimenti.filter(function(r) {
         if (r.veicoloId !== va.id) return true;
