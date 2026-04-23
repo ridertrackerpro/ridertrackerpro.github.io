@@ -4407,21 +4407,22 @@ function aggiornaSuggerimentoConsumo(tipoCarburante) {
         hint.innerText = '';
         return;
     }
-    const result = calcolaMediaConsumoDaStorico(tipoCarburante);
-    if (!result) {
-        hint.innerText = currentLang === 'it'
-            ? '(dati insufficienti per calcolare la media — inserisci valore o attendi il calcolo automatico dopo alcuni turni inseriti)'
-            : '(insufficient data to calculate the average — enter value or wait automatic calculation after a few work shifts)';
-        hint.style.color = 'var(--dim)';
+    var va = getVeicoloAttivo();
+    var consReale = va ? getConsMedioRealeVeicolo(va.id) : null;
+    if (consReale !== null && consReale > 0) {
+        campo.value = consL100kmToDisplayValue(consReale);
+        hint.style.color = 'var(--primary)';
+        var nRif = db.rifornimenti.filter(function(r) {
+            return va && r.veicoloId === va.id && r.km > 0 && r.litri > 0;
+        }).length;
+        var _rWord = nRif === 1 ? 'rifornimento' : 'rifornimenti';
+        hint.innerText = '~consumo reale da ' + nRif + ' ' + _rWord + ' (odometro)';
         return;
     }
-    // Usa il consumo reale calcolato come valore principale
-    hint.style.color = 'var(--primary)';
-    var _rWord = result.numRif === 1 ? 'rifornimento' : 'rifornimenti';
-    var _tWord = result.numTurni === 1 ? 'turno' : 'turni';
-    hint.innerText = '~media da ' + result.numRif + ' ' + _rWord + ' · ' + result.numTurni + ' ' + _tWord;
-    // Sovrascrive sempre con il consumo reale calcolato
-    campo.value = consL100kmToDisplayValue(result.consL100km);
+    hint.style.color = 'var(--dim)';
+    hint.innerText = currentLang === 'it'
+        ? '(inserisci rifornimenti con km odometro per il calcolo reale)'
+        : '(add refuels with odometer km for real consumption)';
 }
 
 // Restituisce la tassazione applicata a un turno (quella salvata nel turno o quella globale per retrocompatibilità)
