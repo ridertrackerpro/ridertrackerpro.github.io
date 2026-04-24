@@ -3883,13 +3883,12 @@ function iniziaTurno() {
         if (document.getElementById('tOStart').value && document.getElementById('tOEnd').value) {
             calcolaOreDaOrari();
         } else {
-            // Se ancora in pausa, chiudi la pausa prima
-            }
             var elapsed = (Date.now() - _turnoTimerStart) / 1000 / 60 / 60;
             var oreArrotondate = Math.round(elapsed * 10) / 10;
             document.getElementById('tO').value = oreArrotondate > 0 ? oreArrotondate : '';
         }
-        _turnoTimerStart = null;        localStorage.removeItem('turno_manual_tStart');
+        _turnoTimerStart = null;
+        localStorage.removeItem('turno_manual_tStart');
         localStorage.removeItem('turno_form_snap');
         aggTurnoAttivoBlink();
         var btn2 = document.getElementById('btnIniziaTurno');
