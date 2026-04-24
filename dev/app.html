@@ -560,7 +560,6 @@ html, body { touch-action: pan-x pan-y; }
 .turno-btn-gps-pause{ background:linear-gradient(135deg,#f39c12,#d68910); color:#000; animation:none; }
 @keyframes pauseBlink { 0%,100%{opacity:1;} 50%{opacity:0.45;} }
 .turno-btn-gps-resume{ background:linear-gradient(135deg,#27ae60,#1e8449); color:#fff; animation:pauseBlink 1s infinite; }
-.turno-btn-gps-resume{ background:linear-gradient(135deg,#27ae60,#1e8449); color:#fff; }
 .turno-btn-start   { background:var(--orange); color:#000; }
 .turno-btn-save    { background:var(--primary); color:#000; }
 
@@ -965,7 +964,7 @@ body {
                 <button class="turno-btn turno-btn-gps-pause" id="btnPausaManuale" onclick="pausaTurnoManuale()" disabled style="font-size:11px;">
                     <span id="btnPausaManualeLbl">PAUSA</span>
                 </button>
-                <button class="turno-btn turno-btn-save" onclick="salvaTurno()" style="font-size:11px;">FINE</button>
+                <button class="turno-btn turno-btn-save" onclick="salvaTurno()" style="font-size:11px;">SALVA</button>
             </div>
             <button class="btn-modal btn-close" onclick="annullaTurno()" data-translate="cancel" style="margin-top:0;">ANNULLA</button>
         </div>
@@ -5526,7 +5525,7 @@ window.onload = function() {
             setTimeout(function() {
                 var btn = document.getElementById('btnIniziaTurno');
                 if (btn) {
-                    btn.innerText = (typeof currentLang !== 'undefined' && currentLang === 'en') ? '⏹ END SHIFT' : '⏹ FINE TURNO';
+                    btn.innerText = 'FINE';
                     btn.style.background = 'var(--accent)';
                     btn.style.color = '#fff';
                 }
@@ -8062,6 +8061,7 @@ function gpsPausa() {
         GPS.pauseStart = null;
         GPS.paused = false;
         // Riavvia GpsService
+        GPS._lastServiceTs = 0; // reset per accettare nuovi punti
         try { if (window.Capacitor && window.Capacitor.isNativePlatform()) window.Capacitor.Plugins.GpsService.start().catch(function(){}); } catch(e) {}
         if (window.Capacitor && window.Capacitor.isNativePlatform()) {
             GPS.serviceTimer = setInterval(function() {
