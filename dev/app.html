@@ -1395,6 +1395,13 @@ body {
 <span id="repExtraTot">-0.00</span>
 </div>
 
+<hr style="border-color:#ddd; margin:6px 0;">
+
+<div class="summary-row" style="font-weight:700;">
+<span>SUBTOTALE:</span>
+<span id="repSubtotale">0.00</span>
+</div>
+
 <div class="summary-row" id="rowRepRiporto" style="display:none;">
 <span data-translate="carry_over_debt">DEBITO RIPORTATO:</span>
 <span id="repRiporto">-0.00</span>
@@ -3321,6 +3328,15 @@ const elRepExtraTot = document.getElementById('repExtraTot');
 if (elRepExtraTot) elRepExtraTot.innerText = '-' + currencySymbol() + roundCurrency(safeNumber(fromEuro(spesaExtraRep)));
 
 const elRowRepRiporto = document.getElementById('rowRepRiporto');
+// Subtotale = lordo - tasse - carburante - extra (senza riporto)
+var subtotale = lordoTot - tassazioneTot - spesaBTotReale - spesaExtraRep;
+var elSubtotale = document.getElementById('repSubtotale');
+if (elSubtotale) {
+    var subSign = subtotale >= 0 ? '' : '-';
+    elSubtotale.innerText = subSign + currencySymbol() + roundCurrency(safeNumber(fromEuro(Math.abs(subtotale))));
+    elSubtotale.style.color = 'inherit';
+}
+
 const elRepRiporto = document.getElementById('repRiporto');
 if (elRowRepRiporto && elRepRiporto) {
     if (riportoRep > 0) {
