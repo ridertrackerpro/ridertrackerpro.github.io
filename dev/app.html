@@ -965,7 +965,7 @@ body {
                 <button class="turno-btn turno-btn-gps-pause" id="btnPausaManuale" onclick="pausaTurnoManuale()" disabled style="font-size:11px;">
                     <span id="btnPausaManualeLbl">PAUSA</span>
                 </button>
-                <button class="turno-btn turno-btn-save" onclick="salvaTurno()" style="font-size:11px;">FINE</button>
+                <button class="turno-btn turno-btn-save" onclick="salvaTurno()" style="font-size:11px;">SALVA</button>
             </div>
             <button class="btn-modal btn-close" onclick="annullaTurno()" data-translate="cancel" style="margin-top:0;">ANNULLA</button>
         </div>
@@ -6709,10 +6709,6 @@ function gpsAvvia(){
     if(lbl) lbl.style.display='none';
     document.getElementById('gpsBtnGo').disabled=true;
     document.getElementById('gpsBtnStop').disabled=false;
-    document.getElementById('gpsBtnPausa').disabled=false;
-    GPS.paused=false; GPS.pauseStart=null; GPS.pausedMs=0;
-    var _pbA=document.getElementById('gpsBtnPausa'); if(_pbA){_pbA.className='turno-btn turno-btn-gps-pause';}
-    var _plA=document.getElementById('gpsBtnPausaLbl'); if(_plA){_plA.innerText='PAUSA';}
     gpsDot('on'); gpsLbl('Acquisizione segnale...');
 
     // Auto-ora inizio
@@ -6726,9 +6722,9 @@ function gpsAvvia(){
     }
     // Timer tempo
     GPS.tempoTimer=setInterval(function(){
-        if(!GPS.tStart)return;
+        if(!GPS.tStart || GPS.paused)return;
         var el=document.getElementById('gpsTempo');
-        if(el) el.innerText=_fmtDur((Date.now()-GPS.tStart)/1000);
+        if(el) el.innerText=_fmtDur((Date.now()-GPS.tStart-GPS.pausedMs)/1000);
     },5000);
 
     // GpsService Java (FusedLocationProviderClient) è la fonte primaria affidabile.
