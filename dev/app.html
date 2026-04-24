@@ -942,15 +942,12 @@ body {
                     <div onclick="_liveMapResetView()" style="position:absolute; bottom:6px; left:6px; z-index:1000; background:rgba(255,255,255,0.9); border-radius:6px; padding:3px 7px; font-size:9px; color:#00a89e; font-weight:900; cursor:pointer;">⊙ CENTRA</div>
                 </div>
             </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
-                <button class="turno-btn turno-btn-gps-go" id="gpsBtnGo" onclick="gpsAvvia()" style="font-size:11px;">
-                    <span id="lblGpsBtnGo">INIZIO</span>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                <button class="turno-btn turno-btn-gps-go" id="gpsBtnGo" onclick="gpsAvvia()" style="white-space:nowrap; line-height:1.2;">
+                    <i class="fas fa-satellite-dish"></i> <span id="lblGpsBtnGo" data-translate="gps_start">INIZIO GPS</span>
                 </button>
-                <button class="turno-btn turno-btn-gps-pause" id="gpsBtnPausa" onclick="gpsPausa()" disabled style="font-size:11px;">
-                    <span id="gpsBtnPausaLbl">PAUSA</span>
-                </button>
-                <button class="turno-btn turno-btn-gps-stop" id="gpsBtnStop" onclick="gpsTermina()" disabled style="font-size:11px;">
-                    <span id="lblGpsBtnStop">FINE</span>
+                <button class="turno-btn turno-btn-gps-stop" id="gpsBtnStop" onclick="gpsTermina()" disabled style="white-space:nowrap; line-height:1.2;">
+                    <i class="fas fa-stop-circle"></i> <span id="lblGpsBtnStop" data-translate="gps_stop">FINE GPS</span>
                 </button>
             </div>
         </div>
@@ -960,12 +957,9 @@ body {
             <div id="lblManualSection" style="font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:1.5px; color:#aaa; margin-bottom:10px; display:flex; align-items:center; justify-content:center; gap:7px; text-align:center;">
                 ✏️ Inserimento Manuale Turno
             </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:8px;">
-                <button class="turno-btn turno-btn-start" id="btnIniziaTurno" onclick="iniziaTurno()" style="font-size:11px;">INIZIO</button>
-                <button class="turno-btn turno-btn-gps-pause" id="btnPausaManuale" onclick="pausaTurnoManuale()" disabled style="font-size:11px;">
-                    <span id="btnPausaManualeLbl">PAUSA</span>
-                </button>
-                <button class="turno-btn turno-btn-save" onclick="salvaTurno()" style="font-size:11px;">SALVA</button>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
+                <button class="turno-btn turno-btn-start" id="btnIniziaTurno" onclick="iniziaTurno()" data-translate="btn_start_shift">INIZIA TURNO</button>
+                <button class="turno-btn turno-btn-save" onclick="salvaTurno()" data-translate="btn_save_shift">SALVA TURNO</button>
             </div>
             <button class="btn-modal btn-close" onclick="annullaTurno()" data-translate="cancel" style="margin-top:0;">ANNULLA</button>
         </div>
@@ -3867,7 +3861,7 @@ function iniziaTurno() {
         // Cambia bottone: INIZIA → FINE TURNO
         var btn = document.getElementById('btnIniziaTurno');
         if (btn) {
-            btn.innerText = currentLang === 'en' ? 'END' : 'FINE';
+            btn.innerText = currentLang === 'en' ? '⏹ END SHIFT' : '⏹ FINE TURNO';
             btn.style.background = 'var(--accent)';
             btn.style.color = '#fff';
         }
@@ -3920,7 +3914,7 @@ function iniziaTurno() {
         var btn2 = document.getElementById('btnIniziaTurno');
         if (btn2) {
             btn2.setAttribute('data-translate','btn_start_shift');
-            btn2.innerText = currentLang === 'en' ? 'INIZIO' : 'INIZIO';
+            btn2.innerText = currentLang === 'en' ? 'START SHIFT' : 'INIZIA TURNO';
             btn2.style.background = '';
             btn2.style.color = '';
         }
@@ -4009,7 +4003,19 @@ function annullaTurno() {
         document.getElementById('modalAnnullaGPS').style.display = 'flex';
         return;
     }
-    // Nessun GPS: annulla direttamente e torna in homepage
+    // Timer manuale attivo: mostra conferma
+    if (_turnoTimerStart !== null) {
+        var it = currentLang !== 'en';
+        document.getElementById('modalAnnullaGPSTitle').innerText = it ? 'Annulla turno' : 'Cancel shift';
+        document.getElementById('modalAnnullaGPSMsg').innerText = it
+            ? 'Sei sicuro di voler annullare? Il turno in corso verrà perso.'
+            : 'Are you sure you want to cancel? The current shift will be lost.';
+        document.getElementById('modalAnnullaGPSBack').innerText = it ? 'CONTINUA' : 'CONTINUE';
+        document.getElementById('modalAnnullaGPSOk').innerText = it ? 'SÌ, ANNULLA' : 'YES, CANCEL';
+        document.getElementById('modalAnnullaGPS').style.display = 'flex';
+        return;
+    }
+    // Nessun GPS, nessun timer: annulla direttamente
     editingId = null; editingCat = null;
     _resetCampiTurno();
     chiudiModali();
@@ -4026,6 +4032,13 @@ function annullaTurnoConfermato() {
     }
     GPS.completed = false;
     GPS.cancelMode = false;
+    // Reset timer manuale se attivo
+    _turnoTimerStart = null;
+    _turnoTimerPaused = false; _turnoTimerPauseStart = null; _turnoTimerPausedMs = 0;
+    localStorage.removeItem('turno_manual_tStart');
+    localStorage.removeItem('turno_form_snap');
+    var _btnI = document.getElementById('btnIniziaTurno');
+    if (_btnI) { _btnI.innerText = currentLang === 'en' ? 'START SHIFT' : 'INIZIA TURNO'; _btnI.style.background = ''; _btnI.style.color = ''; }
     // Pulizia notifica e reset UI GPS
     _gpsNotifClear();
     gpsResetUI();
