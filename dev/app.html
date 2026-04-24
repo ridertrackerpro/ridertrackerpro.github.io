@@ -560,6 +560,7 @@ html, body { touch-action: pan-x pan-y; }
 .turno-btn-gps-pause{ background:linear-gradient(135deg,#f39c12,#d68910); color:#000; animation:none; }
 @keyframes pauseBlink { 0%,100%{opacity:1;} 50%{opacity:0.45;} }
 .turno-btn-gps-resume{ background:linear-gradient(135deg,#27ae60,#1e8449); color:#fff; animation:pauseBlink 1s infinite; }
+.turno-btn-gps-resume{ background:linear-gradient(135deg,#27ae60,#1e8449); color:#fff; }
 .turno-btn-start   { background:var(--orange); color:#000; }
 .turno-btn-save    { background:var(--primary); color:#000; }
 
@@ -964,7 +965,7 @@ body {
                 <button class="turno-btn turno-btn-gps-pause" id="btnPausaManuale" onclick="pausaTurnoManuale()" disabled style="font-size:11px;">
                     <span id="btnPausaManualeLbl">PAUSA</span>
                 </button>
-                <button class="turno-btn turno-btn-save" onclick="salvaTurno()" style="font-size:11px;">SALVA</button>
+                <button class="turno-btn turno-btn-save" onclick="salvaTurno()" style="font-size:11px;">FINE</button>
             </div>
             <button class="btn-modal btn-close" onclick="annullaTurno()" data-translate="cancel" style="margin-top:0;">ANNULLA</button>
         </div>
@@ -5525,7 +5526,7 @@ window.onload = function() {
             setTimeout(function() {
                 var btn = document.getElementById('btnIniziaTurno');
                 if (btn) {
-                    btn.innerText = 'FINE';
+                    btn.innerText = (typeof currentLang !== 'undefined' && currentLang === 'en') ? '⏹ END SHIFT' : '⏹ FINE TURNO';
                     btn.style.background = 'var(--accent)';
                     btn.style.color = '#fff';
                 }
@@ -6708,6 +6709,10 @@ function gpsAvvia(){
     if(lbl) lbl.style.display='none';
     document.getElementById('gpsBtnGo').disabled=true;
     document.getElementById('gpsBtnStop').disabled=false;
+    document.getElementById('gpsBtnPausa').disabled=false;
+    GPS.paused=false; GPS.pauseStart=null; GPS.pausedMs=0;
+    var _pbA=document.getElementById('gpsBtnPausa'); if(_pbA){_pbA.className='turno-btn turno-btn-gps-pause';}
+    var _plA=document.getElementById('gpsBtnPausaLbl'); if(_plA){_plA.innerText='PAUSA';}
     gpsDot('on'); gpsLbl('Acquisizione segnale...');
 
     // Auto-ora inizio
@@ -8061,7 +8066,6 @@ function gpsPausa() {
         GPS.pauseStart = null;
         GPS.paused = false;
         // Riavvia GpsService
-        GPS._lastServiceTs = 0; // reset per accettare nuovi punti
         try { if (window.Capacitor && window.Capacitor.isNativePlatform()) window.Capacitor.Plugins.GpsService.start().catch(function(){}); } catch(e) {}
         if (window.Capacitor && window.Capacitor.isNativePlatform()) {
             GPS.serviceTimer = setInterval(function() {
