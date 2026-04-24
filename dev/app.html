@@ -557,6 +557,10 @@ html, body { touch-action: pan-x pan-y; }
 .turno-btn:disabled { opacity:.35; cursor:not-allowed; }
 .turno-btn-gps-go  { background:linear-gradient(135deg,#00CCBC,#009e94); color:#000; }
 .turno-btn-gps-stop{ background:linear-gradient(135deg,#ff4d4d,#c00); color:#fff; }
+.turno-btn-gps-pause{ background:linear-gradient(135deg,#f39c12,#d68910); color:#000; animation:none; }
+@keyframes pauseBlink { 0%,100%{opacity:1;} 50%{opacity:0.45;} }
+.turno-btn-gps-resume{ background:linear-gradient(135deg,#27ae60,#1e8449); color:#fff; animation:pauseBlink 1s infinite; }
+.turno-btn-gps-resume{ background:linear-gradient(135deg,#27ae60,#1e8449); color:#fff; }
 .turno-btn-start   { background:var(--orange); color:#000; }
 .turno-btn-save    { background:var(--primary); color:#000; }
 
@@ -570,6 +574,7 @@ html, body { touch-action: pan-x pan-y; }
 .gps-dot { width:9px; height:9px; border-radius:50%; background:#333; flex-shrink:0; }
 .gps-dot.on  { background:#4ade80; box-shadow:0 0 6px #4ade80; animation:gpsBlink 1.2s infinite; }
 .gps-dot.done{ background:#00CCBC; box-shadow:0 0 5px #00CCBC; }
+        .gps-dot.pause{ background:#f39c12; box-shadow:0 0 5px #f39c12; animation:none; }
 .gps-dot.err { background:#ff4d4d; }
         @keyframes archiviopulse { 0%,100%{opacity:1; border-color:#f39c12;} 50%{opacity:0.6; border-color:#c07800;} }
         #archivioBar { animation: archiviopulse 1.5s infinite; }
@@ -937,12 +942,15 @@ body {
                     <div onclick="_liveMapResetView()" style="position:absolute; bottom:6px; left:6px; z-index:1000; background:rgba(255,255,255,0.9); border-radius:6px; padding:3px 7px; font-size:9px; color:#00a89e; font-weight:900; cursor:pointer;">⊙ CENTRA</div>
                 </div>
             </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-                <button class="turno-btn turno-btn-gps-go" id="gpsBtnGo" onclick="gpsAvvia()" style="white-space:nowrap; line-height:1.2;">
-                    <i class="fas fa-satellite-dish"></i> <span id="lblGpsBtnGo" data-translate="gps_start">INIZIO GPS</span>
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
+                <button class="turno-btn turno-btn-gps-go" id="gpsBtnGo" onclick="gpsAvvia()" style="font-size:11px;">
+                    <span id="lblGpsBtnGo">INIZIO</span>
                 </button>
-                <button class="turno-btn turno-btn-gps-stop" id="gpsBtnStop" onclick="gpsTermina()" disabled style="white-space:nowrap; line-height:1.2;">
-                    <i class="fas fa-stop-circle"></i> <span id="lblGpsBtnStop" data-translate="gps_stop">FINE GPS</span>
+                <button class="turno-btn turno-btn-gps-pause" id="gpsBtnPausa" onclick="gpsPausa()" disabled style="font-size:11px;">
+                    <span id="gpsBtnPausaLbl">PAUSA</span>
+                </button>
+                <button class="turno-btn turno-btn-gps-stop" id="gpsBtnStop" onclick="gpsTermina()" disabled style="font-size:11px;">
+                    <span id="lblGpsBtnStop">FINE</span>
                 </button>
             </div>
         </div>
@@ -952,9 +960,12 @@ body {
             <div id="lblManualSection" style="font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:1.5px; color:#aaa; margin-bottom:10px; display:flex; align-items:center; justify-content:center; gap:7px; text-align:center;">
                 ✏️ Inserimento Manuale Turno
             </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
-                <button class="turno-btn turno-btn-start" id="btnIniziaTurno" onclick="iniziaTurno()" data-translate="btn_start_shift">INIZIA TURNO</button>
-                <button class="turno-btn turno-btn-save" onclick="salvaTurno()" data-translate="btn_save_shift">SALVA TURNO</button>
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:8px;">
+                <button class="turno-btn turno-btn-start" id="btnIniziaTurno" onclick="iniziaTurno()" style="font-size:11px;">INIZIO</button>
+                <button class="turno-btn turno-btn-gps-pause" id="btnPausaManuale" onclick="pausaTurnoManuale()" disabled style="font-size:11px;">
+                    <span id="btnPausaManualeLbl">PAUSA</span>
+                </button>
+                <button class="turno-btn turno-btn-save" onclick="salvaTurno()" style="font-size:11px;">FINE</button>
             </div>
             <button class="btn-modal btn-close" onclick="annullaTurno()" data-translate="cancel" style="margin-top:0;">ANNULLA</button>
         </div>
@@ -3745,6 +3756,9 @@ var _pickerOraM = -1;
 var _pickerOraValPrecedente = '';
 
 var _turnoTimerStart = null; // timestamp ms inizio turno manuale
+var _turnoTimerPaused = false;
+var _turnoTimerPauseStart = null;
+var _turnoTimerPausedMs = 0;
 
 function chiudiTurnoSenzaAnnullare() {
     document.getElementById('modalTurno').style.display = 'none';
@@ -3786,11 +3800,16 @@ function gpsAvviaConRipristino(ptsPrec, tStartPrec) {
     var lbl=document.getElementById('lblGpsSection'); if(lbl) lbl.style.display='none';
     document.getElementById('gpsBtnGo').disabled=true;
     document.getElementById('gpsBtnStop').disabled=false;
+    document.getElementById('gpsBtnPausa').disabled=false;
+    GPS.paused=false; GPS.pauseStart=null; GPS.pausedMs=0;
+    var _pi=document.getElementById('gpsBtnPausaIcon'); if(_pi){_pi.className='fas fa-pause';}
+    var _pl=document.getElementById('gpsBtnPausaLbl'); if(_pl){_pl.innerText='PAUSA';}
+    var _pb=document.getElementById('gpsBtnPausa'); if(_pb){_pb.className='turno-btn turno-btn-gps-pause';}
     gpsDot('on'); gpsLbl('GPS ripristinato...');
     GPS.tempoTimer=setInterval(function(){
-        if(!GPS.tStart)return;
+        if(!GPS.tStart || GPS.paused)return;
         var el=document.getElementById('gpsTempo');
-        if(el)el.innerText=_fmtDur((Date.now()-GPS.tStart)/1000);
+        if(el)el.innerText=_fmtDur((Date.now()-GPS.tStart-GPS.pausedMs)/1000);
     },1000);
     GPS.checkpointTimer=setInterval(function(){ _gpsCheckpointSave(); },30000);
     // Usa GpsService polling come gpsAvvia — stesso sistema affidabile
@@ -3848,10 +3867,13 @@ function iniziaTurno() {
         // Cambia bottone: INIZIA → FINE TURNO
         var btn = document.getElementById('btnIniziaTurno');
         if (btn) {
-            btn.innerText = currentLang === 'en' ? '⏹ END SHIFT' : '⏹ FINE TURNO';
+            btn.innerText = currentLang === 'en' ? 'END' : 'FINE';
             btn.style.background = 'var(--accent)';
             btn.style.color = '#fff';
         }
+        var _bpm = document.getElementById('btnPausaManuale');
+        if (_bpm) { _bpm.disabled = false; }
+        _turnoTimerPaused = false; _turnoTimerPauseStart = null; _turnoTimerPausedMs = 0;
         var kmStart = document.getElementById('tKStart').value;
         if (kmStart) localStorage.setItem(_kmPartenzaKey(), kmStart);
         localStorage.setItem('turno_form_snap', JSON.stringify({
@@ -3882,20 +3904,40 @@ function iniziaTurno() {
         if (document.getElementById('tOStart').value && document.getElementById('tOEnd').value) {
             calcolaOreDaOrari();
         } else {
-            var elapsed = (Date.now() - _turnoTimerStart) / 1000 / 60 / 60;
+            // Se ancora in pausa, chiudi la pausa prima
+            if (_turnoTimerPaused && _turnoTimerPauseStart) {
+                _turnoTimerPausedMs += Date.now() - _turnoTimerPauseStart;
+            }
+            var elapsed = (Date.now() - _turnoTimerStart - _turnoTimerPausedMs) / 1000 / 60 / 60;
             var oreArrotondate = Math.round(elapsed * 10) / 10;
             document.getElementById('tO').value = oreArrotondate > 0 ? oreArrotondate : '';
         }
         _turnoTimerStart = null;
+        _turnoTimerPaused = false; _turnoTimerPauseStart = null; _turnoTimerPausedMs = 0;
         localStorage.removeItem('turno_manual_tStart');
         localStorage.removeItem('turno_form_snap');
         aggTurnoAttivoBlink();
         var btn2 = document.getElementById('btnIniziaTurno');
         if (btn2) {
             btn2.setAttribute('data-translate','btn_start_shift');
-            btn2.innerText = currentLang === 'en' ? 'START SHIFT' : 'INIZIA TURNO';
+            btn2.innerText = currentLang === 'en' ? 'INIZIO' : 'INIZIO';
             btn2.style.background = '';
             btn2.style.color = '';
+        }
+        var _bpm2 = document.getElementById('btnPausaManuale');
+        if (_bpm2) {
+            _bpm2.disabled = true;
+            _bpm2.className = 'turno-btn turno-btn-gps-pause';
+            var _bi2 = document.getElementById('btnPausaManualeIcon'); if(_bi2) _bi2.className = 'fas fa-pause';
+            var _bl2 = document.getElementById('btnPausaManualeLbl'); if(_bl2) _bl2.innerText = 'PAUSA';
+        }
+        // Mostra popup km arrivo odometro (stesso del GPS)
+        var _vTimer = getVeicoloAttivo();
+        var _mezzoTimer = document.getElementById('tMezzo').value;
+        var _noConsTimer = _mezzoTimer === 'bici' || _mezzoTimer === 'escooter';
+        if (!_noConsTimer && _vTimer) {
+            var _kmTimerDisp = document.getElementById('tK').value || '0';
+            mostraModalKmArrivoGps(_kmTimerDisp, 0);
         }
     }
 }
@@ -3933,14 +3975,22 @@ function _resetCampiTurno() {
     _pickerOraH = -1; _pickerOraM = -1;
     localStorage.removeItem('ora_inizio_tmp');
     localStorage.removeItem('turno_form_snap');
-    // Reset timer manuale
+    // Reset timer manuale e pausa
     _turnoTimerStart = null;
+    _turnoTimerPaused = false; _turnoTimerPauseStart = null; _turnoTimerPausedMs = 0;
     localStorage.removeItem('turno_manual_tStart');
+    var _bpmR = document.getElementById('btnPausaManuale');
+    if (_bpmR) {
+        _bpmR.disabled = true;
+        _bpmR.className = 'turno-btn turno-btn-gps-pause';
+        var _biR = document.getElementById('btnPausaManualeIcon'); if(_biR) _biR.className = 'fas fa-pause';
+        var _blR = document.getElementById('btnPausaManualeLbl'); if(_blR) _blR.innerText = 'PAUSA';
+    }
     aggTurnoAttivoBlink();
     var btnI = document.getElementById('btnIniziaTurno');
     if (btnI) {
         btnI.setAttribute('data-translate','btn_start_shift');
-        btnI.innerText = currentLang === 'en' ? 'START SHIFT' : 'INIZIA TURNO';
+        btnI.innerText = currentLang === 'en' ? 'INIZIO' : 'INIZIO';
         btnI.style.background = '';
         btnI.style.color = '';
     }
@@ -6409,7 +6459,8 @@ var GPS = {
     tempoTimer:null, checkpointTimer:null, swPingTimer:null, serviceTimer:null,
     _lastServiceTs:0,
     STOP_KMH:1, STOP_MIN_S:30,
-    cancelMode:false, completed:false
+    cancelMode:false, completed:false,
+    paused:false, pauseStart:null, pausedMs:0
 };
 
 /* ── WAKE LOCK: impedisce allo schermo di spegnersi durante GPS ── */
@@ -6882,8 +6933,13 @@ function gpsTermina(){
         var sh=parseInt(oraStart.split(':')[0]),sm=parseInt(oraStart.split(':')[1]);
         var diffMin=(fin.getHours()*60+fin.getMinutes())-(sh*60+sm);
         if(diffMin<0)diffMin+=1440;
+        // Sottrai minuti di pausa
+        var pauseMin = GPS.pausedMs / 1000 / 60;
+        diffMin = Math.max(0, diffMin - pauseMin);
         document.getElementById('tO').value=(diffMin/60).toFixed(2);
     }
+    document.getElementById('gpsBtnPausa').disabled=true;
+    GPS.paused=false; GPS.pauseStart=null; GPS.pausedMs=0;
     // Modale con istruzioni (non mostrare se si sta annullando o se è solo viaggio)
     if (!GPS.cancelMode) {
         GPS.completed = true;
@@ -6899,6 +6955,10 @@ function gpsTermina(){
     GPS.cancelMode = false;
     document.getElementById('gpsBtnGo').disabled=false;
     document.getElementById('gpsBtnStop').disabled=true;
+    document.getElementById('gpsBtnPausa').disabled=true;
+    var _pi2=document.getElementById('gpsBtnPausaIcon'); if(_pi2){_pi2.className='fas fa-pause';}
+    var _pl2=document.getElementById('gpsBtnPausaLbl'); if(_pl2){_pl2.innerText='PAUSA';}
+    var _pb2=document.getElementById('gpsBtnPausa'); if(_pb2){_pb2.className='turno-btn turno-btn-gps-pause';}
     var _lblG=document.getElementById('lblGpsSection');if(_lblG)_lblG.style.display='';
     localStorage.removeItem('gps_session_active');
     localStorage.removeItem('gps_session_tStart');
@@ -7978,6 +8038,84 @@ function _resetLiveMap() {
     var wrap = document.getElementById('gpsLiveMapWrap');
     if (wrap) wrap.style.display = 'none';
     if (_liveMap.instance && _liveMap.track) _liveMap.track.setLatLngs([]);
+}
+
+function gpsPausa() {
+    if (!GPS.active) return;
+    if (!GPS.paused) {
+        // Metti in pausa
+        GPS.paused = true;
+        GPS.pauseStart = Date.now();
+        // Ferma GpsService
+        try { if (window.Capacitor && window.Capacitor.isNativePlatform()) window.Capacitor.Plugins.GpsService.stop().catch(function(){}); } catch(e) {}
+        if (GPS.watchId !== null) { navigator.geolocation.clearWatch(GPS.watchId); GPS.watchId = null; }
+        if (GPS.serviceTimer) { clearInterval(GPS.serviceTimer); GPS.serviceTimer = null; }
+        var _pb = document.getElementById('gpsBtnPausa');
+        if (_pb) _pb.className = 'turno-btn turno-btn-gps-resume';
+        var _pi = document.getElementById('gpsBtnPausaIcon'); if (_pi) _pi.className = 'fas fa-play';
+        var _pl = document.getElementById('gpsBtnPausaLbl'); if (_pl) _pl.innerText = 'VAI';
+        gpsLbl('⏸ In pausa');
+        gpsDot('pause');
+    } else {
+        // Riprendi
+        GPS.pausedMs += Date.now() - GPS.pauseStart;
+        GPS.pauseStart = null;
+        GPS.paused = false;
+        // Riavvia GpsService
+        try { if (window.Capacitor && window.Capacitor.isNativePlatform()) window.Capacitor.Plugins.GpsService.start().catch(function(){}); } catch(e) {}
+        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+            GPS.serviceTimer = setInterval(function() {
+                if (!GPS.active || GPS.paused) return;
+                try {
+                    window.Capacitor.Plugins.GpsService.getCoords().then(function(res) {
+                        if (!res || !res.coords) return;
+                        var pts = typeof res.coords === 'string' ? JSON.parse(res.coords) : res.coords;
+                        if (!pts || !pts.length) return;
+                        for (var i = 0; i < pts.length; i++) {
+                            var pt = pts[i];
+                            if (!pt || !pt.ts || pt.ts <= GPS._lastServiceTs) continue;
+                            GPS._lastServiceTs = pt.ts;
+                            _gpsPos({ coords: { latitude: pt.la, longitude: pt.lo, accuracy: pt.acc || 20, speed: (pt.spd > 0) ? pt.spd / 3.6 : null }, timestamp: pt.ts });
+                        }
+                    }).catch(function(){});
+                } catch(e) {}
+            }, 2000);
+        } else {
+            GPS.watchId = navigator.geolocation.watchPosition(
+                function(pos){ if(GPS.active && !GPS.paused) _gpsPos(pos); },
+                function(err){ if(GPS.active && err.code===3) gpsLbl('Segnale debole...'); },
+                {enableHighAccuracy:true, maximumAge:0, timeout:60000}
+            );
+        }
+        var _pb2 = document.getElementById('gpsBtnPausa');
+        if (_pb2) _pb2.className = 'turno-btn turno-btn-gps-pause';
+        var _pi2 = document.getElementById('gpsBtnPausaIcon'); if (_pi2) _pi2.className = 'fas fa-pause';
+        var _pl2 = document.getElementById('gpsBtnPausaLbl'); if (_pl2) _pl2.innerText = 'PAUSA';
+        gpsLbl('Registrazione attiva');
+        gpsDot('on');
+    }
+}
+
+function pausaTurnoManuale() {
+    if (_turnoTimerStart === null) return;
+    if (!_turnoTimerPaused) {
+        // Metti in pausa
+        _turnoTimerPaused = true;
+        _turnoTimerPauseStart = Date.now();
+        var _bp = document.getElementById('btnPausaManuale');
+        if (_bp) _bp.className = 'turno-btn turno-btn-gps-resume';
+        var _bi = document.getElementById('btnPausaManualeIcon'); if (_bi) _bi.className = 'fas fa-play';
+        var _bl = document.getElementById('btnPausaManualeLbl'); if (_bl) _bl.innerText = 'VAI';
+    } else {
+        // Riprendi
+        _turnoTimerPausedMs += Date.now() - _turnoTimerPauseStart;
+        _turnoTimerPauseStart = null;
+        _turnoTimerPaused = false;
+        var _bp2 = document.getElementById('btnPausaManuale');
+        if (_bp2) _bp2.className = 'turno-btn turno-btn-gps-pause';
+        var _bi2 = document.getElementById('btnPausaManualeIcon'); if (_bi2) _bi2.className = 'fas fa-pause';
+        var _bl2 = document.getElementById('btnPausaManualeLbl'); if (_bl2) _bl2.innerText = 'PAUSA';
+    }
 }
 
 function mostraModalKmArrivoGps(kmGps, nSoste) {
