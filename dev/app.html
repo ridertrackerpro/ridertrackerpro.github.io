@@ -1190,6 +1190,14 @@ body {
     </div>
 </div>
 
+<div id="modalDettaglioStorico" class="modal no-print" style="z-index:10013;">
+    <div class="modal-content" style="border-color:var(--primary); max-height:80vh; overflow-y:auto;">
+        <h3 id="modalDetStorTitle" style="color:var(--primary); font-size:15px; margin-bottom:12px;"></h3>
+        <div id="modalDetStorBody" style="font-size:13px; color:var(--text); line-height:1.9;"></div>
+        <button class="btn-modal btn-save" onclick="document.getElementById('modalDettaglioStorico').style.display='none'" style="margin-top:16px;">CHIUDI</button>
+    </div>
+</div>
+
 <div id="modalAnnullaGPS" class="modal no-print" style="z-index:10011;">
     <div class="modal-content" style="border-color:var(--accent);">
         <h3 id="modalAnnullaGPSTitle" style="color:var(--accent); font-size:16px;">Annulla sessione GPS</h3>
@@ -2478,17 +2486,19 @@ function confermaReset() {
         let mediaConsumo = 0;
         const isMetanoTipo = tipo === 'metano';
 
-if (totQ > 0 && km > 0) {
+// Media consumi: SOLO da rifornimenti con km odometro
+var _vaHome = getVeicoloAttivo();
+var _consRealeHome = _vaHome ? getConsMedioRealeVeicolo(_vaHome.id) : null;
+if (_consRealeHome !== null && _consRealeHome > 0) {
     if (userSettings.consumption === 'km_l') {
-        // km per unità: km / quantità
-        mediaConsumo = km / totQ;
+        mediaConsumo = 100 / _consRealeHome;
     } else {
-        // unità per 100km: quantità / km * 100
-        mediaConsumo = totQ / km * 100;
+        mediaConsumo = _consRealeHome;
     }
 }
+// Se non ci sono rifornimenti con km odometro, mediaConsumo resta 0
 
-document.getElementById('kml').innerText = roundConsumption(safeNumber(mediaConsumo));
+document.getElementById('kml').innerText = _consRealeHome ? roundConsumption(safeNumber(mediaConsumo)) : '—';
         var _kmlU = document.getElementById('kmlUnit');
         if (_kmlU) {
             var _kmlUnitStr = getConsUnit(tipo);
@@ -2955,7 +2965,7 @@ function va_noCons(item) {
 
 function generaHtmlItem(i, mediaOraMese) {
     let itemColor = i.tipo === 'T' ? 'var(--primary)' : (i.tipo === 'B' ? 'var(--orange)' : 'var(--accent)');
-    let html = `<div class="storico-item" style="border-left-color:${itemColor}; border-right-color:${itemColor};"><div class="storico-info">`;
+    let html = `<div class="storico-item" style="border-left-color:${itemColor}; border-right-color:${itemColor}; cursor:pointer;" onclick="apriDettaglioStorico('${i.tipo === 'T' ? 'turni' : i.tipo === 'B' ? 'rifornimenti' : 'extraKm'}', ${i.id})"><div class="storico-info">`;
 
     if (i.tipo === 'T') {
         // Turno SOLO VIAGGIO
@@ -3433,9 +3443,15 @@ function calcolaPeriodiConsumo(turni, tax) {
         
         let totL = 0, totO = 0, totK = 0, totLitri = 0, totCostoB = 0;
 
+        // Consumo reale da rifornimenti (odometro)
+        var _vaP = getVeicoloAttivo();
+        var _consRealeP = _vaP ? getConsMedioRealeVeicolo(_vaP.id) : null;
+
         arr.forEach(t => {
             const isNC = va_noCons(t);
-            const q = isNC ? 0 : t.km * (t.cons / 100);
+            // Usa consumo reale da rifornimenti se disponibile, altrimenti t.cons
+            var consL100 = (!isNC && _consRealeP && _consRealeP > 0) ? _consRealeP : (isNC ? 0 : t.cons);
+            const q = isNC ? 0 : t.km * (consL100 / 100);
             let c = isNC ? 0 : q * (t.prezzo || 0);
             if (!isNC && t.tipoCarburante === 'miscela' && t.percMiscela && t.prezzoOlio) {
                 c += (q * (t.percMiscela / 100)) * t.prezzoOlio;
@@ -4444,21 +4460,23 @@ function aggiornaSuggerimentoConsumo(tipoCarburante) {
         hint.innerText = '';
         return;
     }
-    const result = calcolaMediaConsumoDaStorico(tipoCarburante);
-    if (!result) {
-        hint.innerText = currentLang === 'it'
-            ? '(dati insufficienti per calcolare la media — inserisci valore o attendi il calcolo automatico dopo alcuni turni inseriti)'
-            : '(insufficient data to calculate the average — enter value or wait automatic calculation after a few work shifts)';
+    // Usa SOLO getConsMedioRealeVeicolo (km odometro rifornimenti)
+    var _va = getVeicoloAttivo();
+    var _consReale = _va ? getConsMedioRealeVeicolo(_va.id) : null;
+    if (!_consReale || _consReale <= 0) {
         hint.style.color = 'var(--dim)';
+        hint.innerText = currentLang === 'it'
+            ? '(inserisci almeno 2 rifornimenti con km odometro per il calcolo reale)'
+            : '(add at least 2 refuels with odometer km for real consumption)';
         return;
     }
-    // Usa il consumo reale calcolato come valore principale
     hint.style.color = 'var(--primary)';
-    var _rWord = result.numRif === 1 ? 'rifornimento' : 'rifornimenti';
-    var _tWord = result.numTurni === 1 ? 'turno' : 'turni';
-    hint.innerText = '~media da ' + result.numRif + ' ' + _rWord + ' · ' + result.numTurni + ' ' + _tWord;
-    // Sovrascrive sempre con il consumo reale calcolato
-    campo.value = consL100kmToDisplayValue(result.consL100km);
+    var nRif = db.rifornimenti.filter(function(r) {
+        return _va && r.veicoloId === _va.id && r.km > 0 && r.litri > 0;
+    }).length;
+    var _rWord = nRif === 1 ? 'rifornimento' : 'rifornimenti';
+    hint.innerText = '~consumo reale da ' + nRif + ' ' + _rWord + ' (odometro)';
+    campo.value = consL100kmToDisplayValue(_consReale);
 }
 
 // Restituisce la tassazione applicata a un turno (quella salvata nel turno o quella globale per retrocompatibilità)
@@ -4948,6 +4966,11 @@ function modificaVoce(categoria, id) {
             if (item.percMiscela) document.getElementById('bPercMiscela').value = item.percMiscela;
             if (item.prezzoOlio) document.getElementById('bPrezzoOlio').value = item.prezzoOlio;
         }
+        // Ripristina km odometro e litri
+        var _bKmEl = document.getElementById('bKm');
+        var _bLitriEl = document.getElementById('bLitri');
+        if (_bKmEl) _bKmEl.value = (item.km && item.km > 0) ? item.km : '';
+        if (_bLitriEl) _bLitriEl.value = (item.litri && item.litri > 0) ? item.litri : '';
     } else if (categoria === 'extraKm') {
         apriM('modalExtra');
         document.getElementById('dateED').value = parseInt(item.data.substring(0,2));
@@ -8018,6 +8041,50 @@ function _resetLiveMap() {
 }
 
 
+
+function apriDettaglioStorico(categoria, id) {
+    var item = db[categoria] ? db[categoria].find(function(x){ return x.id === id; }) : null;
+    if (!item) return;
+    var title = '';
+    var rows = [];
+    var sym = currencySymbol();
+    var distU = userSettings.distance === 'miles' ? 'mi' : 'km';
+
+    if (categoria === 'turni') {
+        title = (item.soloViaggio ? '🗺️ Solo Viaggio' : '➕ Turno') + ' — ' + item.data;
+        if (item.oraStart) rows.push(['Orario', item.oraStart + (item.oraEnd ? ' → ' + item.oraEnd : '')]);
+        rows.push(['Ore lavorate', item.ore ? item.ore.toFixed(1) + 'h' : '—']);
+        rows.push(['KM percorsi', item.km ? fromKm(item.km).toFixed(1) + ' ' + distU : '—']);
+        if (!item.soloViaggio) {
+            rows.push(['Lordo', sym + fromEuro(item.lordo).toFixed(2)]);
+            var netto = fromEuro(item.lordo - item.lordo*(getTaxPerc(item)/100) - item.km*(item.cons/100)*(item.prezzo||0)).toFixed(2);
+            rows.push(['Netto stimato', sym + netto]);
+        }
+        if (item.cons && !va_noCons(item)) rows.push(['Consumo', consL100kmToDisplayValue(item.cons) + ' ' + getConsUnit(item.tipoCarburante)]);
+        if (item.veicoloNome) rows.push(['Veicolo', item.veicoloNome]);
+        if (item.tipoCarburante) rows.push(['Carburante', getNomeCarburante(item.tipoCarburante)]);
+        if (item.kmOdoStart) rows.push(['KM inizio', item.kmOdoStart]);
+        if (item.kmOdoEnd) rows.push(['KM fine', item.kmOdoEnd]);
+        if (item.gpsKm) rows.push(['KM GPS', item.gpsKm.toFixed(2)]);
+        if (item.gpsVmax) rows.push(['Vel. max', item.gpsVmax.toFixed(0) + ' km/h']);
+    } else if (categoria === 'rifornimenti') {
+        title = '⛽ Rifornimento — ' + item.data;
+        rows.push(['Tipo', getNomeCarburante(item.tipo)]);
+        rows.push(['Euro spesi', sym + fromEuro(item.euro).toFixed(2)]);
+        rows.push(['Prezzo/L', sym + fromEuro(item.prezzo).toFixed(3)]);
+        if (item.litri) rows.push(['Litri', item.litri.toFixed(2) + ' L']);
+        if (item.km) rows.push(['KM odometro', item.km]);
+    } else if (categoria === 'extraKm') {
+        title = '🔧 Spesa Extra — ' + item.data;
+        rows.push(['Importo', sym + fromEuro(item.importo).toFixed(2)]);
+        if (item.desc) rows.push(['Descrizione', item.desc]);
+    }
+
+    document.getElementById('modalDetStorTitle').innerText = title;
+    var body = rows.map(function(r){ return '<div style="display:flex;justify-content:space-between;border-bottom:1px solid #333;padding:4px 0;"><span style="color:var(--dim);">' + r[0] + '</span><span style="font-weight:700;">' + r[1] + '</span></div>'; }).join('');
+    document.getElementById('modalDetStorBody').innerHTML = body;
+    document.getElementById('modalDettaglioStorico').style.display = 'flex';
+}
 
 function mostraModalKmArrivoGps(kmGps, nSoste) {
     var infoEl = document.getElementById('modalKmArrivoGpsInfo');
