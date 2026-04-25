@@ -4918,26 +4918,39 @@ function selezionaVeicoloTurno(veicoloId) {
     var veicoli = getVeicoli();
     var v = veicoli.find(function(x){ return x.id === veicoloId; });
     if (!v) return;
-    // Salva id originale attivo
-    var vAttivoOrig = veicoli.find(function(x){ return x.attivo; });
-    var origId = vAttivoOrig ? vAttivoOrig.id : null;
-    // Imposta temporaneamente il veicolo scelto come attivo
-    veicoli.forEach(function(x){ x.attivo = (x.id === veicoloId); });
-    // Aggiorna banner visivamente
-    if (typeof _syncVeicoloAttivo === 'function') _syncVeicoloAttivo();
-    // Ripristina attivo originale in memoria (senza salvare)
-    veicoli.forEach(function(x){ x.attivo = (x.id === origId); });
-    // Aggiorna consumo suggerito con media del veicolo selezionato
+    // Aggiorna banner direttamente senza toccare attivo nel DB
+    var bannerIcona = document.getElementById('turnoVeicoloIcona');
+    var bannerLbl   = document.getElementById('turnoVeicoloLabel');
+    var carbLabel   = document.getElementById('turnoCarburante_label');
+    var nomeV = ((v.marca || '') + ' ' + (v.modello || '')).trim();
+    if (bannerIcona) bannerIcona.innerText = _getMezzoIcona(v.tipo || 'auto');
+    if (bannerLbl)   bannerLbl.innerText   = nomeV + (v.targa ? ' · ' + v.targa : '');
+    if (carbLabel && v.carburante) carbLabel.innerText = getIconaCarburante(v.carburante) + ' ' + getNomeCarburante(v.carburante).toUpperCase();
+    // Aggiorna carburante nascosto
+    var tCarb = document.getElementById('tCarburante');
+    if (tCarb && v.carburante) tCarb.value = v.carburante;
+    var lblCarbTurno = document.getElementById('labelCarburanteTurno');
+    if (lblCarbTurno && v.carburante) lblCarbTurno.value = getIconaCarburante(v.carburante) + ' ' + getNomeCarburante(v.carburante);
+    // Aggiorna consumo con media del veicolo selezionato
     var tCEl = document.getElementById('tC');
     if (tCEl) {
-        var consReale = getConsMedioRealeVeicolo(veicoloId);
+        var consReale = (typeof getConsMedioRealeVeicolo === 'function') ? getConsMedioRealeVeicolo(veicoloId) : null;
         if (consReale && consReale > 0) {
             tCEl.value = consL100kmToDisplayValue(consReale);
         } else {
             tCEl.value = consL100kmToDisplayValue(v.consMedio || 0);
         }
     }
-    // Salva il veicoloId scelto nel campo nascosto per il salvataggio
+    // Aggiorna anche hint consumo
+    var hint = document.getElementById('consHint');
+    if (hint) {
+        var nRif = db.rifornimenti.filter(function(r){ return r.veicoloId === veicoloId && r.km > 0 && r.litri > 0; }).length;
+        hint.style.color = 'var(--primary)';
+        hint.innerText = nRif >= 2
+            ? '~consumo reale da ' + nRif + ' rifornimenti (odometro)'
+            : '(inserisci almeno 2 rifornimenti con km odometro per il calcolo reale)';
+    }
+    // Salva veicoloId nel campo nascosto per il salvataggio
     var hiddenVId = document.getElementById('tVeicoloId');
     if (!hiddenVId) {
         hiddenVId = document.createElement('input');
