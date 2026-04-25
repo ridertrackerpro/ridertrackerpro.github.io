@@ -2654,8 +2654,8 @@ function apriM(id) {
     document.getElementById(p).innerHTML = `<select id="${p}D">${d}</select><select id="${p}M">${m}</select><select id="${p}Y">${y}</select>`; 
     
     if (id === 'modalTurno') {
-        // Sincronizza sempre banner veicolo all'apertura
-        if (typeof _syncVeicoloAttivo === 'function') _syncVeicoloAttivo();
+        // Sincronizza banner veicolo solo se NON siamo in modifica
+        if (typeof _syncVeicoloAttivo === 'function' && editingId === null) _syncVeicoloAttivo();
         var _vaAM = typeof getVeicoloAttivo === 'function' ? getVeicoloAttivo() : null;
         const ultimoMezzo = _vaAM ? (_vaAM.tipo || 'auto') : (localStorage.getItem('ultimo_mezzo_' + currentLang) || 'auto');
         document.getElementById('tMezzo').value = ultimoMezzo;
@@ -4954,6 +4954,30 @@ function modificaVoce(categoria, id) {
         if (item.tipoCarburante) {
             document.getElementById('tCarburante').value = item.tipoCarburante;
             var _lctEl=document.getElementById('labelCarburanteTurno');if(_lctEl){if(_lctEl.tagName==='INPUT')_lctEl.value=getIconaCarburante(item.tipoCarburante) + ' ' + getNomeCarburante(item.tipoCarburante);else _lctEl.innerText=getIconaCarburante(item.tipoCarburante) + ' ' + getNomeCarburante(item.tipoCarburante);}
+        }
+        // Ripristina veicolo del turno nel banner (visivo, senza cambiare il veicolo attivo nel DB)
+        if (item.veicoloId) {
+            var _vEdit = getVeicoli().find(function(v){ return v.id === item.veicoloId; });
+            if (_vEdit) {
+                // Sincronizza banner con il veicolo del turno
+                var _vNome = ((_vEdit.marca || '') + ' ' + (_vEdit.modello || '')).trim();
+                var _vTipo = _vEdit.tipo || 'auto';
+                // Aggiorna tMezzo se non già impostato da item.mezzo
+                if (!item.mezzo) {
+                    document.getElementById('tMezzo').value = _vTipo;
+                    document.getElementById('labelMezzo').innerText = _getMezzoLabel(_vTipo);
+                }
+                // Aggiorna banner veicolo visivo
+                if (typeof _syncVeicoloAttivo === 'function') {
+                    // Imposta temporaneamente il veicolo del turno come attivo solo visivamente
+                    var _allV = getVeicoli();
+                    var _prevAttivo = _allV.find(function(v){ return v.attivo; });
+                    _allV.forEach(function(v){ v.attivo = (v.id === item.veicoloId); });
+                    _syncVeicoloAttivo();
+                    // Ripristina il veicolo attivo reale (senza salvare)
+                    _allV.forEach(function(v){ v.attivo = (_prevAttivo && v.id === _prevAttivo.id); });
+                }
+            }
         }
         // Ripristina km odometro partenza e arrivo
         var _tKSel = document.getElementById('tKStart');
@@ -8072,7 +8096,7 @@ function apriDettaglioStorico(categoria, id) {
         }
         if (item.cons && !va_noCons(item)) rows.push(['Consumo', consL100kmToDisplayValue(item.cons) + ' ' + getConsUnit(item.tipoCarburante)]);
         if (item.veicoloNome) rows.push(['Veicolo', item.veicoloNome]);
-        if (item.tipoCarburante) rows.push(['Carburante', getNomeCarburante(item.tipoCarburante)]);
+        if (item.tipoCarburante && !va_noCons(item)) rows.push(['Carburante', getNomeCarburante(item.tipoCarburante)]);
         if (item.kmOdoStart) rows.push(['KM inizio', item.kmOdoStart]);
         if (item.kmOdoEnd) rows.push(['KM fine', item.kmOdoEnd]);
         if (item.gpsKm) rows.push(['KM GPS', item.gpsKm.toFixed(2)]);
