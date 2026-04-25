@@ -826,9 +826,10 @@ body {
         </div>
 
         <!-- ── BANNER VEICOLO ATTIVO + carburante inline ── -->
-        <div id="turnoVeicoloRow" style="display:none; margin-bottom:8px; padding:10px 14px; background:#1a1a1a; border-radius:12px; border:1px solid #2a2a2a; align-items:center; gap:10px;">
+        <div id="turnoVeicoloRow" style="display:none; margin-bottom:8px; padding:10px 14px; background:#1a1a1a; border-radius:12px; border:1px solid #2a2a2a; align-items:center; gap:10px; cursor:pointer;" onclick="apriSelectorVeicoloTurno()">
             <span id="turnoVeicoloIcona" style="font-size:22px; flex-shrink:0;">🚗</span>
             <span id="turnoVeicoloLabel" style="font-size:14px; font-weight:700; color:#fff; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
+            <i class="fas fa-chevron-down" style="color:#666; font-size:12px; flex-shrink:0;"></i>
             <!-- Carburante: label per monofuel, pill buttons inline per bifuel -->
             <span id="turnoCarburante_label" style="font-size:11px; font-weight:900; color:var(--dim); text-transform:uppercase; letter-spacing:0.5px; flex-shrink:0;"></span>
             <div id="turnoCarburante_select" style="display:none; flex-shrink:0; display:none;">
@@ -959,6 +960,14 @@ body {
             </div>
             <button class="btn-modal btn-close" onclick="annullaTurno()" data-translate="cancel" style="margin-top:0;">ANNULLA</button>
         </div>
+    </div>
+</div>
+
+<div id="modalSelectVeicoloTurno" class="modal no-print" style="z-index:10014;">
+    <div class="modal-content" style="border-color:var(--primary);">
+        <h3 style="color:var(--primary); font-size:15px; margin-bottom:14px;">🚗 Seleziona Veicolo</h3>
+        <div id="listaSelectorVeicoloTurno" style="display:flex; flex-direction:column; gap:8px; max-height:300px; overflow-y:auto;"></div>
+        <button class="btn-modal btn-close" onclick="document.getElementById('modalSelectVeicoloTurno').style.display='none'" style="margin-top:14px; padding:12px;">ANNULLA</button>
     </div>
 </div>
 
@@ -4522,7 +4531,15 @@ function effettuaSalvataggioTurno(prezzo, rif) {
         setTimeout(gpsResetUI, 80);
     }
     // Veicolo attivo al momento del salvataggio
-    var _vAtt = getVeicoloAttivo();
+    // Se l'utente ha selezionato un veicolo diverso nel turno, usalo
+    var _hiddenVId = document.getElementById('tVeicoloId');
+    var _vAttId = _hiddenVId && _hiddenVId.value ? parseInt(_hiddenVId.value) : null;
+    var _vAtt = null;
+    if (_vAttId) {
+        _vAtt = getVeicoli().find(function(v){ return v.id === _vAttId; });
+        if (_hiddenVId) _hiddenVId.value = '';
+    }
+    if (!_vAtt) _vAtt = getVeicoloAttivo();
     if (_vAtt) { obj.veicoloId = _vAtt.id; obj.veicoloNome = _vAtt.marca + ' ' + _vAtt.modello; }
     // Salva km odometro partenza e arrivo
     var _kSv = document.getElementById('tKStart').value;
@@ -4876,6 +4893,45 @@ function mostraAlertGrafico(titolo, messaggio) {
 function mostraAlertApp(msg) {
     document.getElementById('modalAlertAppMsg').innerText = msg;
     document.getElementById('modalAlertApp').style.display = 'flex';
+}
+
+function apriSelectorVeicoloTurno() {
+    var veicoli = getVeicoli();
+    if (!veicoli || veicoli.length === 0) return;
+    var lista = document.getElementById('listaSelectorVeicoloTurno');
+    if (!lista) return;
+    lista.innerHTML = veicoli.map(function(v) {
+        var nome = ((v.marca || '') + ' ' + (v.modello || '')).trim();
+        var icona = _getMezzoIcona(v.tipo || 'auto');
+        var isAttivo = v.attivo ? 'border-color:var(--primary);' : '';
+        return '<div onclick="selezionaVeicoloTurno(' + v.id + ')" style="padding:12px 14px; background:#1a1a1a; border-radius:10px; border:1px solid #333; ' + isAttivo + ' cursor:pointer; display:flex; align-items:center; gap:10px;">' +
+            '<span style="font-size:20px;">' + icona + '</span>' +
+            '<div style="flex:1;"><div style="font-weight:700; font-size:13px;">' + nome + '</div>' +
+            (v.targa ? '<div style="font-size:10px; color:#888;">' + v.targa + '</div>' : '') +
+            '</div></div>';
+    }).join('');
+    document.getElementById('modalSelectVeicoloTurno').style.display = 'flex';
+}
+
+function selezionaVeicoloTurno(veicoloId) {
+    document.getElementById('modalSelectVeicoloTurno').style.display = 'none';
+    var veicoli = getVeicoli();
+    var v = veicoli.find(function(x){ return x.id === veicoloId; });
+    if (!v) return;
+    // Imposta visivamente il veicolo nel banner senza cambiare attivo nel DB
+    veicoli.forEach(function(x){ x.attivo = (x.id === veicoloId); });
+    if (typeof _syncVeicoloAttivo === 'function') _syncVeicoloAttivo();
+    // Ripristina attivo reale (senza salvare nel DB)
+    var prevId = null;
+    // Salva il veicoloId scelto per questo turno nel campo nascosto
+    var hiddenVId = document.getElementById('tVeicoloId');
+    if (!hiddenVId) {
+        hiddenVId = document.createElement('input');
+        hiddenVId.type = 'hidden';
+        hiddenVId.id = 'tVeicoloId';
+        document.body.appendChild(hiddenVId);
+    }
+    hiddenVId.value = veicoloId;
 }
 
 function _riaggiornaSeStoricoAperto() {
