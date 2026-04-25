@@ -2681,7 +2681,16 @@ function apriM(id) {
         } else {
             if (typeof _syncVeicoloAttivo === 'function') _syncVeicoloAttivo();
         }
-        var _vaAM = typeof getVeicoloAttivo === 'function' ? getVeicoloAttivo() : null;
+        // Se in modifica usa il veicolo del turno, altrimenti il veicolo attivo
+        var _vaAM = null;
+        if (editingId !== null) {
+            var _tEditAM = db.turni ? db.turni.find(function(t){ return t.id === editingId; }) : null;
+            if (_tEditAM && _tEditAM.veicoloId) {
+                var _vvAM = JSON.parse(localStorage.getItem('rider_veicoli') || '[]');
+                _vaAM = _vvAM.find(function(v){ return v.id === _tEditAM.veicoloId; }) || null;
+            }
+        }
+        if (!_vaAM && typeof getVeicoloAttivo === 'function') _vaAM = getVeicoloAttivo();
         const ultimoMezzo = _vaAM ? (_vaAM.tipo || 'auto') : (localStorage.getItem('ultimo_mezzo_' + currentLang) || 'auto');
         document.getElementById('tMezzo').value = ultimoMezzo;
         document.getElementById('labelMezzo').innerText = _getMezzoLabel(ultimoMezzo);
