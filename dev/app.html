@@ -4916,15 +4916,35 @@ function apriSelectorVeicoloTurno() {
     if (!veicoli || veicoli.length === 0) return;
     var lista = document.getElementById('listaSelectorVeicoloTurno');
     if (!lista) return;
-    lista.innerHTML = veicoli.map(function(v) {
+    // Trova il veicolo del turno in modifica
+    var corrVId = null;
+    var hiddenVId = document.getElementById('tVeicoloId');
+    if (hiddenVId && hiddenVId.value) corrVId = parseInt(hiddenVId.value);
+    if (!corrVId && editingId !== null) {
+        var itemEdit = db.turni.find(function(t){ return t.id === editingId; });
+        if (itemEdit && itemEdit.veicoloId) corrVId = itemEdit.veicoloId;
+    }
+    if (!corrVId) {
+        var vaC = getVeicoloAttivo();
+        if (vaC) corrVId = vaC.id;
+    }
+    // Ordina: veicolo del turno per primo
+    var sorted = veicoli.slice().sort(function(a, b) {
+        if (a.id === corrVId) return -1;
+        if (b.id === corrVId) return 1;
+        return 0;
+    });
+    lista.innerHTML = sorted.map(function(v) {
         var nome = ((v.marca || '') + ' ' + (v.modello || '')).trim();
         var icona = _getMezzoIcona(v.tipo || 'auto');
-        var isAttivo = v.attivo ? 'border-color:var(--primary);' : '';
-        return '<div onclick="selezionaVeicoloTurno(' + v.id + ')" style="padding:12px 14px; background:#1a1a1a; border-radius:10px; border:1px solid #333; ' + isAttivo + ' cursor:pointer; display:flex; align-items:center; gap:10px;">' +
+        var isCurr = v.id === corrVId;
+        var borderStyle = isCurr ? 'border-color:var(--primary);' : '';
+        var checkMark = isCurr ? '<i class="fas fa-check" style="color:var(--primary);font-size:12px;margin-left:auto;"></i>' : '';
+        return '<div onclick="selezionaVeicoloTurno(' + v.id + ')" style="padding:12px 14px; background:#1a1a1a; border-radius:10px; border:1px solid #333; ' + borderStyle + ' cursor:pointer; display:flex; align-items:center; gap:10px;">' +
             '<span style="font-size:20px;">' + icona + '</span>' +
             '<div style="flex:1;"><div style="font-weight:700; font-size:13px;">' + nome + '</div>' +
             (v.targa ? '<div style="font-size:10px; color:#888;">' + v.targa + '</div>' : '') +
-            '</div></div>';
+            '</div>' + checkMark + '</div>';
     }).join('');
     document.getElementById('modalSelectVeicoloTurno').style.display = 'flex';
 }
