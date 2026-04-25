@@ -2487,8 +2487,8 @@ function confermaReset() {
         const isMetanoTipo = tipo === 'metano';
 
 // Media consumi: SOLO da rifornimenti con km odometro
-var _vaHome = getVeicoloAttivo();
-var _consRealeHome = _vaHome ? getConsMedioRealeVeicolo(_vaHome.id) : null;
+var _vaHome = (typeof getVeicoloAttivo === 'function') ? getVeicoloAttivo() : null;
+var _consRealeHome = (_vaHome && typeof getConsMedioRealeVeicolo === 'function') ? getConsMedioRealeVeicolo(_vaHome.id) : null;
 if (_consRealeHome !== null && _consRealeHome > 0) {
     if (userSettings.consumption === 'km_l') {
         mediaConsumo = 100 / _consRealeHome;
@@ -3444,8 +3444,8 @@ function calcolaPeriodiConsumo(turni, tax) {
         let totL = 0, totO = 0, totK = 0, totLitri = 0, totCostoB = 0;
 
         // Consumo reale da rifornimenti (odometro)
-        var _vaP = getVeicoloAttivo();
-        var _consRealeP = _vaP ? getConsMedioRealeVeicolo(_vaP.id) : null;
+        var _vaP = (typeof getVeicoloAttivo === 'function') ? getVeicoloAttivo() : null;
+        var _consRealeP = (_vaP && typeof getConsMedioRealeVeicolo === 'function') ? getConsMedioRealeVeicolo(_vaP.id) : null;
 
         arr.forEach(t => {
             const isNC = va_noCons(t);
@@ -4560,6 +4560,7 @@ function effettuaSalvataggioTurno(prezzo, rif) {
     _resetCampiTurno();
     chiudiModali();
     controllaRiportoDopoInserimento(dataCompleta);
+    _riaggiornaSeStoricoAperto();
 }
 
 function salvaBenza() {
@@ -4656,6 +4657,7 @@ if (!_prezzoGiaInterno) {
     document.getElementById('bPrezzoOlio').value = '';
 
     chiudiModali();
+    _riaggiornaSeStoricoAperto();
     controllaRiportoDopoInserimento(obj.data);
 }
 function completaSalvaBenzaConPrezzo() {
@@ -4864,6 +4866,7 @@ function salvaExtraKm() {
     document.getElementById('extraAltroWrap').style.display = 'none';
     chiudiModali();
     controllaRiportoDopoInserimento(extraData);
+    _riaggiornaSeStoricoAperto();
 }
 
 function mostraAlertGrafico(titolo, messaggio) {
@@ -4873,6 +4876,13 @@ function mostraAlertGrafico(titolo, messaggio) {
 function mostraAlertApp(msg) {
     document.getElementById('modalAlertAppMsg').innerText = msg;
     document.getElementById('modalAlertApp').style.display = 'flex';
+}
+
+function _riaggiornaSeStoricoAperto() {
+    var hv = document.getElementById('histView');
+    if (hv && hv.style.display !== 'none') {
+        apriStorico();
+    }
 }
 
 function chiudiModali() {
