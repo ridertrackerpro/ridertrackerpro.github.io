@@ -7295,7 +7295,7 @@ function buildRepVeicoli(turniMese, rifMese) {
     var gruppi = {};
     turniMese.forEach(function(t) {
         var vid = t.veicoloId || 'sconosciuto';
-        if (!gruppi[vid]) gruppi[vid] = { turni:[], nome: t.veicoloNome||'Veicolo non specificato', km:0, ore:0, lordo:0, netto:0, costoB:0 };
+        if (!gruppi[vid]) { var _vNomeAttuale = getVeicoli().find(function(v){ return v.id===vid; }); var _vNome = _vNomeAttuale ? ((_vNomeAttuale.marca||'')+' '+(_vNomeAttuale.modello||'')).trim() : (t.veicoloNome||'Veicolo non specificato'); gruppi[vid] = { turni:[], nome: _vNome, km:0, ore:0, lordo:0, netto:0, costoB:0 }; }
         gruppi[vid].turni.push(t);
         var q=t.km*(t.cons/100), cB=q*(t.prezzo||0);
         if(t.tipoCarburante==='miscela'&&t.percMiscela&&t.prezzoOlio)cB+=(q*(t.percMiscela/100))*t.prezzoOlio;
