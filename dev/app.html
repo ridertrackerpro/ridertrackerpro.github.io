@@ -4918,12 +4918,26 @@ function selezionaVeicoloTurno(veicoloId) {
     var veicoli = getVeicoli();
     var v = veicoli.find(function(x){ return x.id === veicoloId; });
     if (!v) return;
-    // Imposta visivamente il veicolo nel banner senza cambiare attivo nel DB
+    // Salva id originale attivo
+    var vAttivoOrig = veicoli.find(function(x){ return x.attivo; });
+    var origId = vAttivoOrig ? vAttivoOrig.id : null;
+    // Imposta temporaneamente il veicolo scelto come attivo
     veicoli.forEach(function(x){ x.attivo = (x.id === veicoloId); });
+    // Aggiorna banner visivamente
     if (typeof _syncVeicoloAttivo === 'function') _syncVeicoloAttivo();
-    // Ripristina attivo reale (senza salvare nel DB)
-    var prevId = null;
-    // Salva il veicoloId scelto per questo turno nel campo nascosto
+    // Ripristina attivo originale in memoria (senza salvare)
+    veicoli.forEach(function(x){ x.attivo = (x.id === origId); });
+    // Aggiorna consumo suggerito con media del veicolo selezionato
+    var tCEl = document.getElementById('tC');
+    if (tCEl) {
+        var consReale = getConsMedioRealeVeicolo(veicoloId);
+        if (consReale && consReale > 0) {
+            tCEl.value = consL100kmToDisplayValue(consReale);
+        } else {
+            tCEl.value = consL100kmToDisplayValue(v.consMedio || 0);
+        }
+    }
+    // Salva il veicoloId scelto nel campo nascosto per il salvataggio
     var hiddenVId = document.getElementById('tVeicoloId');
     if (!hiddenVId) {
         hiddenVId = document.createElement('input');
