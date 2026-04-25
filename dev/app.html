@@ -4971,9 +4971,14 @@ function selezionaVeicoloTurno(veicoloId) {
     if (hint) {
         var nRif = db.rifornimenti.filter(function(r){ return r.veicoloId === veicoloId && r.km > 0 && r.litri > 0; }).length;
         hint.style.color = 'var(--primary)';
-        hint.innerText = nRif >= 2
-            ? '~consumo reale da ' + nRif + ' rifornimenti (odometro)'
-            : '(inserisci almeno 2 rifornimenti con km odometro per il calcolo reale)';
+        var nRif2 = db.rifornimenti.filter(function(r){ return _va && r.veicoloId === _va.id && r.km > 0 && r.litri > 0; }).length;
+        if (nRif2 >= 2) {
+            hint.innerText = '~consumo reale da ' + nRif2 + ' rifornimenti (odometro)';
+        } else if (nRif2 === 1) {
+            hint.innerText = '~stima (serve 1 altro rifornimento con km per il calcolo reale)';
+        } else {
+            hint.innerText = '~stima teorica da impostazioni veicolo';
+        }
     }
     // Salva veicoloId nel campo nascosto per il salvataggio
     var hiddenVId = document.getElementById('tVeicoloId');
@@ -6583,12 +6588,17 @@ function getConsMedioRealeVeicolo(veicoloId) {
         }
         if (totKm > 0 && totLitri > 0) return (totLitri / totKm) * 100;
     }
-    // Fallback: media ponderata consumi turni
+    // Fallback 1: media ponderata consumi turni
     var turniV = db.turni.filter(function(t) { return t.veicoloId === veicoloId && t.km > 0 && t.cons > 0; });
-    if (turniV.length < 1) return null;
-    var totKm2 = turniV.reduce(function(a,t){ return a + t.km; }, 0);
-    var totCons = turniV.reduce(function(a,t){ return a + (t.km * t.cons / 100); }, 0);
-    return totKm2 > 0 ? (totCons / totKm2 * 100) : null;
+    if (turniV.length >= 1) {
+        var totKm2 = turniV.reduce(function(a,t){ return a + t.km; }, 0);
+        var totCons = turniV.reduce(function(a,t){ return a + (t.km * t.cons / 100); }, 0);
+        if (totKm2 > 0) return totCons / totKm2 * 100;
+    }
+    // Fallback 2: consMedio dalle impostazioni veicolo
+    var vObj = (typeof getVeicoli === 'function' ? getVeicoli() : []).find(function(v){ return v.id === veicoloId; });
+    if (vObj && vObj.consMedio && vObj.consMedio > 0) return vObj.consMedio;
+    return null;
 }
 
 /* ════════════════════════════════════════════════════
