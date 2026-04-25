@@ -2663,37 +2663,17 @@ function apriM(id) {
     document.getElementById(p).innerHTML = `<select id="${p}D">${d}</select><select id="${p}M">${m}</select><select id="${p}Y">${y}</select>`; 
     
     if (id === 'modalTurno') {
-        // Sincronizza banner veicolo
-        if (editingId !== null) {
-            var _tEdit = db.turni ? db.turni.find(function(t){ return t.id === editingId; }) : null;
-            if (_tEdit && _tEdit.veicoloId) {
-                // Salva veicoli originali, imposta attivo il veicolo del turno in localStorage
-                var _vvOrig = localStorage.getItem('rider_veicoli');
-                var _vvTemp = JSON.parse(_vvOrig || '[]');
-                _vvTemp.forEach(function(v){ v.attivo = (v.id === _tEdit.veicoloId); });
-                localStorage.setItem('rider_veicoli', JSON.stringify(_vvTemp));
-                if (typeof _syncVeicoloAttivo === 'function') _syncVeicoloAttivo();
-                // Ripristina localStorage originale
-                localStorage.setItem('rider_veicoli', _vvOrig);
-            } else {
-                if (typeof _syncVeicoloAttivo === 'function') _syncVeicoloAttivo();
-            }
-        } else {
+        // Sincronizza banner veicolo solo per nuovo turno - in modifica ci pensa modificaVoce
+        if (editingId === null) {
             if (typeof _syncVeicoloAttivo === 'function') _syncVeicoloAttivo();
         }
-        // Se in modifica usa il veicolo del turno, altrimenti il veicolo attivo
-        var _vaAM = null;
-        if (editingId !== null) {
-            var _tEditAM = db.turni ? db.turni.find(function(t){ return t.id === editingId; }) : null;
-            if (_tEditAM && _tEditAM.veicoloId) {
-                var _vvAM = JSON.parse(localStorage.getItem('rider_veicoli') || '[]');
-                _vaAM = _vvAM.find(function(v){ return v.id === _tEditAM.veicoloId; }) || null;
-            }
-        }
-        if (!_vaAM && typeof getVeicoloAttivo === 'function') _vaAM = getVeicoloAttivo();
+        // Per nuovo turno usa veicolo attivo; in modifica modificaVoce gestisce il banner
+        var _vaAM = (editingId === null && typeof getVeicoloAttivo === 'function') ? getVeicoloAttivo() : null;
         const ultimoMezzo = _vaAM ? (_vaAM.tipo || 'auto') : (localStorage.getItem('ultimo_mezzo_' + currentLang) || 'auto');
-        document.getElementById('tMezzo').value = ultimoMezzo;
-        document.getElementById('labelMezzo').innerText = _getMezzoLabel(ultimoMezzo);
+        if (editingId === null) {
+            document.getElementById('tMezzo').value = ultimoMezzo;
+            document.getElementById('labelMezzo').innerText = _getMezzoLabel(ultimoMezzo);
+        }
         var _noCons = ultimoMezzo === 'bici' || ultimoMezzo === 'escooter';
         document.getElementById('tC').style.display = _noCons ? 'none' : '';
         document.getElementById('tK').style.width = _noCons ? '100%' : '';
@@ -5083,31 +5063,21 @@ function modificaVoce(categoria, id) {
             document.getElementById('tCarburante').value = item.tipoCarburante;
             var _lctEl=document.getElementById('labelCarburanteTurno');if(_lctEl){if(_lctEl.tagName==='INPUT')_lctEl.value=getIconaCarburante(item.tipoCarburante) + ' ' + getNomeCarburante(item.tipoCarburante);else _lctEl.innerText=getIconaCarburante(item.tipoCarburante) + ' ' + getNomeCarburante(item.tipoCarburante);}
         }
-        // Ripristina veicolo del turno nel banner (visivo, senza cambiare il veicolo attivo nel DB)
+        // Ripristina veicolo del turno nel banner - aggiornamento diretto DOM
         if (item.veicoloId) {
-            var _vEdit = getVeicoli().find(function(v){ return v.id === item.veicoloId; });
+            var _vvAll = JSON.parse(localStorage.getItem('rider_veicoli') || '[]');
+            var _vEdit = _vvAll.find(function(v){ return v.id === item.veicoloId; });
             if (_vEdit) {
-                // Sincronizza banner con il veicolo del turno
-                var _vNome = ((_vEdit.marca || '') + ' ' + (_vEdit.modello || '')).trim();
-                var _vTipo = _vEdit.tipo || 'auto';
-                // Aggiorna tMezzo se non già impostato da item.mezzo
-                if (!item.mezzo) {
-                    document.getElementById('tMezzo').value = _vTipo;
-                    document.getElementById('labelMezzo').innerText = _getMezzoLabel(_vTipo);
-                }
-                // Aggiorna banner veicolo visivo
-                if (typeof _syncVeicoloAttivo === 'function') {
-                    // Imposta temporaneamente il veicolo del turno come attivo solo visivamente
-                    var _allV = getVeicoli();
-                    var _prevAttivo = _allV.find(function(v){ return v.attivo; });
-                    _allV.forEach(function(v){ v.attivo = (v.id === item.veicoloId); });
-                    _syncVeicoloAttivo();
-                    // Ripristina il veicolo attivo reale (senza salvare)
-                    _allV.forEach(function(v){ v.attivo = (_prevAttivo && v.id === _prevAttivo.id); });
-                }
+                // Imposta temporaneamente nel localStorage e chiama _syncVeicoloAttivo
+                var _vvBackup = localStorage.getItem('rider_veicoli');
+                _vvAll.forEach(function(v){ v.attivo = (v.id === item.veicoloId); });
+                localStorage.setItem('rider_veicoli', JSON.stringify(_vvAll));
+                if (typeof _syncVeicoloAttivo === 'function') _syncVeicoloAttivo();
+                // Ripristina subito
+                localStorage.setItem('rider_veicoli', _vvBackup);
             }
         }
-        // Ripristina km odometro partenza e arrivo
+                // Ripristina km odometro partenza e arrivo
         var _tKSel = document.getElementById('tKStart');
         var _tKEel = document.getElementById('tKEnd');
         if (_tKSel) _tKSel.value = (item.kmOdoStart !== undefined && item.kmOdoStart !== null) ? item.kmOdoStart : '';
