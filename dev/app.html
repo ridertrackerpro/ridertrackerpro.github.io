@@ -4971,7 +4971,7 @@ function selezionaVeicoloTurno(veicoloId) {
     if (hint) {
         var nRif = db.rifornimenti.filter(function(r){ return r.veicoloId === veicoloId && r.km > 0 && r.litri > 0; }).length;
         hint.style.color = 'var(--primary)';
-        var nRif2 = db.rifornimenti.filter(function(r){ return _va && r.veicoloId === _va.id && r.km > 0 && r.litri > 0; }).length;
+        var nRif2 = db.rifornimenti.filter(function(r){ return r.veicoloId === veicoloId && r.km > 0 && r.litri > 0; }).length;
         if (nRif2 >= 2) {
             hint.innerText = '~consumo reale da ' + nRif2 + ' rifornimenti (odometro)';
         } else if (nRif2 === 1) {
