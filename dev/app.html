@@ -4338,7 +4338,15 @@ function salvaTurno() {
     var kEnd = document.getElementById('tKEnd').value;
     var kPercorsi = document.getElementById('tK').value;
     var _vaTurno = getVeicoloAttivo();
-    var _vIdTurno = _vaTurno ? _vaTurno.id : null;
+    // Se veicolo cambiato dalla tendina, usa quello
+    var _hiddenVIdSalva = document.getElementById('tVeicoloId');
+    var _vIdTurnoSel = _hiddenVIdSalva && _hiddenVIdSalva.value ? parseInt(_hiddenVIdSalva.value) : null;
+    // Se in modifica e nessuna selezione manuale, usa il veicolo del turno originale
+    if (!_vIdTurnoSel && editingId !== null) {
+        var _tOrig = db.turni.find(function(t){ return t.id === editingId; });
+        if (_tOrig && _tOrig.veicoloId) _vIdTurnoSel = _tOrig.veicoloId;
+    }
+    var _vIdTurno = _vIdTurnoSel || (_vaTurno ? _vaTurno.id : null);
     var _mezzoTurnoKm = document.getElementById('tMezzo').value;
     var _noCons2 = _mezzoTurnoKm === 'bici' || _mezzoTurnoKm === 'escooter';
     if (!_noCons2) {
@@ -4543,6 +4551,13 @@ function effettuaSalvataggioTurno(prezzo, rif) {
     if (_vAttId) {
         _vAtt = getVeicoli().find(function(v){ return v.id === _vAttId; });
         if (_hiddenVId) _hiddenVId.value = '';
+    }
+    // Se in modifica e nessun veicolo selezionato manualmente, usa il veicolo del turno originale
+    if (!_vAtt && editingId !== null) {
+        var _turnoOrig = db.turni.find(function(t){ return t.id === editingId; });
+        if (_turnoOrig && _turnoOrig.veicoloId) {
+            _vAtt = getVeicoli().find(function(v){ return v.id === _turnoOrig.veicoloId; });
+        }
     }
     if (!_vAtt) _vAtt = getVeicoloAttivo();
     if (_vAtt) { obj.veicoloId = _vAtt.id; obj.veicoloNome = _vAtt.marca + ' ' + _vAtt.modello; }
@@ -4943,6 +4958,13 @@ function selezionaVeicoloTurno(veicoloId) {
     var veicoli = getVeicoli();
     var v = veicoli.find(function(x){ return x.id === veicoloId; });
     if (!v) return;
+    // Aggiorna km partenza con l'ultimo km del veicolo selezionato
+    var tKS = document.getElementById('tKStart');
+    if (tKS) {
+        var lastKm = getLastKmVeicolo(veicoloId);
+        tKS.value = (lastKm !== null) ? lastKm : '';
+        calcolaKmDaOdometro();
+    }
     // Aggiorna banner direttamente senza toccare attivo nel DB
     var bannerIcona = document.getElementById('turnoVeicoloIcona');
     var bannerLbl   = document.getElementById('turnoVeicoloLabel');
@@ -7089,8 +7111,10 @@ function gpsTermina(){
     // Modale con istruzioni (non mostrare se si sta annullando o se è solo viaggio)
     if (!GPS.cancelMode) {
         GPS.completed = true;
-        var _vGps = getVeicoloAttivo();
-        var _mezzoGps = document.getElementById('tMezzo').value;
+        var _hiddenVGps = document.getElementById('tVeicoloId');
+        var _vIdGpsSel = _hiddenVGps && _hiddenVGps.value ? parseInt(_hiddenVGps.value) : null;
+        var _vGps = _vIdGpsSel ? getVeicoli().find(function(v){ return v.id === _vIdGpsSel; }) : getVeicoloAttivo();
+        var _mezzoGps = (_vGps && _vGps.tipo) ? _vGps.tipo : document.getElementById('tMezzo').value;
         var _noConsGps = _mezzoGps === 'bici' || _mezzoGps === 'escooter';
         if (!_noConsGps && _vGps) {
             mostraModalKmArrivoGps(GPS.km.toFixed(2), GPS.soste.length);
