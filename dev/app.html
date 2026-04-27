@@ -1454,14 +1454,14 @@ body {
         <h2 style="text-align:center; margin:0; font-size:16px; letter-spacing:1px; color:#fff;" data-translate="yield_analysis">ANALISI RESA</h2>
         <div style="flex:1; min-height:0; border:1px solid #333; border-radius:10px; display:flex; flex-direction:column;">
             <div id="labelOra" style="text-align:center; font-size:10px; color:#00CCBC; font-weight:900; padding:4px 0; flex-shrink:0;"></div>
-            <div id="scrollOra" style="flex:1; overflow-x:scroll; overflow-y:hidden; -webkit-overflow-scrolling:touch; touch-action:pan-x;">
-                <div id="wrapOra" style="display:inline-flex; align-items:flex-end; height:100%; gap:8px; padding:0 8px 22px 8px; box-sizing:border-box;"></div>
+            <div id="scrollOra" style="flex:1; overflow:hidden; position:relative; cursor:grab;">
+                <div id="wrapOra" style="display:inline-flex; align-items:flex-end; height:100%; gap:8px; padding:0 8px 22px 8px; box-sizing:border-box; position:absolute; left:0; top:0; bottom:0;"></div>
             </div>
         </div>
         <div style="flex:1; min-height:0; border:1px solid #333; border-radius:10px; display:flex; flex-direction:column;">
             <div id="labelKm" style="text-align:center; font-size:10px; color:#e74c3c; font-weight:900; padding:4px 0; flex-shrink:0;"></div>
-            <div id="scrollKm" style="flex:1; overflow-x:scroll; overflow-y:hidden; -webkit-overflow-scrolling:touch; touch-action:pan-x;">
-                <div id="wrapKm" style="display:inline-flex; align-items:flex-end; height:100%; gap:8px; padding:0 8px 22px 8px; box-sizing:border-box;"></div>
+            <div id="scrollKm" style="flex:1; overflow:hidden; position:relative; cursor:grab;">
+                <div id="wrapKm" style="display:inline-flex; align-items:flex-end; height:100%; gap:8px; padding:0 8px 22px 8px; box-sizing:border-box; position:absolute; left:0; top:0; bottom:0;"></div>
             </div>
         </div>
         <button class="btn-rep-uniform btn-grey-dark" style="margin-top:5px; margin-bottom:40px; flex-shrink:0;" onclick="chiudiResaView()">
@@ -3603,6 +3603,85 @@ function disegnaGraficoResa(){
 
     buildCSSChart('wrapOra', valsOra, 'rgba(0,204,188,0.85)');
     buildCSSChart('wrapKm',  valsKm,  'rgba(231,76,60,0.85)');
+
+    // ── Scroll orizzontale manuale via touch events ────────────────────────────
+    // Il CSS overflow-x:scroll viene intercettato dal layer nativo di Capacitor
+    // Android WebView, rendendo inutile qualsiasi soluzione CSS pura.
+    // Questa implementazione bypassa il problema gestendo scrollLeft via JS touch.
+    // Manual horizontal scroll via JS touch events — guaranteed on Android WebView/Capacitor
+    (function initHorizontalScroll() {
+        ['scrollOra', 'scrollKm'].forEach(function(containerId) {
+            var container = document.getElementById(containerId);
+            if (!container) return;
+            var wrapId = containerId === 'scrollOra' ? 'wrapOra' : 'wrapKm';
+            var wrap = document.getElementById(wrapId);
+            if (!wrap) return;
+
+            var isDragging = false;
+            var startX = 0;
+            var startLeft = 0;
+            var currentLeft = 0;
+            var velX = 0;
+            var lastX = 0;
+            var lastTime = 0;
+            var rafId = null;
+
+            function getMaxScroll() {
+                return Math.max(0, wrap.offsetWidth - container.clientWidth);
+            }
+
+            function clamp(val, min, max) {
+                return Math.min(Math.max(val, min), max);
+            }
+
+            function setLeft(val) {
+                currentLeft = clamp(val, -getMaxScroll(), 0);
+                wrap.style.left = currentLeft + 'px';
+            }
+
+            function inertiaStep() {
+                if (Math.abs(velX) < 0.3) { velX = 0; return; }
+                velX *= 0.92;
+                setLeft(currentLeft + velX);
+                rafId = requestAnimationFrame(inertiaStep);
+            }
+
+            container.addEventListener('touchstart', function(e) {
+                if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+                isDragging = true;
+                startX = e.touches[0].clientX;
+                startLeft = currentLeft;
+                lastX = startX;
+                lastTime = Date.now();
+                velX = 0;
+            }, { passive: true });
+
+            container.addEventListener('touchmove', function(e) {
+                if (!isDragging) return;
+                var now = Date.now();
+                var clientX = e.touches[0].clientX;
+                var dx = clientX - startX;
+                var dt = now - lastTime;
+                if (dt > 0) velX = (clientX - lastX) / dt * 16;
+                lastX = clientX;
+                lastTime = now;
+                // Previeni scroll verticale solo se movimento prevalentemente orizzontale
+                if (Math.abs(dx) > 8) e.preventDefault();
+                setLeft(startLeft + dx);
+            }, { passive: false });
+
+            container.addEventListener('touchend', function() {
+                isDragging = false;
+                if (Math.abs(velX) > 0.5) {
+                    rafId = requestAnimationFrame(inertiaStep);
+                }
+            }, { passive: true });
+
+            container.addEventListener('touchcancel', function() {
+                isDragging = false;
+            }, { passive: true });
+        });
+    })();
 }
 function selezionaCarburante(tipo, testo) {
     document.getElementById('bTipo').value = tipo;
