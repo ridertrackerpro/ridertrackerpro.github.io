@@ -2424,7 +2424,24 @@ function confermaReset() {
     }
 
     function salvaDB() {
-        localStorage.setItem('rider_db_final_v34', JSON.stringify(db));
+        try {
+            localStorage.setItem('rider_db_final_v34', JSON.stringify(db));
+        } catch(e) {
+            if (e.name === 'QuotaExceededError') {
+                // Rimuovi gpsRoute dai turni più vecchi fino a liberare spazio
+                var turniConRotta = db.turni.filter(function(t){ return t.gpsRoute && t.gpsRoute.coords && t.gpsRoute.coords.length > 0; }).sort(function(a,b){ return a.id - b.id; });
+                var liberato = false;
+                for (var _qi = 0; _qi < turniConRotta.length && !liberato; _qi++) {
+                    delete turniConRotta[_qi].gpsRoute;
+                    try {
+                        localStorage.setItem('rider_db_final_v34', JSON.stringify(db));
+                        liberato = true;
+                        mostraAlertApp('Spazio liberato: rimossa mappa GPS di un turno vecchio per fare spazio.');
+                    } catch(e2) {}
+                }
+                if (!liberato) mostraAlertApp('Spazio localStorage esaurito. Esporta un backup e fai RESET DB.');
+            }
+        }
         calcola();
     }
     function salvaDBSilent() {
@@ -7158,9 +7175,23 @@ function gpsTermina(){
     var ptsInMov=GPS.pts.filter(function(p){return p.spd>=GPS.STOP_KMH && p.spd<=250;});
     var vmedia=ptsInMov.length>0 ? ptsInMov.reduce(function(a,p){return a+p.spd;},0)/ptsInMov.length : 0;
     var vmax=GPS.pts.filter(function(p){return p.spd<=250;}).reduce(function(a,p){return Math.max(a,p.spd);},0);
-    // Salva rotta
+    // Comprimi rotta: max 300 punti campionati
+    var _allPts = GPS.pts;
+    var _maxPts = 300;
+    var _compPts;
+    if (_allPts.length <= _maxPts) {
+        _compPts = _allPts;
+    } else {
+        _compPts = [_allPts[0]]; // primo
+        var _step = (_allPts.length - 2) / (_maxPts - 2);
+        for (var _ci = 1; _ci < _maxPts - 1; _ci++) {
+            _compPts.push(_allPts[Math.round(_ci * _step)]);
+        }
+        _compPts.push(_allPts[_allPts.length - 1]); // ultimo
+    }
+    // Salva rotta compressa
     window._gpsRotta={
-        coords:  GPS.pts.map(function(p){return{la:p.la,lo:p.lo,ts:p.ts,spd:p.spd};}),
+        coords:  _compPts.map(function(p){return{la:p.la,lo:p.lo,spd:p.spd};}),
         soste:   GPS.soste,
         km:      GPS.km,
         vmax:    vmax,
