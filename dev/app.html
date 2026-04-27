@@ -3876,6 +3876,18 @@ function iniziaTurno() {
         mostraAlertApp(_msg);
         return;
     }
+    // Blocca se km partenza mancanti
+    var _hvIdT = document.getElementById('tVeicoloId');
+    var _vIdT = _hvIdT && _hvIdT.value ? parseInt(_hvIdT.value) : (getVeicoloAttivo() ? getVeicoloAttivo().id : null);
+    var _mezzoT = document.getElementById('tMezzo').value;
+    var _noConsT = _mezzoT === 'bici' || _mezzoT === 'escooter';
+    if (!_noConsT && _vIdT) {
+        var _kStartT = document.getElementById('tKStart').value;
+        if (_kStartT === '' && isPrimoTurnoVeicolo(_vIdT)) {
+            mostraAlertApp(t('alert_km_start_required'));
+            return;
+        }
+    }
 
     if (_turnoTimerStart === null) {
         // ── AVVIO TIMER ──
@@ -3977,7 +3989,7 @@ function _resetCampiTurno() {
     if (tL) tL.style.visibility = '';
     if (lblTL) lblTL.style.visibility = '';
     if (rowOreLbls && rowOreLbls.children[0]) rowOreLbls.children[0].style.visibility = '';
-    ['tL','tO','tK','tC','tKStart','tKEnd'].forEach(function(id){
+    ['tL','tO','tK','tC','tKStart','tKEnd','tVeicoloId'].forEach(function(id){
         var e=document.getElementById(id); if(e) e.value='';
     });
     document.getElementById('tOStart').value = '';
@@ -6851,6 +6863,18 @@ function gpsAvvia(){
         mostraAlertApp(_msg);
         return;
     }
+    // Blocca se km partenza mancanti
+    var _hvIdG = document.getElementById('tVeicoloId');
+    var _vIdG = _hvIdG && _hvIdG.value ? parseInt(_hvIdG.value) : (_vaCheck ? _vaCheck.id : null);
+    var _mezzoG = document.getElementById('tMezzo').value;
+    var _noConsG = _mezzoG === 'bici' || _mezzoG === 'escooter';
+    if (!_noConsG && _vIdG) {
+        var _kStartG = document.getElementById('tKStart').value;
+        if (_kStartG === '' && isPrimoTurnoVeicolo(_vIdG)) {
+            mostraAlertApp(t('alert_km_start_required'));
+            return;
+        }
+    }
 
     if(!navigator.geolocation){mostraAlertApp('GPS non disponibile su questo dispositivo.');return;}
     GPS.active=true; GPS.pts=[]; GPS.soste=[]; GPS.km=0; GPS.vmax=0;
@@ -8257,10 +8281,16 @@ function mostraModalKmArrivoGps(kmGps, nSoste) {
     if (infoEl) infoEl.innerText = 'GPS completato! KM: ' + kmGps + ' - Soste: ' + nSoste + '. Inserisci i KM del contachilometri per il calcolo del consumo reale.';
     var inp = document.getElementById('inputKmArrivoGps');
     if (inp) {
-        var va = getVeicoloAttivo();
-        var lastKm = va ? getLastKmVeicolo(va.id) : null;
-        inp.value = lastKm ? Math.round(lastKm + parseFloat(kmGps)) : '';
-        inp.placeholder = lastKm ? Math.round(lastKm + parseFloat(kmGps)) : '12540';
+        // Usa il veicolo dalla tendina se presente, altrimenti quello attivo
+        var _hvIdM = document.getElementById('tVeicoloId');
+        var _vIdM = _hvIdM && _hvIdM.value ? parseInt(_hvIdM.value) : null;
+        var vaM = _vIdM ? getVeicoli().find(function(v){ return v.id === _vIdM; }) : getVeicoloAttivo();
+        var lastKm = vaM ? getLastKmVeicolo(vaM.id) : null;
+        // Se km partenza è noto, suggerisci km partenza + km GPS
+        var kStart = parseFloat(document.getElementById('tKStart').value) || 0;
+        var base = kStart > 0 ? kStart : lastKm;
+        inp.value = base ? Math.round(base + parseFloat(kmGps)) : '';
+        inp.placeholder = base ? Math.round(base + parseFloat(kmGps)) : '';
     }
     document.getElementById('modalKmArrivoGps').style.display = 'flex';
 }
@@ -8272,8 +8302,11 @@ function confermaKmArrivoGps() {
     document.getElementById('modalKmArrivoGps').style.display = 'none';
     var tKE = document.getElementById('tKEnd');
     if (tKE) { tKE.value = km; calcolaKmDaOdometro(); }
-    var va = getVeicoloAttivo();
-    if (va) setLastKmVeicolo(va.id, km);
+    // Usa il veicolo della tendina se presente, altrimenti quello attivo
+    var _hvIdC = document.getElementById('tVeicoloId');
+    var _vIdC = _hvIdC && _hvIdC.value ? parseInt(_hvIdC.value) : null;
+    var vaC = _vIdC ? getVeicoli().find(function(v){ return v.id === _vIdC; }) : getVeicoloAttivo();
+    if (vaC) setLastKmVeicolo(vaC.id, km);
     mostraAlertApp('Rilevamento GPS completato! Compila LORDO GUADAGNATO e premi SALVA TURNO.');
 }
 
