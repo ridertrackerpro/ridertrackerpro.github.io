@@ -5414,6 +5414,10 @@ document.getElementById("fileBackup").addEventListener("change", function (e) {
                     targets: (dbRaw.targets && typeof dbRaw.targets === 'object') ? dbRaw.targets : {},
                     tax: (dbRaw.tax !== undefined) ? dbRaw.tax : null
                 };
+                // Rimuovi gpsRoute dai turni importati per non riempire il localStorage
+                dbMerged.turni.forEach(function(t) {
+                    if (t.gpsRoute) { t.hasGpsRoute = true; delete t.gpsRoute; }
+                });
                 db = dbMerged;
                 localStorage.setItem('rider_db_final_v34', JSON.stringify(db));
                 var nTurni = dbMerged.turni.length;
