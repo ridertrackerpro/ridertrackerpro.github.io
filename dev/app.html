@@ -3576,8 +3576,10 @@ function disegnaGraficoResa(){
     const nPunti = dati.length;
     const wrapO = document.getElementById('wrapOra');
     const wrapK = document.getElementById('wrapKm');
-    const canvasW = Math.max(wrapO.parentElement.clientWidth - 10, nPunti * minPxPerPoint);
-    const canvasH = wrapO.parentElement.clientHeight - 10;
+    const containerW = (wrapO.parentElement.clientWidth > 50 ? wrapO.parentElement.clientWidth : window.innerWidth) - 10;
+    const canvasW = Math.max(containerW, nPunti * minPxPerPoint);
+    const containerH = wrapO.parentElement.clientHeight;
+    const canvasH = (containerH > 50 ? containerH : Math.floor(window.innerHeight * 0.35)) - 10;
     const cO = document.getElementById('chartOra');
     const cK = document.getElementById('chartKm');
     cO.width = canvasW; cO.height = canvasH;
