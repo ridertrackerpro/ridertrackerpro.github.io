@@ -2419,7 +2419,16 @@ function confermaReset() {
     }
 
     function aggiornaTax() {
-        db.tax = parseFloat(document.getElementById('taxIn').value) || null;
+        var nuovaTax = parseFloat(document.getElementById('taxIn').value) || null;
+        db.tax = nuovaTax;
+        // Aggiorna tax di tutti i turni del mese corrente
+        if (nuovaTax !== null) {
+            var adesso = new Date();
+            var tagMese = (adesso.getMonth()+1).toString().padStart(2,'0') + '/' + adesso.getFullYear();
+            db.turni.forEach(function(t) {
+                if (t.data.endsWith(tagMese)) t.tax = nuovaTax;
+            });
+        }
         salvaDB();
     }
 
