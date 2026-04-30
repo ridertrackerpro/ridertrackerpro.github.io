@@ -3114,7 +3114,7 @@ function generaHtmlItem(i, mediaOraMese) {
 
     var _cat = i.tipo === 'T' ? 'turni' : (i.tipo === 'B' ? 'rifornimenti' : 'extraKm');
     var _detBtn = '';
-    if (i.tipo === 'T' && i.gpsRoute && i.gpsRoute.coords && i.gpsRoute.coords.length > 1) {
+    if (i.tipo === 'T' && ((i.gpsRoute && i.gpsRoute.coords && i.gpsRoute.coords.length > 1) || i.hasGpsRoute)) {
         _detBtn = '<div class="btn-det-turno" onclick="apriDettaglioTurno(' + i.id + ')" title="Dettagli GPS"><i class="fas fa-map-marked-alt" style="color:#00CCBC;font-size:12px;"></i></div>';
     }
     html += '</div><div style="display:flex;flex-direction:column;gap:6px;margin-right:8px;">' +
