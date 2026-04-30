@@ -1185,7 +1185,7 @@ body {
         <input type="number" id="inputKmArrivoGps" style="text-align:center; margin-bottom:16px;" placeholder="es. 12540" step="1" inputmode="decimal" autocomplete="off">
         <div class="confirm-buttons">
             <button class="btn-confirm-cancel" onclick="confermaKmArrivoGps()">CONFERMA</button>
-            <button class="btn-confirm-ok" style="background:#444; color:#aaa;" onclick="saltaKmArrivoGps()">SALTA</button>
+            <button class="btn-confirm-ok" style="background:#2a2a2a; color:#888; margin-top:6px; font-size:12px;" onclick="annullaKmArrivoGps()">ANNULLA TURNO</button>
         </div>
     </div>
 </div>
@@ -4029,7 +4029,7 @@ function iniziaTurno() {
         var _noConsTimer = _mezzoTimer === 'bici' || _mezzoTimer === 'escooter';
         if (!_noConsTimer && _vTimer) {
             var _kmTimerDisp = document.getElementById('tK').value || '0';
-            mostraModalKmArrivoGps(_kmTimerDisp, 0);
+            mostraModalKmArrivoGps(_kmTimerDisp, 0, 'Turno completato!');
         }
     }
 }
@@ -8239,9 +8239,12 @@ function apriDettaglioStorico(categoria, id) {
     document.getElementById('modalDettaglioStorico').style.display = 'flex';
 }
 
-function mostraModalKmArrivoGps(kmGps, nSoste) {
+function mostraModalKmArrivoGps(kmGps, nSoste, titoloCustom) {
     var infoEl = document.getElementById('modalKmArrivoGpsInfo');
-    if (infoEl) infoEl.innerText = 'GPS completato! KM: ' + kmGps + ' - Soste: ' + nSoste + '. Inserisci i KM del contachilometri per il calcolo del consumo reale.';
+    var _infoTxt = titoloCustom
+        ? titoloCustom + ' Inserisci i KM attuali del contachilometri (obbligatori).'
+        : 'GPS completato! KM rilevati: ' + kmGps + ' — Soste: ' + nSoste + '\n\nInserisci i KM attuali del contachilometri (obbligatori).';
+    if (infoEl) infoEl.innerText = _infoTxt;
     var inp = document.getElementById('inputKmArrivoGps');
     if (inp) {
         // Usa il veicolo dalla tendina se presente, altrimenti quello attivo
@@ -8254,6 +8257,11 @@ function mostraModalKmArrivoGps(kmGps, nSoste) {
         inp.placeholder = base ? Math.round(base + parseFloat(kmGps)) : '';
     }
     document.getElementById('modalKmArrivoGps').style.display = 'flex';
+}
+
+function annullaKmArrivoGps() {
+    document.getElementById('modalKmArrivoGps').style.display = 'none';
+    annullaTurnoConfermato();
 }
 
 function confermaKmArrivoGps() {
@@ -8269,10 +8277,6 @@ function confermaKmArrivoGps() {
     mostraAlertApp('Rilevamento GPS completato! Compila LORDO GUADAGNATO e premi SALVA TURNO.');
 }
 
-function saltaKmArrivoGps() {
-    document.getElementById('modalKmArrivoGps').style.display = 'none';
-    mostraAlertApp('Rilevamento GPS completato! Compila LORDO GUADAGNATO e premi SALVA TURNO. Attenzione: KM odometro non inseriti, il consumo reale non verra calcolato.');
-}
 </script>
 </body>
 </html>
