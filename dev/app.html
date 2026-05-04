@@ -3922,12 +3922,9 @@ function gpsAvviaConRipristino(ptsPrec, tStartPrec) {
     try { if (window.Capacitor && window.Capacitor.isNativePlatform()) window.Capacitor.Plugins.GpsService.start().catch(function(){}); } catch(e) {}
     var bar=document.getElementById('gpsLiveBar'); if(bar) bar.classList.add('visible');
     var lbl=document.getElementById('lblGpsSection'); if(lbl) lbl.style.display='none';
+    // Non sovrascrivere il tasto — già impostato sopra in base allo stato pausa
     var _btnGoR = document.getElementById('gpsBtnGo');
-    var _iconGoR = document.getElementById('gpsBtnGoIcon');
-    var _lblGoR = document.getElementById('lblGpsBtnGo');
-    if (_btnGoR) { _btnGoR.disabled = false; _btnGoR.style.background = '#e67e22'; }
-    if (_iconGoR) _iconGoR.className = 'fas fa-pause-circle';
-    if (_lblGoR) _lblGoR.innerText = 'PAUSA';
+    if (_btnGoR) _btnGoR.disabled = false;
     document.getElementById('gpsBtnStop').disabled=false;
     gpsDot('on'); gpsLbl('GPS ripristinato...');
     GPS.tempoTimer=setInterval(function(){
