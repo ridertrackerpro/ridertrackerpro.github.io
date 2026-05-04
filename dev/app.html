@@ -4072,6 +4072,7 @@ function iniziaTurno() {
         var btn2 = document.getElementById('btnIniziaTurno');
         if (btn2) {
             btn2.setAttribute('data-translate','btn_start_shift');
+            btn2.className = 'turno-btn turno-btn-start';
             btn2.innerHTML = currentLang === 'en' ? 'START SHIFT' : 'INIZIA TURNO';
             btn2.style.background = '';
             btn2.style.color = '';
@@ -4128,6 +4129,7 @@ function _resetCampiTurno() {
     var btnI = document.getElementById('btnIniziaTurno');
     if (btnI) {
         btnI.setAttribute('data-translate','btn_start_shift');
+        btnI.className = 'turno-btn turno-btn-start';
         btnI.innerText = currentLang === 'en' ? 'START SHIFT' : 'INIZIA TURNO';
         btnI.style.background = '';
         btnI.style.color = '';
