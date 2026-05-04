@@ -5755,7 +5755,8 @@ window.onload = function() {
                         btn.className = 'turno-btn turno-btn-start';
                         btn.innerHTML = '<i class="fas fa-pause-circle"></i> PAUSA';
                         btn.style.background = '#e67e22';
-                    btn.style.color = '#fff';
+                        btn.style.color = '#fff';
+                    }
                 }
                 var fsnap = localStorage.getItem('turno_form_snap');
                 if (fsnap) { try { var fs=JSON.parse(fsnap); if(fs.tL)document.getElementById('tL').value=fs.tL; if(fs.tMezzo){document.getElementById('tMezzo').value=fs.tMezzo;var lm=document.getElementById('labelMezzo');if(lm)lm.innerText=_getMezzoLabel(fs.tMezzo);} if(fs.tOStart){document.getElementById('tOStart').value=fs.tOStart;var los=document.getElementById('labelOraStart');if(los)los.innerText=fs.tOStart;} if(fs.dateTD)document.getElementById('dateTD').value=fs.dateTD; if(fs.dateTM)document.getElementById('dateTM').value=fs.dateTM; if(fs.dateTY)document.getElementById('dateTY').value=fs.dateTY; } catch(e){} }
