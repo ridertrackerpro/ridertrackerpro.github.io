@@ -954,7 +954,7 @@ body {
                 ✏️ Inserimento Manuale Turno
             </div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
-                <button class="turno-btn turno-btn-start" id="btnIniziaTurno" onclick="iniziaTurno()" data-translate="btn_start_shift">INIZIA TURNO</button>
+                <button class="turno-btn turno-btn-start" id="btnIniziaTurno" onclick="timerBtnSxClick()" data-translate="btn_start_shift">INIZIA TURNO</button>
                 <button class="turno-btn turno-btn-save" onclick="salvaTurno()" data-translate="btn_save_shift">SALVA TURNO</button>
             </div>
             <button class="btn-modal btn-close" onclick="annullaTurno()" data-translate="cancel" style="margin-top:0;">ANNULLA</button>
@@ -3859,7 +3859,10 @@ var _pickerOraH = -1;
 var _pickerOraM = -1;
 var _pickerOraValPrecedente = '';
 
-var _turnoTimerStart = null; // timestamp ms inizio turno manuale
+var _turnoTimerStart = null;
+var _turnoTimerPausaStart = null;
+var _turnoTimerPausaTot = 0;
+var _turnoTimerInPausa = false; // timestamp ms inizio turno manuale
 
 function chiudiTurnoSenzaAnnullare() {
     document.getElementById('modalTurno').style.display = 'none';
@@ -3943,6 +3946,34 @@ function gpsAvviaConRipristino(ptsPrec, tStartPrec) {
     }
 }
 
+function timerBtnSxClick() {
+    if (!_turnoTimerStart) { iniziaTurno(); return; }
+    if (_turnoTimerInPausa) { timerRiprendi(); } else { timerPausa(); }
+}
+
+function timerPausa() {
+    if (!_turnoTimerStart || _turnoTimerInPausa) return;
+    _turnoTimerInPausa = true;
+    _turnoTimerPausaStart = Date.now();
+    var btn = document.getElementById('btnIniziaTurno');
+    if (btn) {
+        btn.style.background = 'var(--primary)';
+        btn.innerHTML = '<i class="fas fa-play-circle"></i> RIPRENDI';
+    }
+}
+
+function timerRiprendi() {
+    if (!_turnoTimerStart || !_turnoTimerInPausa) return;
+    _turnoTimerPausaTot += Date.now() - _turnoTimerPausaStart;
+    _turnoTimerInPausa = false;
+    _turnoTimerPausaStart = null;
+    var btn = document.getElementById('btnIniziaTurno');
+    if (btn) {
+        btn.style.background = '#e67e22';
+        btn.innerHTML = '<i class="fas fa-pause-circle"></i> PAUSA';
+    }
+}
+
 function iniziaTurno() {
     var _vaCheck = getVeicoloAttivo();
     if (!_vaCheck) {
@@ -3979,13 +4010,14 @@ function iniziaTurno() {
             _pickerOraH = now.getHours(); _pickerOraM = now.getMinutes();
             localStorage.setItem('ora_inizio_tmp', oraStr);
         }
-        // Cambia bottone: INIZIA → FINE TURNO
+        // Cambia bottone: INIZIA → PAUSA
         var btn = document.getElementById('btnIniziaTurno');
         if (btn) {
-            btn.innerText = currentLang === 'en' ? '⏹ END SHIFT' : '⏹ FINE TURNO';
-            btn.style.background = 'var(--accent)';
+            btn.innerHTML = '<i class="fas fa-pause-circle"></i> PAUSA';
+            btn.style.background = '#e67e22';
             btn.style.color = '#fff';
         }
+        _turnoTimerPausaTot = 0; _turnoTimerInPausa = false; _turnoTimerPausaStart = null;
         var kmStart = document.getElementById('tKStart').value;
         if (kmStart) localStorage.setItem(_kmPartenzaKey(), kmStart);
         localStorage.setItem('turno_form_snap', JSON.stringify({
@@ -4016,7 +4048,12 @@ function iniziaTurno() {
         if (document.getElementById('tOStart').value && document.getElementById('tOEnd').value) {
             calcolaOreDaOrari();
         } else {
-            var elapsed = (Date.now() - _turnoTimerStart) / 1000 / 60 / 60;
+            // Chiudi pausa aperta se ancora in pausa
+            if (_turnoTimerInPausa && _turnoTimerPausaStart) {
+                _turnoTimerPausaTot += Date.now() - _turnoTimerPausaStart;
+                _turnoTimerInPausa = false;
+            }
+            var elapsed = (Date.now() - _turnoTimerStart - _turnoTimerPausaTot) / 1000 / 60 / 60;
             var oreArrotondate = Math.round(elapsed * 10) / 10;
             document.getElementById('tO').value = oreArrotondate > 0 ? oreArrotondate : '';
         }
@@ -4027,9 +4064,10 @@ function iniziaTurno() {
         var btn2 = document.getElementById('btnIniziaTurno');
         if (btn2) {
             btn2.setAttribute('data-translate','btn_start_shift');
-            btn2.innerText = currentLang === 'en' ? 'START SHIFT' : 'INIZIA TURNO';
+            btn2.innerHTML = currentLang === 'en' ? 'START SHIFT' : 'INIZIA TURNO';
             btn2.style.background = '';
             btn2.style.color = '';
+            _turnoTimerPausaTot = 0; _turnoTimerInPausa = false; _turnoTimerPausaStart = null;
         }
         // Mostra popup km arrivo odometro (stesso del GPS)
         var _vTimer = getVeicoloAttivo();
@@ -5674,8 +5712,8 @@ window.onload = function() {
             setTimeout(function() {
                 var btn = document.getElementById('btnIniziaTurno');
                 if (btn) {
-                    btn.innerText = (typeof currentLang !== 'undefined' && currentLang === 'en') ? '⏹ END SHIFT' : '⏹ FINE TURNO';
-                    btn.style.background = 'var(--accent)';
+                    btn.innerHTML = '<i class="fas fa-pause-circle"></i> PAUSA';
+                    btn.style.background = '#e67e22';
                     btn.style.color = '#fff';
                 }
                 var fsnap = localStorage.getItem('turno_form_snap');
