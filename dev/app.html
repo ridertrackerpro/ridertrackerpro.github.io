@@ -7222,7 +7222,13 @@ function gpsResetUI(){
     ['gpsKm','gpsSpd','gpsSoste'].forEach(function(id){var e=document.getElementById(id);if(e)e.innerText=id==='gpsKm'?'0.0':'0';});
     var a=document.getElementById('gpsAcc');if(a)a.innerText='';
     var t=document.getElementById('gpsTempo');if(t)t.innerText='0m';
-    var bg=document.getElementById('gpsBtnGo');if(bg)bg.disabled=false;
+    var bg=document.getElementById('gpsBtnGo');
+    if(bg){bg.disabled=false;bg.style.background='';}
+    var _iconGoR=document.getElementById('gpsBtnGoIcon');
+    if(_iconGoR)_iconGoR.className='fas fa-satellite-dish';
+    var _lblGoR=document.getElementById('lblGpsBtnGo');
+    if(_lblGoR)_lblGoR.innerText='INIZIO GPS';
+    GPS.inPausa=false;GPS.pauseStart=null;GPS.pauseTot=0;
     var bs=document.getElementById('gpsBtnStop');if(bs)bs.disabled=true;
 }
 
