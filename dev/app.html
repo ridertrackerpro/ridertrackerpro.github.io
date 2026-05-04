@@ -693,6 +693,7 @@ body {
     padding-bottom: max(45px, calc(45px + env(safe-area-inset-bottom, 48px))) !important;
 }
 
+@keyframes blinkBtn{0%,100%{opacity:1}50%{opacity:.35}}.btn-blink{animation:blinkBtn 1s ease-in-out infinite;}
 </style>
 </head>
 <body>
@@ -3963,6 +3964,7 @@ function timerPausa() {
     var btn = document.getElementById('btnIniziaTurno');
     if (btn) {
         btn.style.background = 'var(--primary)';
+        btn.className = 'turno-btn turno-btn-start btn-blink';
         btn.innerHTML = '<i class="fas fa-play-circle"></i> RIPRENDI';
     }
 }
@@ -3975,6 +3977,7 @@ function timerRiprendi() {
     var btn = document.getElementById('btnIniziaTurno');
     if (btn) {
         btn.style.background = '#e67e22';
+        btn.className = 'turno-btn turno-btn-start';
         btn.innerHTML = '<i class="fas fa-pause-circle"></i> PAUSA';
     }
 }
@@ -6877,7 +6880,7 @@ function gpsPausa() {
     var btn = document.getElementById('gpsBtnGo');
     var icon = document.getElementById('gpsBtnGoIcon');
     var lbl = document.getElementById('lblGpsBtnGo');
-    if (btn) { btn.className = 'turno-btn turno-btn-gps-go'; btn.style.background = ''; }
+    if (btn) { btn.className = 'turno-btn turno-btn-gps-go btn-blink'; btn.style.background = 'var(--primary)'; }
     if (icon) icon.className = 'fas fa-play-circle';
     if (lbl) lbl.innerText = 'RIPRENDI';
 }
@@ -7223,7 +7226,7 @@ function gpsResetUI(){
     var a=document.getElementById('gpsAcc');if(a)a.innerText='';
     var t=document.getElementById('gpsTempo');if(t)t.innerText='0m';
     var bg=document.getElementById('gpsBtnGo');
-    if(bg){bg.disabled=false;bg.style.background='';}
+    if(bg){bg.disabled=false;bg.style.background='';bg.className='turno-btn turno-btn-gps-go';}
     var _iconGoR=document.getElementById('gpsBtnGoIcon');
     if(_iconGoR)_iconGoR.className='fas fa-satellite-dish';
     var _lblGoR=document.getElementById('lblGpsBtnGo');
