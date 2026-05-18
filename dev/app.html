@@ -4687,12 +4687,10 @@ function effettuaSalvataggioTurno(prezzo, rif) {
     if (_kSv !== '') obj.kmOdoStart = parseFloat(_kSv);
     if (_kEv !== '') {
         obj.kmOdoEnd = parseFloat(_kEv);
-        if (_vAtt) {
-            setLastKmVeicolo(_vAtt.id, parseFloat(_kEv));
-            // Rimuovi il tmp così il turno successivo legge last_km_veicolo (km fine) e non il km inizio di questo turno
-            localStorage.removeItem(_kmPartenzaKey());
-        }
+        if (_vAtt) setLastKmVeicolo(_vAtt.id, parseFloat(_kEv));
     }
+    // Rimuovi sempre il tmp km partenza dopo il salvataggio
+    localStorage.removeItem(_kmPartenzaKey());
 
     if (editingId !== null && editingCat === 'turni') {
         const idx = db.turni.findIndex(x => x.id === editingId);
