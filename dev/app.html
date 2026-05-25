@@ -6770,6 +6770,7 @@ function salvaVeicolo() {
     document.getElementById('modalVeicolo').style.display = 'none';
     renderVehList();
     _syncVeicoloAttivo();
+    if (typeof aggiornaTagliando === 'function') aggiornaTagliando();
 }
 
 function setVeicoloAttivo(id) {
