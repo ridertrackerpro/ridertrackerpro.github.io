@@ -953,7 +953,7 @@ body {
             <div id="lblManualSection" style="font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:1.5px; color:#aaa; margin-bottom:10px; display:flex; align-items:center; justify-content:center; gap:7px; text-align:center;">
                 ✏️ Inserimento Manuale Turno
             </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:6px;">
                 <button class="turno-btn turno-btn-start" id="btnIniziaTurno" onclick="timerBtnSxClick()" data-translate="btn_start_shift">INIZIA TURNO</button>
                 <button class="turno-btn turno-btn-save" onclick="salvaTurno()" style="background:#c0392b; color:#fff;" data-translate="btn_save_shift">SALVA TURNO</button>
             </div>
@@ -6461,26 +6461,31 @@ calcola();
 
     <!-- Sezione carburante (nascosta per noCons) -->
     <div id="vehFuelSection">
-      <div id="vehSerbatoioSection" style="margin-bottom:14px;">
-        <label id="lblVehSerbatoio" style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:5px;">Capacità Serbatoio (L) *</label>
-        <input type="number" id="vehSerbatoio" placeholder="es. 45" class="veh-req-fuel" inputmode="decimal" style="width:100%;padding:11px;text-align:center;background:#252525;border:1px solid #444;color:#fff;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
+      <!-- Serbatoio + Consumo affiancati -->
+      <div id="vehSerbatoioSection" style="margin-bottom:10px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div>
+            <label id="lblVehSerbatoio" style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px;text-align:center;">Serbatoio (L) *</label>
+            <input type="number" id="vehSerbatoio" placeholder="es. 45" class="veh-req-fuel" inputmode="decimal" style="width:100%;padding:9px;text-align:center;background:#252525;border:1px solid #444;color:#fff;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
+          </div>
+          <div>
+            <label id="lblVehConsMedio" style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px;text-align:center;">Consumo medio</label>
+            <input type="number" id="vehConsMedio" placeholder="es. 18" inputmode="decimal" style="width:100%;padding:9px;text-align:center;background:#252525;border:1px solid #444;color:#fff;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
+          </div>
+        </div>
       </div>
-      <div id="vehBifuelSection" style="display:none;margin-bottom:14px;">
-        <label id="lblVehSerbatoio2" style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:5px;">Capacità Bombole (L equiv.) *</label>
-        <input type="number" id="vehSerbatoio2" placeholder="es. 50" class="veh-req-fuel2" inputmode="decimal" style="width:100%;padding:11px;text-align:center;background:#252525;border:1px solid #444;color:#fff;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
+      <div id="vehBifuelSection" style="display:none;margin-bottom:10px;">
+        <label id="lblVehSerbatoio2" style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px;">Capacità Bombole (L equiv.) *</label>
+        <input type="number" id="vehSerbatoio2" placeholder="es. 50" class="veh-req-fuel2" inputmode="decimal" style="width:100%;padding:9px;text-align:center;background:#252525;border:1px solid #444;color:#fff;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
       </div>
-      <div style="margin-bottom:14px;">
-        <label id="lblVehConsMedio" style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:5px;">Consumo medio</label>
-        <input type="number" id="vehConsMedio" placeholder="es. 18" inputmode="decimal" style="width:100%;padding:11px;text-align:center;background:#252525;border:1px solid #444;color:#fff;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
-      </div>
-      <div id="vehConsMedio2Wrap" style="display:none;margin-bottom:14px;">
-        <input type="number" id="vehConsMedio2" placeholder="Consumo 2° carb." inputmode="decimal" style="width:100%;padding:11px;text-align:center;background:#252525;border:1px solid #444;color:#fff;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
+      <div id="vehConsMedio2Wrap" style="display:none;margin-bottom:10px;">
+        <input type="number" id="vehConsMedio2" placeholder="Consumo 2° carb." inputmode="decimal" style="width:100%;padding:9px;text-align:center;background:#252525;border:1px solid #444;color:#fff;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
       </div>
     </div>
 
-    <div id="vehTagliandoWrap" style="margin-bottom:14px; border-top:1px solid #333; padding-top:14px;">
+    <div id="vehTagliandoWrap" style="margin-bottom:8px; border-top:1px solid #333; padding-top:10px;">
       <div style="font-size:11px; color:var(--primary); font-weight:700; margin-bottom:8px; text-align:center;">🔧 TAGLIANDO</div>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:6px;">
         <div>
           <div style="font-size:10px; color:#888; margin-bottom:4px; text-align:center;">KM ULTIMO TAGLIANDO</div>
           <input type="number" id="vehTagliandoKm" placeholder="es. 135000" inputmode="numeric" style="width:100%;padding:11px;text-align:center;background:#252525;border:1px solid #444;color:#fff;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
