@@ -6743,9 +6743,24 @@ function salvaVeicolo() {
     if (!isNC && !serbatoio) { mostraAlertApp('Inserisci la capacità del serbatoio.'); return; }
     var vv = getVeicoli();
     var editId = document.getElementById('vehEditId').value;
+    // Leggi campi tagliando PRIMA della costruzione oggetto
+    var _tagKmRaw = document.getElementById('vehTagliandoKm') ? document.getElementById('vehTagliandoKm').value : '';
+    var _tagDataRaw = document.getElementById('vehTagliandoData') ? document.getElementById('vehTagliandoData').value : '';
+    var _tagIntRaw = document.getElementById('vehTagliandoIntervallo') ? document.getElementById('vehTagliandoIntervallo').value : '';
+    var _tagKm = _tagKmRaw !== '' ? (parseFloat(_tagKmRaw) || null) : null;
+    var _tagData = _tagDataRaw !== '' ? _tagDataRaw : null;
+    var _tagInt = _tagIntRaw !== '' ? (parseFloat(_tagIntRaw) || null) : null;
+    // Se campi nascosti (bici), preserva valori esistenti
+    var _vExist = editId ? vv.find(function(x){return x.id===parseInt(editId);}) : null;
+    var _tipoV = document.getElementById('vehTipo').value;
+    if (_tipoV === 'bici' || _tipoV === 'escooter') {
+        _tagKm = _vExist ? (_vExist.tagliandoKm || null) : null;
+        _tagData = _vExist ? (_vExist.tagliandoData || null) : null;
+        _tagInt = _vExist ? (_vExist.tagliandoIntervallo || null) : null;
+    }
     var obj = {
         id:          editId ? parseInt(editId) : Date.now(),
-        tipo:        document.getElementById('vehTipo').value,
+        tipo:        _tipoV,
         marca:       marca,
         modello:     modello,
         cilindrata:  document.getElementById('vehCilindrata').value.trim(),
@@ -6757,9 +6772,9 @@ function salvaVeicolo() {
         carburante:  carburante,
         noCons:      isNC,
         attivo:      editId ? (vv.find(function(x){return x.id===parseInt(editId);})||{}).attivo || false : vv.length === 0,
-        tagliandoKm:  (function(){ var el=document.getElementById('vehTagliandoKm'); return el ? (parseFloat(el.value) || null) : null; })(),
-        tagliandoData: (function(){ var el=document.getElementById('vehTagliandoData'); return el ? (el.value || null) : null; })(),
-        tagliandoIntervallo: (function(){ var el=document.getElementById('vehTagliandoIntervallo'); return el ? (parseFloat(el.value) || null) : null; })()
+        tagliandoKm:  _tagKm,
+        tagliandoData: _tagData,
+        tagliandoIntervallo: _tagInt
     };
     if (editId) {
         var idx = vv.findIndex(function(x){ return x.id === parseInt(editId); });
