@@ -6782,6 +6782,9 @@ function salvaVeicolo() {
     } else {
         vv.push(obj);
     }
+    // Debug tagliando
+    var _dbgV = vv.find(function(x){ return x.id === obj.id; }) || obj;
+    mostraAlertApp('Salvato: km=' + _dbgV.tagliandoKm + ' data=' + _dbgV.tagliandoData);
     salvaVeicoli(vv);
     document.getElementById('modalVeicolo').style.display = 'none';
     renderVehList();
