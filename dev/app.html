@@ -6604,7 +6604,7 @@ function aggiornaTagliando() {
     // Bici/escooter: non applicabile
     if (!va || va.noCons) {
         el.innerText = '—';
-        sub.innerText = '';
+        if(sub) sub.innerText = '';
         el.style.color = 'var(--val)';
         el.style.animation = '';
         return;
@@ -6612,7 +6612,7 @@ function aggiornaTagliando() {
 
     if (!va.tagliandoKm) {
         el.innerText = '?';
-        sub.innerText = 'Inserisci in impostazioni';
+        if(sub) sub.innerText = 'Inserisci in impostazioni';
         el.style.color = '#888';
         el.style.animation = '';
         return;
