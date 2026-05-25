@@ -81,9 +81,9 @@ html, body { touch-action: pan-x pan-y; }
 .modal-content { animation: fadeSlideUp 0.22s cubic-bezier(0.22,1,0.36,1) both; }
         .app-title { margin:10px 0 15px; font-size:30px; font-weight:800; color:var(--primary); text-transform:uppercase; user-select:none; cursor: pointer; }
         .grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-bottom:8px; }
-        .card { background:var(--card); height:75px; display:flex; flex-direction:column; justify-content:center; align-items:center; border-radius:12px; border:1px solid #333; }
-        .label { font-size:8px; color:var(--dim); text-transform:uppercase; margin-bottom:4px; font-weight:bold; }
-        .val { font-size:14px; font-weight:bold; }
+        .card { background:var(--card); height:75px; display:flex; flex-direction:column; justify-content:center; align-items:center; border-radius:12px; border:1px solid #333; padding:0; box-sizing:border-box; }
+        .label { font-size:8px; color:var(--dim); text-transform:uppercase; margin-bottom:4px; font-weight:bold; line-height:1.2; height:20px; display:flex; align-items:center; justify-content:center; text-align:center; }
+        .val { font-size:14px; font-weight:bold; line-height:1; display:flex; align-items:center; justify-content:center; height:30px; }
         .card.main .val, #lordo, #mancante { color:var(--primary)!important; } 
         #netto { color:var(--accent)!important; }
         .card input { width:80%; background:transparent; border:none; border-bottom:1px solid #444; color:#fff; text-align:center; font-size:14px; outline:none; }
@@ -777,15 +777,14 @@ body {
         <div class="val" id="ore">0.0</div>
     </div>
 
-    <div class="card">
-        <div class="label" data-translate="consumption">Q.TÀ CONSUMO</div>
-        <div class="val" id="cons">0.0L</div>
+    <div class="card" id="cardTagliando" onclick="mostraDettaglioTagliando()" style="cursor:pointer;">
+        <div class="label">TAGLIANDO</div>
+        <div class="val" id="tagliandoKmVal">—</div>
     </div>
 
     <div class="card">
-        <div class="label" data-translate="avg_consumption">MEDIA CONSUMI</div>
+        <div class="label" id="labelMediaConsumi">MEDIA KM/L</div>
         <div class="val" id="kml">0.0</div>
-        <div style="font-size:9px; color:var(--dim); font-weight:700; text-transform:uppercase; letter-spacing:0.5px; margin-top:2px;" id="kmlUnit">km/L</div>
     </div>
 
     <div class="card">
@@ -794,8 +793,8 @@ body {
     </div>
 </div>
 <div class="grid">
-    <div class="card"><div class="label" data-translate="net_target">OBIETTIVO NETTO</div><input id="targetIn" type="number" inputmode="decimal" oninput="aggiornaTarget()" data-translate-placeholder="ph_inserisci" placeholder="INSERISCI" class="blink-placeholder"></div>
-    <div class="card"><div class="label" data-translate="taxation">TASSAZIONE %</div><input id="taxIn" type="number" inputmode="decimal" oninput="aggiornaTax()" data-translate-placeholder="ph_inserisci" placeholder="INSERISCI" class="blink-placeholder"></div>
+    <div class="card"><div class="label" data-translate="net_target">OBIETTIVO NETTO</div><input id="targetIn" type="number" inputmode="decimal" oninput="aggiornaTarget()" data-translate-placeholder="ph_inserisci" placeholder="INSERISCI" class="blink-placeholder" style="height:30px;font-size:14px;font-weight:bold;background:transparent;border:none;border-bottom:1px solid #444;color:#fff;text-align:center;width:80%;outline:none;line-height:1;padding:0;box-sizing:border-box;"></div>
+    <div class="card"><div class="label" data-translate="taxation">TASSAZIONE %</div><input id="taxIn" type="number" inputmode="decimal" oninput="aggiornaTax()" data-translate-placeholder="ph_inserisci" placeholder="INSERISCI" class="blink-placeholder" style="height:30px;font-size:14px;font-weight:bold;background:transparent;border:none;border-bottom:1px solid #444;color:#fff;text-align:center;width:80%;outline:none;line-height:1;padding:0;box-sizing:border-box;"></div>
     <div class="card main"><div class="label" data-translate="gross_missing">LORDO MANCANTE</div><div class="val" id="mancante">0.00</div></div>    
 </div>
 <div class="progress-container">
@@ -954,7 +953,7 @@ body {
             <div id="lblManualSection" style="font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:1.5px; color:#aaa; margin-bottom:10px; display:flex; align-items:center; justify-content:center; gap:7px; text-align:center;">
                 ✏️ Inserimento Manuale Turno
             </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:6px;">
                 <button class="turno-btn turno-btn-start" id="btnIniziaTurno" onclick="timerBtnSxClick()" data-translate="btn_start_shift">INIZIA TURNO</button>
                 <button class="turno-btn turno-btn-save" onclick="salvaTurno()" style="background:#c0392b; color:#fff;" data-translate="btn_save_shift">SALVA TURNO</button>
             </div>
@@ -1963,7 +1962,7 @@ function updateInterface() {
         el.placeholder = t(chiave);
     });
 
-    var _kmlU = document.getElementById('kmlUnit');
+    var _kmlU = document.getElementById('labelMediaConsumi');
     if (_kmlU) _kmlU.innerText = userSettings.consumption === 'km_l' ? 'km/L' : 'L/100km';
 
     const tLInput = document.getElementById('tL');
@@ -2507,9 +2506,8 @@ function confermaReset() {
         const unita = getUnitaCarburante(tipo);
         const litriTot = consumiPerTipo[tipo];
         const volDisplay = tipo === 'metano' ? litriTot : fromLiters(litriTot);
-        document.getElementById('cons').innerText = volDisplay.toFixed(1) + unita;
-        document.getElementById('cons').classList.remove('clickable');
-        document.getElementById('cons').onclick = null;
+        var _consEl1 = document.getElementById('cons');
+        if (_consEl1) { _consEl1.innerText = volDisplay.toFixed(1) + unita; _consEl1.classList.remove('clickable'); _consEl1.onclick = null; }
 
         const totQ = consumiPerTipo[tipo];
         let mediaConsumo = 0;
@@ -2528,25 +2526,25 @@ if (_consRealeHome !== null && _consRealeHome > 0) {
 // Se non ci sono rifornimenti con km odometro, mediaConsumo resta 0
 
 document.getElementById('kml').innerText = _consRealeHome ? roundConsumption(safeNumber(mediaConsumo)) : '—';
-        var _kmlU = document.getElementById('kmlUnit');
+        var _kmlU = document.getElementById('labelMediaConsumi');
         if (_kmlU) {
             var _kmlUnitStr = getConsUnit(tipo);
-            _kmlU.innerText = _kmlUnitStr;
+            _kmlU.innerText = 'MEDIA ' + _kmlUnitStr.toUpperCase();
             _kmlU.style.display = '';
         }
         document.getElementById('kml').classList.remove('clickable');
         document.getElementById('kml').onclick = null;
     } else if (tipiCarb.length > 1) {
-        document.getElementById('cons').innerText = t('multi');
-        document.getElementById('cons').classList.add('clickable');
-        document.getElementById('cons').onclick = () => apriMulti('consumo');
+        var _consEl2 = document.getElementById('cons');
+        if (_consEl2) { _consEl2.innerText = t('multi'); _consEl2.classList.add('clickable'); }
+        var _consEl3 = document.getElementById('cons'); if (_consEl3) _consEl3.onclick = () => apriMulti('consumo');
         multiSnapshot.consumo = { consumiPerTipo: { ...consumiPerTipo } };
 
         document.getElementById('kml').innerText = t('multi');
         document.getElementById('kml').classList.add('clickable');
         document.getElementById('kml').onclick = () => apriMulti('efficienza');
         multiSnapshot.efficienza = { consumiPerTipo: { ...consumiPerTipo }, kmPerTipo: { ...kmPerTipo }, kmTotali: km };
-        var _kmlUm = document.getElementById('kmlUnit'); if (_kmlUm) _kmlUm.style.display = 'none';
+        var _kmlUm = document.getElementById('labelMediaConsumi'); if (_kmlUm) _kmlUm.innerText = 'MEDIA KM/L';
     }
 
     document.getElementById('spesaB').innerText = currencySymbol() + roundCurrency(safeNumber(fromEuro(spesaBCalcolo)));
@@ -2766,7 +2764,9 @@ function apriM(id) {
             currentLang === 'en' ? 'Amount (' + _sym + ')' : 'Importo spesa (' + _sym + ')';
     }
     document.getElementById(id).style.display='flex'; 
+    if (typeof aggiornaTagliando === 'function') aggiornaTagliando();
 }
+
 function apriStorico() {
     const tutti = [
         ...db.turni.map(t => ({...t, tipo: 'T'})),
@@ -3802,6 +3802,9 @@ function vehOnTipoChange() {
     var tipo = document.getElementById('vehTipo').value;
     var carbSel = document.getElementById('vehCarburante');
     var noCons = tipo === 'bici' || tipo === 'escooter';
+    var tagWrap = document.getElementById('vehTagliandoWrap');
+    // Mostra tagliando per auto/scooter/moto (non per bici/escooter elettrico)
+    if (tagWrap) tagWrap.style.display = (tipo === 'bici' || tipo === 'escooter') ? 'none' : 'block';
     if (noCons) {
         carbSel.value = 'nessuno';
         carbSel.style.opacity = '0.45';
@@ -4716,6 +4719,7 @@ function effettuaSalvataggioTurno(prezzo, rif) {
     chiudiModali();
     controllaRiportoDopoInserimento(dataCompleta);
     _riaggiornaSeStoricoAperto();
+    if (typeof aggiornaTagliando === 'function') aggiornaTagliando();
 }
 
 function salvaBenza() {
@@ -6224,7 +6228,7 @@ function salvaSettingsEChiudi() {
     const k = document.getElementById('settingsConsumption');
     if (k) userSettings.consumption = k.value;
     salvaUserSettings();
-    var _kmlU = document.getElementById('kmlUnit');
+    var _kmlU = document.getElementById('labelMediaConsumi');
     if (_kmlU) _kmlU.innerText = userSettings.consumption === 'km_l' ? 'km/L' : 'L/100km';
     chiudiModalSettings();
 }
@@ -6459,25 +6463,49 @@ calcola();
 
     <!-- Sezione carburante (nascosta per noCons) -->
     <div id="vehFuelSection">
-      <div id="vehSerbatoioSection" style="margin-bottom:14px;">
-        <label id="lblVehSerbatoio" style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:5px;">Capacità Serbatoio (L) *</label>
-        <input type="number" id="vehSerbatoio" placeholder="es. 45" class="veh-req-fuel" inputmode="decimal" style="width:100%;padding:11px;text-align:center;background:#252525;border:1px solid #444;color:#fff;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
+      <!-- Serbatoio + Consumo affiancati -->
+      <div id="vehSerbatoioSection" style="margin-bottom:10px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div>
+            <label id="lblVehSerbatoio" style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px;text-align:center;">Serbatoio (L) *</label>
+            <input type="number" id="vehSerbatoio" placeholder="es. 45" class="veh-req-fuel" inputmode="decimal" style="width:100%;padding:9px;text-align:center;background:#252525;border:1px solid #444;color:#fff;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
+          </div>
+          <div>
+            <label id="lblVehConsMedio" style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px;text-align:center;">Consumo medio</label>
+            <input type="number" id="vehConsMedio" placeholder="es. 18" inputmode="decimal" style="width:100%;padding:9px;text-align:center;background:#252525;border:1px solid #444;color:#fff;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
+          </div>
+        </div>
       </div>
-      <div id="vehBifuelSection" style="display:none;margin-bottom:14px;">
-        <label id="lblVehSerbatoio2" style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:5px;">Capacità Bombole (L equiv.) *</label>
-        <input type="number" id="vehSerbatoio2" placeholder="es. 50" class="veh-req-fuel2" inputmode="decimal" style="width:100%;padding:11px;text-align:center;background:#252525;border:1px solid #444;color:#fff;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
+      <div id="vehBifuelSection" style="display:none;margin-bottom:10px;">
+        <label id="lblVehSerbatoio2" style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px;">Capacità Bombole (L equiv.) *</label>
+        <input type="number" id="vehSerbatoio2" placeholder="es. 50" class="veh-req-fuel2" inputmode="decimal" style="width:100%;padding:9px;text-align:center;background:#252525;border:1px solid #444;color:#fff;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
       </div>
-      <div style="margin-bottom:14px;">
-        <label id="lblVehConsMedio" style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:5px;">Consumo medio</label>
-        <input type="number" id="vehConsMedio" placeholder="es. 18" inputmode="decimal" style="width:100%;padding:11px;text-align:center;background:#252525;border:1px solid #444;color:#fff;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
+      <div id="vehConsMedio2Wrap" style="display:none;margin-bottom:10px;">
+        <input type="number" id="vehConsMedio2" placeholder="Consumo 2° carb." inputmode="decimal" style="width:100%;padding:9px;text-align:center;background:#252525;border:1px solid #444;color:#fff;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
       </div>
-      <div id="vehConsMedio2Wrap" style="display:none;margin-bottom:14px;">
-        <input type="number" id="vehConsMedio2" placeholder="Consumo 2° carb." inputmode="decimal" style="width:100%;padding:11px;text-align:center;background:#252525;border:1px solid #444;color:#fff;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
+    </div>
+
+    <div id="vehTagliandoWrap" style="margin-bottom:8px; border-top:1px solid #333; padding-top:10px;">
+      <div style="font-size:11px; color:var(--primary); font-weight:700; margin-bottom:8px; text-align:center;">🔧 TAGLIANDO</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:6px;">
+        <div>
+          <div style="font-size:10px; color:#888; margin-bottom:4px; text-align:center;">KM ULTIMO TAGLIANDO</div>
+          <input type="number" id="vehTagliandoKm" placeholder="es. 135000" inputmode="numeric" style="width:100%;padding:11px;text-align:center;background:#252525;border:1px solid #444;color:#fff;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
+        </div>
+        <div>
+          <div style="font-size:10px; color:#888; margin-bottom:4px; text-align:center;">DATA ULTIMO TAGLIANDO</div>
+          <input type="date" id="vehTagliandoData" style="width:100%;padding:11px;text-align:center;background:#252525;border:1px solid #444;color:#fff;border-radius:10px;font-size:13px;outline:none;box-sizing:border-box;">
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px; color:#888; margin-bottom:4px; text-align:center;">INTERVALLO KM (default: auto=15000, scooter=2500)</div>
+        <input type="number" id="vehTagliandoIntervallo" placeholder="lascia vuoto per default" inputmode="numeric" style="width:100%;padding:11px;text-align:center;background:#252525;border:1px solid #444;color:#fff;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
       </div>
     </div>
 
     <button id="btnSalvaVeicolo" class="btn-modal btn-save" onclick="salvaVeicolo()" style="padding:14px; margin-top:4px;">💾 SALVA VEICOLO</button>
     <button class="btn-modal btn-close" onclick="resetMediaConsumoVeicolo()" style="padding:10px; margin-top:8px; background:#1a1a1a; border:1px solid #444; color:#888; font-size:11px;">🔄 RESET MEDIA CONSUMO</button>
+    <button id="btnResetTagliando" class="btn-modal btn-close" onclick="resetTagliandoVeicolo()" style="padding:10px; margin-top:8px; background:#1a1a1a; border:1px solid #444; color:#e67e22; font-size:11px;">🔧 HO FATTO IL TAGLIANDO</button>
     <button class="btn-modal btn-close" onclick="document.getElementById('modalVeicolo').style.display='none';" style="padding:14px; margin-top:8px;">ANNULLA</button>
   </div>
 </div>
@@ -6543,10 +6571,143 @@ function apriFormVeicolo(id) {
     var c2el = document.getElementById('vehConsMedio2');
     if (s2el) s2el.value = v ? (v.serbatoio2 || '') : '';
     if (c2el) c2el.value = v ? (v.consMedio2 ? consL100kmToDisplayValue(v.consMedio2) : '') : '';
+    // Tagliando
+    var _tagKmEl = document.getElementById('vehTagliandoKm');
+    var _tagDataEl = document.getElementById('vehTagliandoData');
+    var _tagIntEl = document.getElementById('vehTagliandoIntervallo');
+    if (_tagKmEl) _tagKmEl.value = v ? (v.tagliandoKm || '') : '';
+    if (_tagDataEl) _tagDataEl.value = v ? (v.tagliandoData || '') : '';
+    if (_tagIntEl) _tagIntEl.value = v ? (v.tagliandoIntervallo || '') : '';
     // Applica logica visibilità
     vehOnTipoChange();
     vehOnCarbChange();
     document.getElementById('modalVeicolo').style.display = 'flex';
+}
+
+function getKmAttualiVeicolo(veicoloId) {
+    // Usa lastKmVeicolo (km odometro ultimo turno)
+    var lastKm = getLastKmVeicolo(veicoloId);
+    if (lastKm) return lastKm;
+    // Fallback: somma km GPS dai turni
+    var totGps = db.turni.filter(function(t){ return t.veicoloId === veicoloId; })
+        .reduce(function(a,t){ return a + (t.gpsKm || t.km || 0); }, 0);
+    return totGps > 0 ? totGps : null;
+}
+
+function aggiornaTagliando() {
+    var va = (typeof getVeicoloAttivo === 'function') ? getVeicoloAttivo() : null;
+    var el = document.getElementById('tagliandoKmVal');
+    var sub = document.getElementById('tagliandoSub');
+    var card = document.getElementById('cardTagliando');
+    if (!el) return;
+
+    // Bici/escooter: non applicabile
+    if (!va || va.noCons) {
+        el.innerText = '—';
+        sub.innerText = '';
+        el.style.color = 'var(--val)';
+        el.style.animation = '';
+        return;
+    }
+
+    if (!va.tagliandoKm) {
+        el.innerText = '?';
+        sub.innerText = 'Inserisci in impostazioni';
+        el.style.color = '#888';
+        el.style.animation = '';
+        return;
+    }
+
+    // Intervallo km: personalizzato o default
+    var tipo = va.tipo || 'auto';
+    var defaultIntervallo = (tipo === 'scooter' || tipo === 'moto') ? 2500 : 15000;
+    var intervallo = va.tagliandoIntervallo || defaultIntervallo;
+
+    // Km attuali
+    var kmAttuali = getLastKmVeicolo(va.id);
+    var prossimo = va.tagliandoKm + intervallo;
+    var mancanti = kmAttuali ? Math.round(prossimo - kmAttuali) : null;
+
+    // Scadenza annuale
+    var scadutoData = false;
+    var giorniMancanti = null;
+    if (va.tagliandoData) {
+        var dataTagl = new Date(va.tagliandoData);
+        dataTagl.setFullYear(dataTagl.getFullYear() + 1);
+        var oggi = new Date();
+        giorniMancanti = Math.round((dataTagl - oggi) / (1000*60*60*24));
+        if (giorniMancanti < 0) scadutoData = true;
+    }
+
+    // Determina stato
+    var scadutoKm = mancanti !== null && mancanti <= 0;
+    var scaduto = scadutoKm || scadutoData;
+    var warning = (mancanti !== null && mancanti <= 1000) || (giorniMancanti !== null && giorniMancanti <= 30 && giorniMancanti > 0);
+
+    if (scaduto) {
+        el.innerText = scadutoKm ? 'SCADUTO' : (mancanti !== null ? mancanti + ' km' : 'SCAD.');
+        el.style.color = '#e74c3c';
+        el.style.animation = 'blinkBtn 1s ease-in-out infinite';
+        if(sub){sub.innerText = scadutoData ? 'Scaduto per data' : 'Km superati'; sub.style.color = '#e74c3c';}
+    } else if (warning) {
+        el.innerText = mancanti !== null ? mancanti + ' km' : '—';
+        el.style.color = '#e67e22';
+        el.style.animation = '';
+        if(sub){sub.innerText = giorniMancanti !== null && giorniMancanti <= 30 ? '+' + giorniMancanti + 'gg' : ''; sub.style.color = '#e67e22';}
+    } else {
+        el.innerText = mancanti !== null ? mancanti + ' km' : '?';
+        el.style.color = 'var(--val)';
+        el.style.animation = '';
+        if(sub){sub.innerText = giorniMancanti !== null ? '+' + giorniMancanti + 'gg' : ''; sub.style.color = 'var(--dim)';}
+    }
+}
+
+function mostraDettaglioTagliando() {
+    var va = getVeicoloAttivo();
+    if (!va || !va.tagliandoKm) {
+        mostraAlertApp('Inserisci i dati del tagliando nelle impostazioni veicolo.');
+        return;
+    }
+    var tipo = va.tipo || 'auto';
+    var defaultInt = (tipo === 'scooter' || tipo === 'moto') ? 2500 : 15000;
+    var intervallo = va.tagliandoIntervallo || defaultInt;
+    var prossimo = va.tagliandoKm + intervallo;
+    var kmAttuali = getLastKmVeicolo(va.id);
+    var mancanti = kmAttuali ? Math.round(prossimo - kmAttuali) : '?';
+    var msg = 'TAGLIANDO - ' + va.marca + ' ' + va.modello + '. Ultimo: ' + va.tagliandoKm + ' km';
+    if (va.tagliandoData) msg += ' (' + va.tagliandoData + ')';
+    msg += '. Prossimo: ' + prossimo + ' km. Mancanti: ' + mancanti + ' km';
+    mostraAlertApp(msg);
+}
+
+function resetTagliandoVeicolo() {
+    // Chiamata dalle impostazioni veicolo
+    var editId = document.getElementById('vehEditId') ? document.getElementById('vehEditId').value : null;
+    var vv = getVeicoli();
+    var v = editId ? vv.find(function(x){ return x.id === parseInt(editId); }) : getVeicoloAttivo();
+    if (!v) return;
+    var kmAttuali = getLastKmVeicolo(v.id);
+    var tagKm = parseFloat(document.getElementById('vehTagliandoKm').value) || kmAttuali || v.tagliandoKm;
+    if (!tagKm) { mostraAlertApp('Inserisci i km attuali nel campo KM ULTIMO TAGLIANDO prima.'); return; }
+    document.getElementById('vehTagliandoKm').value = kmAttuali || tagKm;
+    document.getElementById('vehTagliandoData').value = new Date().toISOString().substring(0,10);
+    mostraAlertApp('✓ Dati tagliando aggiornati. Premi SALVA VEICOLO per confermare.');
+}
+
+function resetTagliando() {
+    var va = getVeicoloAttivo();
+    if (!va) return;
+    var kmAttuali = getLastKmVeicolo(va.id);
+    var vv = getVeicoli();
+    var idx = vv.findIndex(function(v){ return v.id === va.id; });
+    if (idx !== -1) {
+        vv[idx].tagliandoKm = kmAttuali || vv[idx].tagliandoKm;
+        vv[idx].tagliandoData = new Date().toISOString().substring(0,10);
+        salvaVeicoli(vv);
+        if (typeof _syncVeicoloAttivo === 'function') _syncVeicoloAttivo();
+        aggiornaTagliando();
+        mostraAlertApp('✓ Tagliando registrato! Prossimo tra ' + (vv[idx].tagliandoIntervallo || ((va.tipo==='scooter'||va.tipo==='moto')?2500:15000)) + ' km.');
+    }
 }
 
 function resetMediaConsumoVeicolo() {
@@ -6579,9 +6740,24 @@ function salvaVeicolo() {
     if (!isNC && !serbatoio) { mostraAlertApp('Inserisci la capacità del serbatoio.'); return; }
     var vv = getVeicoli();
     var editId = document.getElementById('vehEditId').value;
+    // Leggi campi tagliando PRIMA della costruzione oggetto
+    var _tagKmRaw = document.getElementById('vehTagliandoKm') ? document.getElementById('vehTagliandoKm').value : '';
+    var _tagDataRaw = document.getElementById('vehTagliandoData') ? document.getElementById('vehTagliandoData').value : '';
+    var _tagIntRaw = document.getElementById('vehTagliandoIntervallo') ? document.getElementById('vehTagliandoIntervallo').value : '';
+    var _tagKm = _tagKmRaw !== '' ? (parseFloat(_tagKmRaw) || null) : null;
+    var _tagData = _tagDataRaw !== '' ? _tagDataRaw : null;
+    var _tagInt = _tagIntRaw !== '' ? (parseFloat(_tagIntRaw) || null) : null;
+    // Se campi nascosti (bici), preserva valori esistenti
+    var _vExist = editId ? vv.find(function(x){return x.id===parseInt(editId);}) : null;
+    var _tipoV = document.getElementById('vehTipo').value;
+    if (_tipoV === 'bici' || _tipoV === 'escooter') {
+        _tagKm = _vExist ? (_vExist.tagliandoKm || null) : null;
+        _tagData = _vExist ? (_vExist.tagliandoData || null) : null;
+        _tagInt = _vExist ? (_vExist.tagliandoIntervallo || null) : null;
+    }
     var obj = {
         id:          editId ? parseInt(editId) : Date.now(),
-        tipo:        document.getElementById('vehTipo').value,
+        tipo:        _tipoV,
         marca:       marca,
         modello:     modello,
         cilindrata:  document.getElementById('vehCilindrata').value.trim(),
@@ -6592,7 +6768,10 @@ function salvaVeicolo() {
         consMedio2:  parseFloat(document.getElementById('vehConsMedio2').value) || null,
         carburante:  carburante,
         noCons:      isNC,
-        attivo:      editId ? (vv.find(function(x){return x.id===parseInt(editId);})||{}).attivo || false : vv.length === 0
+        attivo:      editId ? (vv.find(function(x){return x.id===parseInt(editId);})||{}).attivo || false : vv.length === 0,
+        tagliandoKm:  _tagKm,
+        tagliandoData: _tagData,
+        tagliandoIntervallo: _tagInt
     };
     if (editId) {
         var idx = vv.findIndex(function(x){ return x.id === parseInt(editId); });
@@ -6604,6 +6783,7 @@ function salvaVeicolo() {
     document.getElementById('modalVeicolo').style.display = 'none';
     renderVehList();
     _syncVeicoloAttivo();
+    if (typeof aggiornaTagliando === 'function') aggiornaTagliando();
 }
 
 function setVeicoloAttivo(id) {
@@ -7636,7 +7816,10 @@ salvaVeicolo = function() {
         consMedio2:  _isBifuel(carb) ? (parseFloat(document.getElementById('vehConsMedio2').value) ? consDisplayToL100km(parseFloat(document.getElementById('vehConsMedio2').value)) : null) : null,
         carburante:  carb,
         noCons:      noCons,
-        attivo:      editId ? ((vv.find(function(x){return x.id===parseInt(editId);})||{}).attivo || false) : isFirst
+        attivo:      editId ? ((vv.find(function(x){return x.id===parseInt(editId);})||{}).attivo || false) : isFirst,
+        tagliandoKm: (function(){ var el=document.getElementById('vehTagliandoKm'); if(!el||el.value==='') { var _ex=editId?vv.find(function(x){return x.id===parseInt(editId);}):null; return _ex?(_ex.tagliandoKm||null):null; } return parseFloat(el.value)||null; })(),
+        tagliandoData: (function(){ var el=document.getElementById('vehTagliandoData'); if(!el||el.value==='') { var _ex=editId?vv.find(function(x){return x.id===parseInt(editId);}):null; return _ex?(_ex.tagliandoData||null):null; } return el.value||null; })(),
+        tagliandoIntervallo: (function(){ var el=document.getElementById('vehTagliandoIntervallo'); if(!el||el.value==='') { var _ex=editId?vv.find(function(x){return x.id===parseInt(editId);}):null; return _ex?(_ex.tagliandoIntervallo||null):null; } return parseFloat(el.value)||null; })()
     };
     if (editId) {
         var idx = vv.findIndex(function(x){ return x.id === parseInt(editId); });
@@ -7646,6 +7829,7 @@ salvaVeicolo = function() {
     document.getElementById('modalVeicolo').style.display = 'none';
     renderVehList();
     _syncVeicoloAttivo();
+    if (typeof aggiornaTagliando === 'function') aggiornaTagliando();
 };
 
 /* apriFormVeicolo definita sopra — patch rimossa */
@@ -7834,8 +8018,8 @@ selezionaCarburanteTurno = function(carb, label) {
     // Aggiorna label consumo modale turno e ricalcola homepage
     var _lblTC2 = document.getElementById('lblTC');
     if (_lblTC2) _lblTC2.innerText = 'CONSUMO (' + getConsUnit(carb).toUpperCase() + ')';
-    var _kmlU2 = document.getElementById('kmlUnit');
-    if (_kmlU2) _kmlU2.innerText = getConsUnit(carb);
+    var _kmlU2 = document.getElementById('labelMediaConsumi');
+    if (_kmlU2) _kmlU2.innerText = 'MEDIA ' + getConsUnit(carb);
     if (typeof calcola === 'function') setTimeout(calcola, 0);
 };
 
