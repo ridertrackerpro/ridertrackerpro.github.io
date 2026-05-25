@@ -6252,7 +6252,7 @@ aggiornaLabelSettings();
 
 updateInterface();
 calcola();
-if (typeof aggiornaTagliando === 'function') aggiornaTagliando();
+setTimeout(function(){ if (typeof aggiornaTagliando === 'function') aggiornaTagliando(); }, 300);
 </script>
 <div id="onboardingOverlay" style="display:none;">
     <div style="width:100%; display:flex; justify-content:flex-end; margin-bottom:8px;">
@@ -6796,6 +6796,7 @@ function setVeicoloAttivo(id) {
     _syncVeicoloAttivo();
     // Forza ricalcolo homepage con nuovo veicolo attivo
     if (typeof calcola === 'function') setTimeout(calcola, 50);
+    if (typeof aggiornaTagliando === 'function') setTimeout(aggiornaTagliando, 100);
 }
 
 function eliminaVeicolo(id) {
