@@ -6493,7 +6493,7 @@ calcola();
         </div>
         <div>
           <div style="font-size:10px; color:#888; margin-bottom:4px; text-align:center;">DATA ULTIMO TAGLIANDO</div>
-          <input type="text" id="vehTagliandoData" placeholder="GG/MM/AAAA" inputmode="numeric" maxlength="10" style="width:100%;padding:11px;text-align:center;background:#252525;border:1px solid #444;color:#fff;border-radius:10px;font-size:13px;outline:none;box-sizing:border-box;">
+          <input type="date" id="vehTagliandoData" style="width:100%;padding:11px;text-align:center;background:#252525;border:1px solid #444;color:#fff;border-radius:10px;font-size:13px;outline:none;box-sizing:border-box;">
         </div>
       </div>
       <div>
@@ -6631,8 +6631,7 @@ function aggiornaTagliando() {
     var scadutoData = false;
     var giorniMancanti = null;
     if (va.tagliandoData) {
-        var _dParts = va.tagliandoData.includes('/') ? va.tagliandoData.split('/') : va.tagliandoData.split('-');
-        var dataTagl = va.tagliandoData.includes('/') ? new Date(_dParts[2], _dParts[1]-1, _dParts[0]) : new Date(va.tagliandoData);
+        var dataTagl = new Date(va.tagliandoData);
         dataTagl.setFullYear(dataTagl.getFullYear() + 1);
         var oggi = new Date();
         giorniMancanti = Math.round((dataTagl - oggi) / (1000*60*60*24));
@@ -6694,7 +6693,7 @@ function resetTagliandoVeicolo() {
     var tagKm = parseFloat(document.getElementById('vehTagliandoKm').value) || kmAttuali || v.tagliandoKm;
     if (!tagKm) { mostraAlertApp('Inserisci i km attuali nel campo KM ULTIMO TAGLIANDO prima.'); return; }
     document.getElementById('vehTagliandoKm').value = kmAttuali || tagKm;
-    var _oggiR = new Date(); document.getElementById('vehTagliandoData').value = _oggiR.getDate().toString().padStart(2,'0') + '/' + (_oggiR.getMonth()+1).toString().padStart(2,'0') + '/' + _oggiR.getFullYear();
+    document.getElementById('vehTagliandoData').value = new Date().toISOString().substring(0,10);
     mostraAlertApp('✓ Dati tagliando aggiornati. Premi SALVA VEICOLO per confermare.');
 }
 
@@ -6706,7 +6705,7 @@ function resetTagliando() {
     var idx = vv.findIndex(function(v){ return v.id === va.id; });
     if (idx !== -1) {
         vv[idx].tagliandoKm = kmAttuali || vv[idx].tagliandoKm;
-        var _oggi = new Date(); vv[idx].tagliandoData = _oggi.getDate().toString().padStart(2,'0') + '/' + (_oggi.getMonth()+1).toString().padStart(2,'0') + '/' + _oggi.getFullYear();
+        vv[idx].tagliandoData = new Date().toISOString().substring(0,10);
         salvaVeicoli(vv);
         if (typeof _syncVeicoloAttivo === 'function') _syncVeicoloAttivo();
         aggiornaTagliando();
