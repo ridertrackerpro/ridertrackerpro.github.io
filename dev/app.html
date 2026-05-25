@@ -1921,6 +1921,7 @@ function cambiaLingua(lang) {
     aggiornaLabelKmReport();
     calcola();
     aggiornaMeteo(false);
+    if (typeof aggiornaTagliando === 'function') aggiornaTagliando();
     if (typeof aggiornaTestiSettings === 'function') aggiornaTestiSettings();
     if (typeof aggiornaTestiTurnoModal === 'function') aggiornaTestiTurnoModal();
 }
