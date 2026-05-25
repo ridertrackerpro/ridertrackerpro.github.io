@@ -2506,9 +2506,8 @@ function confermaReset() {
         const unita = getUnitaCarburante(tipo);
         const litriTot = consumiPerTipo[tipo];
         const volDisplay = tipo === 'metano' ? litriTot : fromLiters(litriTot);
-        document.getElementById('cons').innerText = volDisplay.toFixed(1) + unita;
-        document.getElementById('cons').classList.remove('clickable');
-        document.getElementById('cons').onclick = null;
+        var _consEl1 = document.getElementById('cons');
+        if (_consEl1) { _consEl1.innerText = volDisplay.toFixed(1) + unita; _consEl1.classList.remove('clickable'); _consEl1.onclick = null; }
 
         const totQ = consumiPerTipo[tipo];
         let mediaConsumo = 0;
@@ -2536,9 +2535,9 @@ document.getElementById('kml').innerText = _consRealeHome ? roundConsumption(saf
         document.getElementById('kml').classList.remove('clickable');
         document.getElementById('kml').onclick = null;
     } else if (tipiCarb.length > 1) {
-        document.getElementById('cons').innerText = t('multi');
-        document.getElementById('cons').classList.add('clickable');
-        document.getElementById('cons').onclick = () => apriMulti('consumo');
+        var _consEl2 = document.getElementById('cons');
+        if (_consEl2) { _consEl2.innerText = t('multi'); _consEl2.classList.add('clickable'); }
+        var _consEl3 = document.getElementById('cons'); if (_consEl3) _consEl3.onclick = () => apriMulti('consumo');
         multiSnapshot.consumo = { consumiPerTipo: { ...consumiPerTipo } };
 
         document.getElementById('kml').innerText = t('multi');
