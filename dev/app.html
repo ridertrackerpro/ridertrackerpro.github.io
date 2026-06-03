@@ -2575,7 +2575,10 @@ document.getElementById('kml').innerText = _consRealeHome ? roundConsumption(saf
         const totaleSpeseConRiporto = totaleSpese + riportoMese;
         p = totaleSpeseConRiporto > 0 ? Math.min(Math.max((lordoA / (totaleSpeseConRiporto / (1 - (taxPerc/100)))) * 100, 0), 100) : (lordoA >= 0 ? 100 : 0);
     } else if (tNetto > 0) {
-        p = Math.min(Math.max((nettoA / tNettoEur) * 100, 0), 100);
+        // Progresso verso obiettivo: considera anche il riporto nel denominatore
+        var _totaleObiettivo = tNettoEur + riportoMese;
+        var _nettoProgresso = nettoA + riportoMese; // netto senza il peso del debito
+        p = Math.min(Math.max((_nettoProgresso / _totaleObiettivo) * 100, 0), 100);
     }
     document.getElementById('perc').innerText = Math.round(p) + '%';
     document.getElementById('bar').style.width = p + '%';
