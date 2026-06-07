@@ -5188,8 +5188,19 @@ document.getElementById('btnConfermaElimina').onclick = function() {
     } else {
         const itemEliminato = db[catElimina].find(x => x.id === idElimina);
         const dataEliminata = itemEliminato ? itemEliminato.data : null;
+        const veicoloIdEliminato = itemEliminato ? itemEliminato.veicoloId : null;
         db[catElimina] = db[catElimina].filter(x => x.id !== idElimina);
         salvaDB();
+        // Ricalcola ultimo km odometro per il veicolo dopo eliminazione turno
+        if (catElimina === 'turni' && veicoloIdEliminato) {
+            var turniVeicolo = db.turni.filter(function(t){ return t.veicoloId === veicoloIdEliminato && t.kmOdoEnd; });
+            if (turniVeicolo.length > 0) {
+                turniVeicolo.sort(function(a,b){ return a.id - b.id; });
+                setLastKmVeicolo(veicoloIdEliminato, turniVeicolo[turniVeicolo.length-1].kmOdoEnd);
+            } else {
+                localStorage.removeItem('last_km_veicolo_' + veicoloIdEliminato);
+            }
+        }
         if (dataEliminata) controllaRiportoDopoInserimento(dataEliminata);
         apriStorico();
         resetModaleElimina();
