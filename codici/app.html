@@ -34,394 +34,182 @@
       --mono:        'SF Mono','Fira Code',monospace;
     }
 
-    html, body {
-      height: 100%;
-      background: var(--bg);
-      color: var(--text);
-      font-family: var(--font);
-      -webkit-font-smoothing: antialiased;
-      overscroll-behavior: none;
-    }
+    html, body { height:100%; background:var(--bg); color:var(--text); font-family:var(--font); -webkit-font-smoothing:antialiased; overscroll-behavior:none; }
+    body { display:flex; flex-direction:column; align-items:center; min-height:100dvh; padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0); }
 
-    body {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100dvh;
-      padding: env(safe-area-inset-top,0) env(safe-area-inset-right,0)
-               env(safe-area-inset-bottom,0) env(safe-area-inset-left,0);
-    }
+    .app { width:100%; max-width:480px; padding:20px 20px 32px; display:flex; flex-direction:column; min-height:100dvh; }
 
-    /* ── APP WRAPPER ─────────────────────────────────── */
-    .app {
-      width: 100%;
-      max-width: 480px;
-      padding: 20px 20px 32px;
-      display: flex;
-      flex-direction: column;
-      min-height: 100dvh;
-    }
+    /* ── HEADER ── */
+    .header { display:flex; align-items:center; justify-content:space-between; padding:12px 0 20px; }
+    .app-title { font-size:13px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-dim); }
+    .header-right { display:flex; align-items:center; gap:8px; }
+    .status-chip { display:flex; align-items:center; gap:7px; padding:6px 14px; background:var(--surface); border:1px solid var(--border); border-radius:100px; font-size:12px; font-weight:500; color:var(--text-muted); transition:all 0.3s ease; }
+    .status-chip.listening { border-color:var(--accent); color:var(--accent); background:rgba(91,110,255,0.08); box-shadow:0 0 16px var(--accent-glow); }
+    .status-chip.found     { border-color:var(--green);  color:var(--green);  background:rgba(61,220,132,0.08); }
+    .status-chip.error     { border-color:var(--accent2);color:var(--accent2);background:rgba(255,107,107,0.08); }
+    .status-dot { width:7px; height:7px; border-radius:50%; background:currentColor; flex-shrink:0; }
+    .status-chip.listening .status-dot { animation:pulse-dot 1s ease-in-out infinite; }
 
-    /* ── HEADER ──────────────────────────────────────── */
-    .header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 0 20px;
-    }
+    .btn-icon { width:36px; height:36px; border-radius:50%; background:var(--surface); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background 0.2s,border-color 0.2s; outline:none; flex-shrink:0; }
+    .btn-icon:active { background:var(--surface2); border-color:var(--accent); }
+    .btn-icon svg { width:16px; height:16px; color:var(--text-muted); pointer-events:none; }
 
-    .app-title {
-      font-size: 13px;
-      font-weight: 600;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--text-dim);
-    }
+    /* ── MIC ── */
+    .mic-wrap { display:flex; flex-direction:column; align-items:center; gap:10px; padding:8px 0 28px; }
+    .mic-btn { width:92px; height:92px; border-radius:50%; border:none; background:var(--surface2); cursor:pointer; display:flex; align-items:center; justify-content:center; position:relative; transition:transform 0.15s ease,background 0.25s ease; -webkit-tap-highlight-color:transparent; outline:none; box-shadow:0 0 0 1px var(--border),0 8px 32px rgba(0,0,0,0.5); }
+    .mic-btn::before { content:''; position:absolute; inset:-1px; border-radius:50%; background:conic-gradient(var(--accent),var(--accent2),var(--accent)); opacity:0; transition:opacity 0.3s ease; z-index:-1; }
+    .mic-btn.listening::before { opacity:1; animation:spin-ring 2s linear infinite; }
+    .mic-btn.listening { background:var(--bg); box-shadow:0 0 0 2px transparent,0 0 40px var(--accent-glow),0 8px 32px rgba(0,0,0,0.6); animation:mic-breathe 1.5s ease-in-out infinite; }
+    .mic-btn:active:not(.listening) { transform:scale(0.93); }
+    .mic-icon { width:32px; height:32px; color:var(--text); transition:color 0.25s; pointer-events:none; }
+    .mic-btn.listening .mic-icon { color:var(--accent); }
+    .mic-label { font-size:11px; font-weight:500; color:var(--text-dim); letter-spacing:0.06em; text-transform:uppercase; }
 
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+    /* ── FIELDS ── */
+    .fields { display:flex; flex-direction:column; gap:12px; flex:1; }
+    .field-group { position:relative; }
+    .field-label { font-size:11px; font-weight:600; letter-spacing:0.09em; text-transform:uppercase; color:var(--text-dim); margin-bottom:7px; display:block; }
+    .field-input { width:100%; padding:16px 18px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); font-size:17px; font-weight:500; color:var(--text); font-family:var(--font); outline:none; transition:border-color 0.2s,box-shadow 0.2s; -webkit-appearance:none; appearance:none; }
+    .field-input::placeholder { color:var(--text-dim); }
+    .field-input:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-glow); }
 
-    .status-chip {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      padding: 6px 14px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 100px;
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--text-muted);
-      transition: all 0.3s ease;
-    }
-    .status-chip.listening { border-color: var(--accent); color: var(--accent); background: rgba(91,110,255,0.08); box-shadow: 0 0 16px var(--accent-glow); }
-    .status-chip.found     { border-color: var(--green);  color: var(--green);  background: rgba(61,220,132,0.08); }
-    .status-chip.error     { border-color: var(--accent2);color: var(--accent2);background: rgba(255,107,107,0.08); }
-    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
-    .status-chip.listening .status-dot { animation: pulse-dot 1s ease-in-out infinite; }
+    /* ── DROPDOWN ── */
+    .dropdown { position:absolute; top:calc(100% + 4px); left:0; right:0; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); overflow:hidden; z-index:100; box-shadow:0 16px 40px rgba(0,0,0,0.6); display:none; }
+    .dropdown.open { display:block; }
+    .dropdown-item { padding:14px 18px; cursor:pointer; display:flex; flex-direction:column; gap:2px; border-bottom:1px solid var(--border); transition:background 0.15s; -webkit-tap-highlight-color:transparent; }
+    .dropdown-item:last-child { border-bottom:none; }
+    .dropdown-item:active { background:var(--surface); }
+    .dropdown-item .di-name { font-size:15px; font-weight:600; color:var(--text); }
+    .dropdown-item .di-addr { font-size:12px; color:var(--text-muted); }
+    .dropdown-item .di-cap  { font-size:12px; color:var(--text-dim); }
+    .dropdown-item .di-code { font-size:12px; font-weight:700; color:var(--accent); font-family:var(--mono); }
+    mark { background:transparent; color:var(--accent); font-weight:700; }
 
-    /* Pulsante gestione DB */
-    .btn-db {
-      width: 36px; height: 36px;
-      border-radius: 50%;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-      transition: background 0.2s, border-color 0.2s;
-      outline: none;
-    }
-    .btn-db:active { background: var(--surface2); border-color: var(--accent); }
-    .btn-db svg { width: 16px; height: 16px; color: var(--text-muted); pointer-events: none; }
+    /* ── CODE BOX ── */
+    .code-box { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:20px 18px; display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:90px; transition:border-color 0.3s,box-shadow 0.3s; }
+    .code-box.filled { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent-glow),0 0 24px var(--accent-glow); }
+    .code-box-left { display:flex; flex-direction:column; gap:3px; }
+    .code-value { font-family:var(--mono); font-size:56px; font-weight:700; line-height:1; color:var(--text); letter-spacing:-2px; transition:color 0.3s; }
+    .code-box.filled .code-value { color:var(--accent); }
+    .code-placeholder { font-size:28px; color:var(--text-dim); font-family:var(--mono); font-weight:400; letter-spacing:4px; }
+    .code-desc { font-size:11px; color:var(--text-dim); font-weight:500; letter-spacing:0.06em; text-transform:uppercase; }
+    .code-box-right { display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:50%; background:var(--surface2); border:1px solid var(--border); transition:all 0.3s; flex-shrink:0; }
+    .code-box.filled .code-box-right { background:var(--accent); border-color:var(--accent); box-shadow:0 0 16px var(--accent-glow); }
+    .code-icon { width:22px; height:22px; color:var(--text-dim); transition:color 0.3s; }
+    .code-box.filled .code-icon { color:#fff; }
 
-    /* ── MIC ─────────────────────────────────────────── */
-    .mic-wrap {
-      display: flex; flex-direction: column; align-items: center;
-      gap: 10px; padding: 8px 0 28px;
-    }
-    .mic-btn {
-      width: 92px; height: 92px;
-      border-radius: 50%; border: none;
-      background: var(--surface2);
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      position: relative;
-      transition: transform 0.15s ease, background 0.25s ease;
-      -webkit-tap-highlight-color: transparent; outline: none;
-      box-shadow: 0 0 0 1px var(--border), 0 8px 32px rgba(0,0,0,0.5);
-    }
-    .mic-btn::before {
-      content: ''; position: absolute; inset: -1px;
-      border-radius: 50%;
-      background: conic-gradient(var(--accent), var(--accent2), var(--accent));
-      opacity: 0; transition: opacity 0.3s ease; z-index: -1;
-    }
-    .mic-btn.listening::before { opacity: 1; animation: spin-ring 2s linear infinite; }
-    .mic-btn.listening {
-      background: var(--bg);
-      box-shadow: 0 0 0 2px transparent, 0 0 40px var(--accent-glow), 0 8px 32px rgba(0,0,0,0.6);
-      animation: mic-breathe 1.5s ease-in-out infinite;
-    }
-    .mic-btn:active:not(.listening) { transform: scale(0.93); }
-    .mic-icon { width: 32px; height: 32px; color: var(--text); transition: color 0.25s; pointer-events: none; }
-    .mic-btn.listening .mic-icon { color: var(--accent); }
-    .mic-label { font-size: 11px; font-weight: 500; color: var(--text-dim); letter-spacing: 0.06em; text-transform: uppercase; }
+    /* ── BOTTOM BUTTONS ── */
+    .btn-clear { width:100%; padding:16px; margin-top:16px; border:1px solid var(--border); border-radius:var(--radius-sm); background:transparent; color:var(--text-muted); font-size:14px; font-weight:600; font-family:var(--font); letter-spacing:0.04em; cursor:pointer; transition:background 0.2s,color 0.2s; -webkit-tap-highlight-color:transparent; outline:none; }
+    .btn-clear:active { background:var(--surface2); color:var(--text); }
+    .divider { width:100%; height:1px; background:var(--border); margin:20px 0 0; }
 
-    /* ── FIELDS ──────────────────────────────────────── */
-    .fields { display: flex; flex-direction: column; gap: 12px; flex: 1; }
-    .field-group { position: relative; }
-    .field-label { font-size: 11px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 7px; display: block; }
-    .field-input {
-      width: 100%; padding: 16px 18px;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      font-size: 17px; font-weight: 500; color: var(--text);
-      font-family: var(--font); outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
-      -webkit-appearance: none; appearance: none;
-    }
-    .field-input::placeholder { color: var(--text-dim); }
-    .field-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
-
-    /* ── DROPDOWN ────────────────────────────────────── */
-    .dropdown {
-      position: absolute; top: calc(100% + 4px); left: 0; right: 0;
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: var(--radius-sm); overflow: hidden;
-      z-index: 100; box-shadow: 0 16px 40px rgba(0,0,0,0.6); display: none;
-    }
-    .dropdown.open { display: block; }
-    .dropdown-item {
-      padding: 14px 18px; cursor: pointer;
-      display: flex; flex-direction: column; gap: 2px;
-      border-bottom: 1px solid var(--border);
-      transition: background 0.15s; -webkit-tap-highlight-color: transparent;
-    }
-    .dropdown-item:last-child { border-bottom: none; }
-    .dropdown-item:active { background: var(--surface); }
-    .dropdown-item .di-name  { font-size: 15px; font-weight: 600; color: var(--text); }
-    .dropdown-item .di-addr  { font-size: 12px; color: var(--text-muted); }
-    .dropdown-item .di-code  { font-size: 12px; font-weight: 700; color: var(--accent); font-family: var(--mono); }
-    mark { background: transparent; color: var(--accent); font-weight: 700; }
-
-    /* ── CODE BOX ────────────────────────────────────── */
-    .code-box {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 20px 18px;
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 12px; min-height: 90px;
-      transition: border-color 0.3s, box-shadow 0.3s;
-    }
-    .code-box.filled { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-glow), 0 0 24px var(--accent-glow); }
-    .code-box-left { display: flex; flex-direction: column; gap: 3px; }
-    .code-value { font-family: var(--mono); font-size: 56px; font-weight: 700; line-height: 1; color: var(--text); letter-spacing: -2px; transition: color 0.3s; }
-    .code-box.filled .code-value { color: var(--accent); }
-    .code-placeholder { font-size: 28px; color: var(--text-dim); font-family: var(--mono); font-weight: 400; letter-spacing: 4px; }
-    .code-desc { font-size: 11px; color: var(--text-dim); font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; }
-    .code-box-right {
-      display: flex; align-items: center; justify-content: center;
-      width: 48px; height: 48px; border-radius: 50%;
-      background: var(--surface2); border: 1px solid var(--border);
-      transition: all 0.3s; flex-shrink: 0;
-    }
-    .code-box.filled .code-box-right { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 16px var(--accent-glow); }
-    .code-icon { width: 22px; height: 22px; color: var(--text-dim); transition: color 0.3s; }
-    .code-box.filled .code-icon { color: #fff; }
-
-    /* ── BUTTONS ─────────────────────────────────────── */
-    .btn-clear {
-      width: 100%; padding: 16px; margin-top: 16px;
-      border: 1px solid var(--border); border-radius: var(--radius-sm);
-      background: transparent; color: var(--text-muted);
-      font-size: 14px; font-weight: 600; font-family: var(--font);
-      letter-spacing: 0.04em; cursor: pointer;
-      transition: background 0.2s, color 0.2s;
-      -webkit-tap-highlight-color: transparent; outline: none;
-    }
-    .btn-clear:active { background: var(--surface2); color: var(--text); }
-    .divider { width: 100%; height: 1px; background: var(--border); margin: 20px 0 0; }
-
-    /* ── WAVE BARS ───────────────────────────────────── */
-    .wave-bars { display: none; align-items: flex-end; justify-content: center; gap: 4px; height: 24px; margin-top: 6px; }
-    .wave-bars.active { display: flex; }
-    .wave-bar { width: 4px; border-radius: 2px; background: var(--accent); animation: wave 0.8s ease-in-out infinite; }
+    /* ── WAVE BARS ── */
+    .wave-bars { display:none; align-items:flex-end; justify-content:center; gap:4px; height:24px; margin-top:6px; }
+    .wave-bars.active { display:flex; }
+    .wave-bar { width:4px; border-radius:2px; background:var(--accent); animation:wave 0.8s ease-in-out infinite; }
     .wave-bar:nth-child(1){ animation-delay:0.0s; height:8px; }
     .wave-bar:nth-child(2){ animation-delay:0.1s; height:16px; }
     .wave-bar:nth-child(3){ animation-delay:0.2s; height:22px; }
     .wave-bar:nth-child(4){ animation-delay:0.1s; height:16px; }
     .wave-bar:nth-child(5){ animation-delay:0.0s; height:8px; }
+    .no-result { text-align:center; padding:14px; font-size:13px; color:var(--text-dim); }
 
-    .no-result { text-align: center; padding: 14px; font-size: 13px; color: var(--text-dim); }
+    /* ════════════════════════════════════
+       MODALE
+    ════════════════════════════════════ */
+    .modal-overlay { position:fixed; inset:0; z-index:500; background:rgba(0,0,0,0.75); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); display:flex; align-items:flex-end; justify-content:center; opacity:0; pointer-events:none; transition:opacity 0.25s ease; }
+    .modal-overlay.open { opacity:1; pointer-events:all; }
+    .modal { width:100%; max-width:480px; background:var(--surface); border:1px solid var(--border); border-top-left-radius:24px; border-top-right-radius:24px; padding:0 0 env(safe-area-inset-bottom,20px); transform:translateY(100%); transition:transform 0.35s cubic-bezier(0.32,0.72,0,1); max-height:92dvh; display:flex; flex-direction:column; overflow:hidden; }
+    .modal-overlay.open .modal { transform:translateY(0); }
+    .modal-handle { width:40px; height:4px; background:var(--border); border-radius:2px; margin:12px auto 0; flex-shrink:0; }
+    .modal-header { display:flex; align-items:center; justify-content:space-between; padding:16px 20px 12px; flex-shrink:0; border-bottom:1px solid var(--border); }
+    .modal-title { font-size:16px; font-weight:700; color:var(--text); }
+    .modal-count { font-size:12px; font-weight:600; padding:4px 10px; background:var(--surface2); border:1px solid var(--border); border-radius:100px; color:var(--text-muted); }
+    .modal-tabs { display:flex; padding:12px 20px 0; flex-shrink:0; }
+    .tab-btn { flex:1; padding:10px; background:transparent; border:none; font-size:13px; font-weight:600; font-family:var(--font); color:var(--text-dim); cursor:pointer; border-bottom:2px solid transparent; transition:color 0.2s,border-color 0.2s; -webkit-tap-highlight-color:transparent; }
+    .tab-btn.active { color:var(--accent); border-bottom-color:var(--accent); }
+    .modal-body { overflow-y:auto; flex:1; padding:16px 20px 20px; }
+    .tab-pane { display:none; }
+    .tab-pane.active { display:block; }
 
-    /* ════════════════════════════════════════════════════
-       MODALE GESTIONE DATABASE
-    ════════════════════════════════════════════════════ */
-    .modal-overlay {
-      position: fixed; inset: 0; z-index: 500;
-      background: rgba(0,0,0,0.75);
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
-      display: flex; align-items: flex-end; justify-content: center;
-      opacity: 0; pointer-events: none;
-      transition: opacity 0.25s ease;
+    /* ── Form campi ── */
+    .form-field { margin-bottom:14px; }
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+    .form-label { font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-dim); display:block; margin-bottom:6px; }
+    .form-input { width:100%; padding:14px 16px; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); font-size:16px; font-weight:500; color:var(--text); font-family:var(--font); outline:none; transition:border-color 0.2s,box-shadow 0.2s; -webkit-appearance:none; appearance:none; }
+    .form-input::placeholder { color:var(--text-dim); }
+    .form-input:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-glow); }
+    .form-input.codice { font-family:var(--mono); font-size:28px; font-weight:700; text-align:center; letter-spacing:4px; }
+    .form-input.cap { font-family:var(--mono); font-size:20px; font-weight:600; text-align:center; letter-spacing:2px; }
+
+    /* ── Screenshot import ── */
+    .ocr-zone {
+      border:2px dashed var(--border); border-radius:var(--radius-sm);
+      padding:20px 16px; margin-bottom:14px;
+      display:flex; flex-direction:column; align-items:center; gap:10px;
+      cursor:pointer; transition:border-color 0.2s,background 0.2s;
+      -webkit-tap-highlight-color:transparent; position:relative;
     }
-    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .ocr-zone:active, .ocr-zone.drag { border-color:var(--accent); background:rgba(91,110,255,0.05); }
+    .ocr-zone input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; }
+    .ocr-zone-icon { width:32px; height:32px; color:var(--text-dim); }
+    .ocr-zone-text { font-size:13px; font-weight:600; color:var(--text-muted); text-align:center; line-height:1.4; }
+    .ocr-zone-sub  { font-size:11px; color:var(--text-dim); }
 
-    .modal {
-      width: 100%; max-width: 480px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-top-left-radius: 24px;
-      border-top-right-radius: 24px;
-      padding: 0 0 env(safe-area-inset-bottom, 20px);
-      transform: translateY(100%);
-      transition: transform 0.35s cubic-bezier(0.32,0.72,0,1);
-      max-height: 92dvh;
-      display: flex; flex-direction: column;
-      overflow: hidden;
-    }
-    .modal-overlay.open .modal { transform: translateY(0); }
+    .ocr-preview { width:100%; border-radius:var(--radius-sm); overflow:hidden; margin-bottom:10px; display:none; }
+    .ocr-preview img { width:100%; display:block; max-height:160px; object-fit:cover; }
+    .ocr-preview.visible { display:block; }
 
-    /* Handle bar */
-    .modal-handle {
-      width: 40px; height: 4px;
-      background: var(--border); border-radius: 2px;
-      margin: 12px auto 0;
-      flex-shrink: 0;
-    }
+    .ocr-spinner { display:none; align-items:center; gap:8px; padding:10px 0; font-size:13px; color:var(--text-muted); }
+    .ocr-spinner.active { display:flex; }
+    .spin { width:16px; height:16px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.7s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
 
-    /* Modal header */
-    .modal-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 16px 20px 12px;
-      flex-shrink: 0;
-      border-bottom: 1px solid var(--border);
-    }
-    .modal-title { font-size: 16px; font-weight: 700; color: var(--text); }
-    .modal-count {
-      font-size: 12px; font-weight: 600;
-      padding: 4px 10px;
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 100px; color: var(--text-muted);
-    }
+    /* ── API key field ── */
+    .apikey-row { display:flex; gap:8px; margin-bottom:14px; align-items:flex-end; }
+    .apikey-row .form-input { font-size:13px; padding:12px 14px; letter-spacing:0.02em; }
+    .btn-save-key { flex-shrink:0; padding:12px 16px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); font-size:13px; font-weight:600; font-family:var(--font); color:var(--text-muted); cursor:pointer; white-space:nowrap; -webkit-tap-highlight-color:transparent; outline:none; transition:border-color 0.2s,color 0.2s; }
+    .btn-save-key:active { border-color:var(--accent); color:var(--accent); }
+    .key-status { font-size:11px; margin-bottom:14px; padding:8px 12px; border-radius:var(--radius-sm); display:none; }
+    .key-status.ok  { display:block; background:rgba(61,220,132,0.08); border:1px solid var(--green); color:var(--green); }
+    .key-status.err { display:block; background:rgba(255,107,107,0.08); border:1px solid var(--red); color:var(--red); }
 
-    /* Tabs */
-    .modal-tabs {
-      display: flex; gap: 0;
-      padding: 12px 20px 0;
-      flex-shrink: 0;
-    }
-    .tab-btn {
-      flex: 1; padding: 10px;
-      background: transparent; border: none;
-      font-size: 13px; font-weight: 600; font-family: var(--font);
-      color: var(--text-dim); cursor: pointer;
-      border-bottom: 2px solid transparent;
-      transition: color 0.2s, border-color 0.2s;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+    /* ── Pulsanti azione ── */
+    .btn-add { width:100%; padding:16px; background:var(--accent); border:none; border-radius:var(--radius-sm); font-size:15px; font-weight:700; font-family:var(--font); color:#fff; cursor:pointer; letter-spacing:0.02em; transition:opacity 0.2s,transform 0.1s; -webkit-tap-highlight-color:transparent; outline:none; box-shadow:0 4px 20px var(--accent-glow); }
+    .btn-add:active { opacity:0.85; transform:scale(0.98); }
+    .form-msg { margin-top:10px; padding:10px 14px; border-radius:var(--radius-sm); font-size:13px; font-weight:500; display:none; }
+    .form-msg.ok  { background:rgba(61,220,132,0.1); border:1px solid var(--green); color:var(--green); display:block; }
+    .form-msg.err { background:rgba(255,107,107,0.1); border:1px solid var(--red);  color:var(--red);  display:block; }
 
-    /* Tab content */
-    .modal-body { overflow-y: auto; flex: 1; padding: 16px 20px 20px; }
+    /* ── Edit banner ── */
+    .form-edit-banner { display:none; align-items:center; gap:8px; padding:10px 14px; margin-bottom:14px; background:rgba(91,110,255,0.08); border:1px solid var(--accent); border-radius:var(--radius-sm); font-size:13px; font-weight:600; color:var(--accent); }
+    .form-edit-banner.visible { display:flex; }
+    .btn-cancel-edit { margin-left:auto; background:transparent; border:none; font-size:13px; font-weight:600; color:var(--text-muted); cursor:pointer; padding:0 4px; -webkit-tap-highlight-color:transparent; }
 
-    .tab-pane { display: none; }
-    .tab-pane.active { display: block; }
+    /* ── Lista record ── */
+    .db-list { display:flex; flex-direction:column; gap:10px; }
+    .db-item { background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); display:flex; align-items:center; gap:10px; padding:12px 14px; transition:border-color 0.2s; }
+    .db-item:hover { border-color:var(--accent); }
+    .db-item-info { flex:1; min-width:0; }
+    .db-item-nome { font-size:14px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .db-item-addr { font-size:11px; color:var(--text-muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .db-item-cap  { font-size:11px; color:var(--text-dim); font-family:var(--mono); }
+    .db-item-code { font-family:var(--mono); font-size:20px; font-weight:700; color:var(--accent); min-width:32px; text-align:right; flex-shrink:0; }
+    .btn-del, .btn-edit { width:30px; height:30px; border-radius:50%; background:transparent; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; -webkit-tap-highlight-color:transparent; transition:background 0.2s,border-color 0.2s; outline:none; }
+    .btn-del:active  { background:rgba(255,107,107,0.15); border-color:var(--red); }
+    .btn-edit:active { background:rgba(91,110,255,0.15);  border-color:var(--accent); }
+    .btn-del svg, .btn-edit svg { width:13px; height:13px; color:var(--text-dim); pointer-events:none; }
+    .db-empty { text-align:center; padding:32px 16px; color:var(--text-dim); font-size:14px; line-height:1.6; }
 
-    /* ── Tab AGGIUNGI ──────────────────────────────── */
-    .form-field { margin-bottom: 14px; }
-    .form-label {
-      font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
-      text-transform: uppercase; color: var(--text-dim);
-      display: block; margin-bottom: 6px;
-    }
-    .form-input {
-      width: 100%; padding: 14px 16px;
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      font-size: 16px; font-weight: 500; color: var(--text);
-      font-family: var(--font); outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
-      -webkit-appearance: none; appearance: none;
-    }
-    .form-input::placeholder { color: var(--text-dim); }
-    .form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+    /* ── Sezione ── */
+    .section-label { font-size:10px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-dim); margin-bottom:10px; margin-top:4px; }
+    .section-divider { height:1px; background:var(--border); margin:16px 0; }
 
-    /* codice — grande e centrato */
-    .form-input.codice {
-      font-family: var(--mono); font-size: 28px; font-weight: 700;
-      text-align: center; letter-spacing: 4px;
-    }
-
-    .btn-add {
-      width: 100%; padding: 16px;
-      background: var(--accent); border: none; border-radius: var(--radius-sm);
-      font-size: 15px; font-weight: 700; font-family: var(--font);
-      color: #fff; cursor: pointer; letter-spacing: 0.02em;
-      transition: opacity 0.2s, transform 0.1s;
-      -webkit-tap-highlight-color: transparent; outline: none;
-      box-shadow: 0 4px 20px var(--accent-glow);
-    }
-    .btn-add:active { opacity: 0.85; transform: scale(0.98); }
-
-    .form-msg {
-      margin-top: 10px; padding: 10px 14px;
-      border-radius: var(--radius-sm);
-      font-size: 13px; font-weight: 500;
-      display: none;
-    }
-    .form-msg.ok  { background: rgba(61,220,132,0.1); border: 1px solid var(--green); color: var(--green); display: block; }
-    .form-msg.err { background: rgba(255,107,107,0.1); border: 1px solid var(--red);  color: var(--red);  display: block; }
-
-    /* ── Tab LISTA ─────────────────────────────────── */
-    .db-list { display: flex; flex-direction: column; gap: 10px; }
-
-    .db-item {
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      display: flex; align-items: center; gap: 12px;
-      padding: 14px 16px;
-      transition: border-color 0.2s;
-    }
-    .db-item:hover { border-color: var(--accent); }
-
-    .db-item-info { flex: 1; min-width: 0; }
-    .db-item-nome { font-size: 15px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .db-item-addr { font-size: 12px; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-    .db-item-code {
-      font-family: var(--mono); font-size: 22px; font-weight: 700;
-      color: var(--accent); min-width: 36px; text-align: right;
-      flex-shrink: 0;
-    }
-
-    .btn-del, .btn-edit {
-      width: 32px; height: 32px; border-radius: 50%;
-      background: transparent; border: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer; flex-shrink: 0;
-      -webkit-tap-highlight-color: transparent;
-      transition: background 0.2s, border-color 0.2s;
-      outline: none;
-    }
-    .btn-del:active  { background: rgba(255,107,107,0.15); border-color: var(--red); }
-    .btn-edit:active { background: rgba(91,110,255,0.15);  border-color: var(--accent); }
-    .btn-del svg, .btn-edit svg { width: 14px; height: 14px; color: var(--text-dim); pointer-events: none; }
-
-    /* Form in modalità modifica */
-    .form-edit-banner {
-      display: none;
-      align-items: center; gap: 8px;
-      padding: 10px 14px; margin-bottom: 14px;
-      background: rgba(91,110,255,0.08);
-      border: 1px solid var(--accent);
-      border-radius: var(--radius-sm);
-      font-size: 13px; font-weight: 600; color: var(--accent);
-    }
-    .form-edit-banner.visible { display: flex; }
-    .btn-cancel-edit {
-      margin-left: auto;
-      background: transparent; border: none;
-      font-size: 13px; font-weight: 600; color: var(--text-muted);
-      cursor: pointer; padding: 0 4px;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    .db-empty {
-      text-align: center; padding: 32px 16px;
-      color: var(--text-dim); font-size: 14px; line-height: 1.6;
-    }
-
-    /* ── KEYFRAMES ───────────────────────────────────── */
-    @keyframes pulse-dot { 0%,100%{ opacity:1; transform:scale(1); } 50%{ opacity:0.4; transform:scale(0.7); } }
-    @keyframes spin-ring  { from{ transform:rotate(0deg); } to{ transform:rotate(360deg); } }
-    @keyframes mic-breathe{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.05); } }
-    @keyframes wave       { 0%,100%{ transform:scaleY(0.4); } 50%{ transform:scaleY(1); } }
+    /* ── KEYFRAMES ── */
+    @keyframes pulse-dot  { 0%,100%{ opacity:1; transform:scale(1); }    50%{ opacity:0.4; transform:scale(0.7); } }
+    @keyframes spin-ring  { from{ transform:rotate(0deg); }              to{ transform:rotate(360deg); } }
+    @keyframes mic-breathe{ 0%,100%{ transform:scale(1); }               50%{ transform:scale(1.05); } }
+    @keyframes wave       { 0%,100%{ transform:scaleY(0.4); }            50%{ transform:scaleY(1); } }
   </style>
 </head>
 
@@ -436,8 +224,7 @@
         <span class="status-dot"></span>
         <span id="statusText">Pronto</span>
       </div>
-      <!-- Pulsante DB -->
-      <button class="btn-db" id="btnOpenDB" aria-label="Gestisci rubrica">
+      <button class="btn-icon" id="btnOpenDB" aria-label="Gestisci rubrica">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
           <circle cx="9" cy="7" r="4"/>
@@ -480,6 +267,12 @@
       <div class="dropdown" id="dropVia"></div>
     </div>
 
+    <div class="field-group">
+      <label class="field-label" for="inputCap">CAP</label>
+      <input class="field-input" id="inputCap" type="text" placeholder="es. 32100" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="numeric"/>
+      <div class="dropdown" id="dropCap"></div>
+    </div>
+
     <div>
       <label class="field-label">Codice</label>
       <div class="code-box" id="codeBox">
@@ -489,10 +282,8 @@
         </div>
         <div class="code-box-right">
           <svg class="code-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="4" y1="9"  x2="20" y2="9"/>
-            <line x1="4" y1="15" x2="20" y2="15"/>
-            <line x1="10" y1="3"  x2="8"  y2="21"/>
-            <line x1="16" y1="3"  x2="14" y2="21"/>
+            <line x1="4" y1="9"  x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/>
+            <line x1="10" y1="3" x2="8"  y2="21"/><line x1="16" y1="3" x2="14" y2="21"/>
           </svg>
         </div>
       </div>
@@ -504,34 +295,50 @@
 
 </div><!-- /app -->
 
-<!-- ════════════════════════════════════════════════════
-     MODALE GESTIONE DATABASE
-════════════════════════════════════════════════════ -->
+<!-- ════════════════ MODALE ════════════════ -->
 <div class="modal-overlay" id="modalOverlay">
-  <div class="modal" id="modal">
+  <div class="modal">
     <div class="modal-handle"></div>
-
     <div class="modal-header">
       <span class="modal-title">Rubrica</span>
       <span class="modal-count" id="modalCount">0 record</span>
     </div>
-
-    <!-- Tabs -->
     <div class="modal-tabs">
       <button class="tab-btn active" data-tab="aggiungi">Aggiungi</button>
       <button class="tab-btn"        data-tab="lista">Lista</button>
+      <button class="tab-btn"        data-tab="impostazioni">⚙️</button>
     </div>
 
     <div class="modal-body">
 
       <!-- TAB: AGGIUNGI -->
       <div class="tab-pane active" id="tab-aggiungi">
-        <!-- Banner modalità modifica -->
+
+        <!-- Edit banner -->
         <div class="form-edit-banner" id="editBanner">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           <span id="editBannerText">Modifica record</span>
           <button class="btn-cancel-edit" id="btnCancelEdit">Annulla</button>
         </div>
+
+        <!-- Screenshot import -->
+        <div class="section-label">Importa da screenshot</div>
+        <div class="ocr-zone" id="ocrZone">
+          <input type="file" id="ocrInput" accept="image/*" />
+          <svg class="ocr-zone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+          <span class="ocr-zone-text">Tocca per scegliere uno screenshot</span>
+          <span class="ocr-zone-sub">Gemini estrarrà nome, indirizzo e CAP</span>
+        </div>
+        <div class="ocr-preview" id="ocrPreview"><img id="ocrImg" src="" alt=""/></div>
+        <div class="ocr-spinner" id="ocrSpinner"><div class="spin"></div> Analisi in corso…</div>
+
+        <div class="section-divider"></div>
+        <div class="section-label">Dati record</div>
+
         <div class="form-field">
           <label class="form-label" for="fNome">Nome e Cognome</label>
           <input class="form-input" id="fNome" type="text" placeholder="es. Mario Rossi" autocorrect="off" spellcheck="false"/>
@@ -540,9 +347,15 @@
           <label class="form-label" for="fVia">Via e Numero Civico</label>
           <input class="form-input" id="fVia" type="text" placeholder="es. Via Garibaldi 10" autocorrect="off" spellcheck="false"/>
         </div>
-        <div class="form-field">
-          <label class="form-label" for="fCodice">Codice</label>
-          <input class="form-input codice" id="fCodice" type="text" inputmode="numeric" maxlength="4" placeholder="45" autocorrect="off"/>
+        <div class="form-row">
+          <div>
+            <label class="form-label" for="fCap">CAP</label>
+            <input class="form-input cap" id="fCap" type="text" inputmode="numeric" maxlength="5" placeholder="32100" autocorrect="off"/>
+          </div>
+          <div>
+            <label class="form-label" for="fCodice">Codice</label>
+            <input class="form-input codice" id="fCodice" type="text" inputmode="numeric" maxlength="4" placeholder="45" autocorrect="off"/>
+          </div>
         </div>
         <button class="btn-add" id="btnSave">Salva record</button>
         <div class="form-msg" id="formMsg"></div>
@@ -553,42 +366,68 @@
         <div class="db-list" id="dbList"></div>
       </div>
 
+      <!-- TAB: IMPOSTAZIONI -->
+      <div class="tab-pane" id="tab-impostazioni">
+        <div class="section-label">Gemini API Key</div>
+        <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px;line-height:1.6;">
+          Ottieni una chiave gratuita su <strong style="color:var(--text-muted)">aistudio.google.com</strong> → "Get API key".<br>
+          La chiave è salvata solo sul tuo dispositivo.
+        </p>
+        <div class="apikey-row">
+          <input class="form-input" id="apiKeyInput" type="password" placeholder="AIza..." autocorrect="off" spellcheck="false"/>
+          <button class="btn-save-key" id="btnSaveKey">Salva</button>
+        </div>
+        <div class="key-status" id="keyStatus"></div>
+
+        <div class="section-divider"></div>
+        <div class="section-label">Backup rubrica</div>
+        <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px;line-height:1.6;">
+          Esporta i record come file JSON. Importalo su un altro dispositivo o come backup di sicurezza.
+        </p>
+        <div style="display:flex;gap:10px;margin-bottom:10px;">
+          <button class="btn-add" id="btnExport" style="flex:1;background:var(--surface2);border:1px solid var(--border);box-shadow:none;color:var(--text-muted);font-size:13px;">⬇ Esporta</button>
+          <label style="flex:1;padding:16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-weight:700;color:var(--text-muted);display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;">
+            ⬆ Importa
+            <input type="file" id="btnImport" accept=".json" style="display:none;"/>
+          </label>
+        </div>
+        <div class="key-status" id="backupStatus"></div>
+      </div>
+
     </div><!-- /modal-body -->
-  </div><!-- /modal -->
-</div><!-- /modal-overlay -->
+  </div>
+</div>
 
 <script>
 /* ═══════════════════════════════════════════════════════
-   DATABASE (persistente via localStorage)
+   DATABASE
 ═══════════════════════════════════════════════════════ */
 const DB_KEY = 'consegna_db';
-
 const DEFAULT_DB = [
-  { nome: "Mario Rossi",    indirizzo: "Via Garibaldi 10",  codice: "45" },
-  { nome: "Giuseppe Verdi", indirizzo: "Corso Italia 25",   codice: "12" },
-  { nome: "Anna Russo",     indirizzo: "Via Dante 8",       codice: "88" },
+  { nome:"Mario Rossi",    indirizzo:"Via Garibaldi 10", cap:"32100", codice:"45" },
+  { nome:"Giuseppe Verdi", indirizzo:"Corso Italia 25",  cap:"32100", codice:"12" },
+  { nome:"Anna Russo",     indirizzo:"Via Dante 8",      cap:"32100", codice:"88" },
 ];
-
-function loadDB() {
-  try {
-    const raw = localStorage.getItem(DB_KEY);
-    return raw ? JSON.parse(raw) : DEFAULT_DB.slice();
-  } catch { return DEFAULT_DB.slice(); }
-}
-
-function saveDB() {
-  try { localStorage.setItem(DB_KEY, JSON.stringify(DB)); } catch {}
-}
-
+function loadDB(){ try{ const r=localStorage.getItem(DB_KEY); return r?JSON.parse(r):DEFAULT_DB.slice(); }catch{ return DEFAULT_DB.slice(); } }
+function saveDB(){ try{ localStorage.setItem(DB_KEY,JSON.stringify(DB)); }catch{} }
 let DB = loadDB();
+
+/* ═══════════════════════════════════════════════════════
+   API KEY
+═══════════════════════════════════════════════════════ */
+const API_KEY_STORAGE = 'gemini_api_key';
+function getApiKey(){ return localStorage.getItem(API_KEY_STORAGE)||''; }
+function setApiKey(k){ localStorage.setItem(API_KEY_STORAGE,k); }
 
 /* ═══════════════════════════════════════════════════════
    DOM REFS — MAIN
 ═══════════════════════════════════════════════════════ */
 const inputNome   = document.getElementById('inputNome');
 const inputVia    = document.getElementById('inputVia');
+const inputCap    = document.getElementById('inputCap');
 const dropNome    = document.getElementById('dropNome');
 const dropVia     = document.getElementById('dropVia');
+const dropCap     = document.getElementById('dropCap');
 const codeBox     = document.getElementById('codeBox');
 const codeDisplay = document.getElementById('codeDisplay');
 const codeDesc    = document.getElementById('codeDesc');
@@ -602,317 +441,375 @@ const btnClear    = document.getElementById('btnClear');
 /* ═══════════════════════════════════════════════════════
    DOM REFS — MODAL
 ═══════════════════════════════════════════════════════ */
-const btnOpenDB    = document.getElementById('btnOpenDB');
-const modalOverlay = document.getElementById('modalOverlay');
-const tabBtns      = document.querySelectorAll('.tab-btn');
-const fNome        = document.getElementById('fNome');
-const fVia         = document.getElementById('fVia');
-const fCodice      = document.getElementById('fCodice');
-const btnSave      = document.getElementById('btnSave');
-const formMsg      = document.getElementById('formMsg');
-const dbList       = document.getElementById('dbList');
-const modalCount   = document.getElementById('modalCount');
-const editBanner   = document.getElementById('editBanner');
+const btnOpenDB      = document.getElementById('btnOpenDB');
+const modalOverlay   = document.getElementById('modalOverlay');
+const tabBtns        = document.querySelectorAll('.tab-btn');
+const fNome          = document.getElementById('fNome');
+const fVia           = document.getElementById('fVia');
+const fCap           = document.getElementById('fCap');
+const fCodice        = document.getElementById('fCodice');
+const btnSave        = document.getElementById('btnSave');
+const formMsg        = document.getElementById('formMsg');
+const dbList         = document.getElementById('dbList');
+const modalCount     = document.getElementById('modalCount');
+const editBanner     = document.getElementById('editBanner');
 const editBannerText = document.getElementById('editBannerText');
 const btnCancelEdit  = document.getElementById('btnCancelEdit');
+const ocrZone        = document.getElementById('ocrZone');
+const ocrInput       = document.getElementById('ocrInput');
+const ocrPreview     = document.getElementById('ocrPreview');
+const ocrImg         = document.getElementById('ocrImg');
+const ocrSpinner     = document.getElementById('ocrSpinner');
+const apiKeyInput    = document.getElementById('apiKeyInput');
+const btnSaveKey     = document.getElementById('btnSaveKey');
+const keyStatus      = document.getElementById('keyStatus');
 
-let editingIdx = -1; // -1 = nuovo inserimento, >=0 = modifica
+let editingIdx = -1;
 
 /* ═══════════════════════════════════════════════════════
    UTILITY
 ═══════════════════════════════════════════════════════ */
-function normalise(str) {
-  return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+function normalise(s){ return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim(); }
+function highlight(text,q){
+  if(!q) return text;
+  return text.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<mark>$1</mark>');
 }
-function highlight(text, query) {
-  if (!query) return text;
-  const e = query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-  return text.replace(new RegExp(`(${e})`,'gi'),'<mark>$1</mark>');
-}
-function setStatus(msg, type='') {
-  statusText.textContent = msg;
-  statusChip.className   = 'status-chip' + (type ? ' '+type : '');
+function setStatus(msg,type=''){
+  statusText.textContent=msg;
+  statusChip.className='status-chip'+(type?' '+type:'');
 }
 
 /* ═══════════════════════════════════════════════════════
    MAIN APP LOGIC
 ═══════════════════════════════════════════════════════ */
-function showCode(record) {
+function showCode(record){
   codeBox.classList.add('filled');
-  codeDisplay.innerHTML = `<span class="code-value">${record.codice}</span>`;
-  codeDesc.textContent  = record.nome;
-  inputNome.value       = record.nome;
-  inputVia.value        = record.indirizzo;
+  codeDisplay.innerHTML=`<span class="code-value">${record.codice}</span>`;
+  codeDesc.textContent=record.nome;
+  inputNome.value=record.nome;
+  inputVia.value=record.indirizzo;
+  inputCap.value=record.cap||'';
   closeAllDropdowns();
   setStatus('Trovato','found');
 }
 
-function resetAll() {
-  inputNome.value = ''; inputVia.value = '';
+function resetAll(){
+  inputNome.value=''; inputVia.value=''; inputCap.value='';
   codeBox.classList.remove('filled');
-  codeDisplay.innerHTML = `<span class="code-placeholder">—</span>`;
-  codeDesc.textContent  = 'In attesa di selezione';
+  codeDisplay.innerHTML=`<span class="code-placeholder">—</span>`;
+  codeDesc.textContent='In attesa di selezione';
   closeAllDropdowns();
   setStatus('Pronto');
 }
 
-function closeAllDropdowns() {
-  dropNome.classList.remove('open'); dropVia.classList.remove('open');
-  dropNome.innerHTML = ''; dropVia.innerHTML = '';
+function closeAllDropdowns(){
+  [dropNome,dropVia,dropCap].forEach(d=>{ d.classList.remove('open'); d.innerHTML=''; });
 }
 
-function buildItems(matches, query, dropdown) {
-  dropdown.innerHTML = '';
-  if (!matches.length) {
-    dropdown.innerHTML = `<div class="no-result">Nessun risultato</div>`;
+function buildItems(matches,query,dropdown){
+  dropdown.innerHTML='';
+  if(!matches.length){
+    dropdown.innerHTML=`<div class="no-result">Nessun risultato</div>`;
     dropdown.classList.add('open'); return;
   }
-  matches.forEach(r => {
-    const div = document.createElement('div');
-    div.className = 'dropdown-item';
-    div.innerHTML = `
-      <span class="di-name">${highlight(r.nome, query)}</span>
-      <span class="di-addr">${highlight(r.indirizzo, query)}</span>
+  matches.forEach(r=>{
+    const div=document.createElement('div');
+    div.className='dropdown-item';
+    div.innerHTML=`
+      <span class="di-name">${highlight(r.nome,query)}</span>
+      <span class="di-addr">${highlight(r.indirizzo,query)}${r.cap?' · <span class="di-cap">'+r.cap+'</span>':''}</span>
       <span class="di-code">Codice ${r.codice}</span>`;
-    div.addEventListener('pointerdown', e => {
-      e.preventDefault();
-      showCode(r);
-      speak(`Codice ${r.codice} — ${r.nome}`);
-    });
+    div.addEventListener('pointerdown',e=>{ e.preventDefault(); showCode(r); speak(`Codice ${r.codice} — ${r.nome}`); });
     dropdown.appendChild(div);
   });
   dropdown.classList.add('open');
 }
 
-function onNomeInput() {
-  const q = normalise(inputNome.value);
-  dropVia.classList.remove('open');
-  if (q.length < 2) { dropNome.classList.remove('open'); return; }
-  const m = DB.filter(r => normalise(r.nome).includes(q) || normalise(r.indirizzo).includes(q));
-  buildItems(m, inputNome.value, dropNome);
+function onNomeInput(){
+  const q=normalise(inputNome.value);
+  [dropVia,dropCap].forEach(d=>d.classList.remove('open'));
+  if(q.length<2){ dropNome.classList.remove('open'); return; }
+  buildItems(DB.filter(r=>normalise(r.nome).includes(q)||normalise(r.indirizzo).includes(q)),inputNome.value,dropNome);
+}
+function onViaInput(){
+  const q=normalise(inputVia.value);
+  [dropNome,dropCap].forEach(d=>d.classList.remove('open'));
+  if(q.length<2){ dropVia.classList.remove('open'); return; }
+  buildItems(DB.filter(r=>normalise(r.indirizzo).includes(q)||normalise(r.nome).includes(q)),inputVia.value,dropVia);
+}
+function onCapInput(){
+  const q=normalise(inputCap.value);
+  [dropNome,dropVia].forEach(d=>d.classList.remove('open'));
+  if(q.length<3){ dropCap.classList.remove('open'); return; }
+  buildItems(DB.filter(r=>(r.cap||'').includes(q)),inputCap.value,dropCap);
 }
 
-function onViaInput() {
-  const q = normalise(inputVia.value);
-  dropNome.classList.remove('open');
-  if (q.length < 2) { dropVia.classList.remove('open'); return; }
-  const m = DB.filter(r => normalise(r.indirizzo).includes(q) || normalise(r.nome).includes(q));
-  buildItems(m, inputVia.value, dropVia);
-}
-
-inputNome.addEventListener('input', onNomeInput);
-inputVia.addEventListener('input',  onViaInput);
-document.addEventListener('pointerdown', e => { if (!e.target.closest('.field-group,.modal')) closeAllDropdowns(); });
-btnClear.addEventListener('click', resetAll);
+inputNome.addEventListener('input',onNomeInput);
+inputVia.addEventListener('input',onViaInput);
+inputCap.addEventListener('input',onCapInput);
+document.addEventListener('pointerdown',e=>{ if(!e.target.closest('.field-group,.modal')) closeAllDropdowns(); });
+btnClear.addEventListener('click',resetAll);
 
 /* ═══════════════════════════════════════════════════════
    TTS
 ═══════════════════════════════════════════════════════ */
-function speak(text) {
-  if (!('speechSynthesis' in window)) return;
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'it-IT'; u.rate = 0.95; u.pitch = 1;
+function speak(text){
+  if(!('speechSynthesis' in window)) return;
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang='it-IT'; u.rate=0.95; u.pitch=1;
   speechSynthesis.cancel(); speechSynthesis.speak(u);
 }
 
 /* ═══════════════════════════════════════════════════════
    VOICE RECOGNITION
 ═══════════════════════════════════════════════════════ */
-let isListening = false, recognition = null;
-
-function initRecognition() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { setStatus('Voce non supportata','error'); micBtn.disabled=true; micLabel.textContent='Non disponibile'; return null; }
-  const r = new SR();
+let isListening=false, recognition=null;
+function initRecognition(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){ setStatus('Voce non supportata','error'); micBtn.disabled=true; micLabel.textContent='Non disponibile'; return null; }
+  const r=new SR();
   r.lang='it-IT'; r.continuous=false; r.interimResults=false;
-  r.onstart  = () => { isListening=true;  micBtn.classList.add('listening');    waveBars.classList.add('active');    micLabel.textContent='Sto ascoltando...'; setStatus('In ascolto…','listening'); };
-  r.onend    = () => { isListening=false; micBtn.classList.remove('listening'); waveBars.classList.remove('active'); micLabel.textContent='Tocca per parlare'; if(statusChip.classList.contains('listening')) setStatus('Pronto'); };
-  r.onerror  = e  => {
-    isListening=false; micBtn.classList.remove('listening'); waveBars.classList.remove('active'); micLabel.textContent='Tocca per parlare';
-    const msgs={'no-speech':'Niente sentito','not-allowed':'Microfono negato'};
-    setStatus(msgs[e.error]||'Errore voce','error'); setTimeout(()=>setStatus('Pronto'),2500);
-  };
-  r.onresult = e  => processVoice(e.results[0][0].transcript.trim());
+  r.onstart =()=>{ isListening=true;  micBtn.classList.add('listening');    waveBars.classList.add('active');    micLabel.textContent='Sto ascoltando...'; setStatus('In ascolto…','listening'); };
+  r.onend   =()=>{ isListening=false; micBtn.classList.remove('listening'); waveBars.classList.remove('active'); micLabel.textContent='Tocca per parlare'; if(statusChip.classList.contains('listening')) setStatus('Pronto'); };
+  r.onerror =e=>{ isListening=false; micBtn.classList.remove('listening'); waveBars.classList.remove('active'); micLabel.textContent='Tocca per parlare'; const m={'no-speech':'Niente sentito','not-allowed':'Microfono negato'}; setStatus(m[e.error]||'Errore voce','error'); setTimeout(()=>setStatus('Pronto'),2500); };
+  r.onresult=e=>processVoice(e.results[0][0].transcript.trim());
   return r;
 }
-
-function processVoice(transcript) {
-  const q = normalise(transcript);
-  setStatus(`"${transcript}"`,'');
-  const match = DB.find(r =>
-    normalise(r.nome).includes(q) || normalise(r.indirizzo).includes(q) ||
-    q.includes(normalise(r.nome)) || q.includes(normalise(r.indirizzo))
-  );
-  if (match) { showCode(match); speak(`Codice ${match.codice}. ${match.nome}, ${match.indirizzo}.`); }
-  else { setStatus('Non trovato','error'); speak('Nessun risultato trovato.'); setTimeout(()=>setStatus('Pronto'),3000); }
+function processVoice(t){
+  const q=normalise(t);
+  setStatus(`"${t}"`,'');
+  const match=DB.find(r=>normalise(r.nome).includes(q)||normalise(r.indirizzo).includes(q)||q.includes(normalise(r.nome))||q.includes(normalise(r.indirizzo)));
+  if(match){ showCode(match); speak(`Codice ${match.codice}. ${match.nome}, ${match.indirizzo}.`); }
+  else{ setStatus('Non trovato','error'); speak('Nessun risultato trovato.'); setTimeout(()=>setStatus('Pronto'),3000); }
 }
-
-recognition = initRecognition();
-micBtn.addEventListener('click', () => {
-  if (!recognition) return;
-  if (isListening) recognition.stop();
-  else { try { recognition.start(); } catch {} }
-});
+recognition=initRecognition();
+micBtn.addEventListener('click',()=>{ if(!recognition) return; if(isListening) recognition.stop(); else{ try{ recognition.start(); }catch{} } });
 
 /* ═══════════════════════════════════════════════════════
-   MODAL
+   MODAL — GENERALE
 ═══════════════════════════════════════════════════════ */
-function openModal() {
-  renderList();
-  updateCount();
-  modalOverlay.classList.add('open');
-}
+function openModal(){ renderList(); updateCount(); modalOverlay.classList.add('open'); }
+function closeModal(){ modalOverlay.classList.remove('open'); clearForm(); }
+function updateCount(){ modalCount.textContent=DB.length+' record'; }
 
-function closeModal() {
-  modalOverlay.classList.remove('open');
-  clearForm();
-}
-
-function updateCount() {
-  modalCount.textContent = DB.length + ' record';
-}
-
-/* Tabs */
-tabBtns.forEach(btn => {
-  btn.addEventListener('click', () => {
-    tabBtns.forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-    if (btn.dataset.tab === 'lista') renderList();
+tabBtns.forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    tabBtns.forEach(b=>b.classList.remove('active')); btn.classList.add('active');
+    document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab==='lista') renderList();
+    if(btn.dataset.tab==='impostazioni'){ apiKeyInput.value=getApiKey(); }
   });
 });
 
-btnOpenDB.addEventListener('click', openModal);
+btnOpenDB.addEventListener('click',openModal);
+modalOverlay.addEventListener('pointerdown',e=>{ if(e.target===modalOverlay) closeModal(); });
 
-/* Chiudi toccando l'overlay fuori dal modal */
-modalOverlay.addEventListener('pointerdown', e => {
-  if (e.target === modalOverlay) closeModal();
-});
-
-/* ── AGGIUNGI / MODIFICA ──────────────────────────── */
-function clearForm() {
-  fNome.value=''; fVia.value=''; fCodice.value='';
+/* ═══════════════════════════════════════════════════════
+   MODAL — AGGIUNGI / MODIFICA
+═══════════════════════════════════════════════════════ */
+function clearForm(){
+  fNome.value=''; fVia.value=''; fCap.value=''; fCodice.value='';
   formMsg.className='form-msg'; formMsg.textContent='';
-  editingIdx = -1;
-  editBanner.classList.remove('visible');
-  btnSave.textContent = 'Salva record';
+  editingIdx=-1; editBanner.classList.remove('visible');
+  btnSave.textContent='Salva record';
+  ocrPreview.classList.remove('visible'); ocrImg.src='';
+  ocrSpinner.classList.remove('active'); ocrInput.value='';
 }
 
-function startEdit(idx) {
-  const r = DB[idx];
-  editingIdx = idx;
-  fNome.value   = r.nome;
-  fVia.value    = r.indirizzo;
-  fCodice.value = r.codice;
-  editBannerText.textContent = `Modifica: ${r.nome}`;
-  editBanner.classList.add('visible');
-  btnSave.textContent = 'Aggiorna record';
-  /* Passa alla tab Aggiungi */
-  tabBtns.forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+function startEdit(idx){
+  const r=DB[idx]; editingIdx=idx;
+  fNome.value=r.nome; fVia.value=r.indirizzo; fCap.value=r.cap||''; fCodice.value=r.codice;
+  editBannerText.textContent=`Modifica: ${r.nome}`;
+  editBanner.classList.add('visible'); btnSave.textContent='Aggiorna record';
+  tabBtns.forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
   document.querySelector('[data-tab="aggiungi"]').classList.add('active');
   document.getElementById('tab-aggiungi').classList.add('active');
   fNome.focus();
 }
 
-btnCancelEdit.addEventListener('click', clearForm);
+btnCancelEdit.addEventListener('click',clearForm);
 
-function showMsg(text, type) {
-  formMsg.textContent = text;
-  formMsg.className   = 'form-msg ' + type;
-  setTimeout(() => { formMsg.className='form-msg'; formMsg.textContent=''; }, 3000);
+function showMsg(text,type){
+  formMsg.textContent=text; formMsg.className='form-msg '+type;
+  setTimeout(()=>{ formMsg.className='form-msg'; formMsg.textContent=''; },3000);
 }
 
-btnSave.addEventListener('click', () => {
-  const nome      = fNome.value.trim();
-  const indirizzo = fVia.value.trim();
-  const codice    = fCodice.value.trim();
+btnSave.addEventListener('click',()=>{
+  const nome=fNome.value.trim(), indirizzo=fVia.value.trim(), cap=fCap.value.trim(), codice=fCodice.value.trim();
+  if(!nome)      { showMsg('Inserisci nome e cognome.','err'); fNome.focus();   return; }
+  if(!indirizzo) { showMsg('Inserisci via e civico.',  'err'); fVia.focus();    return; }
+  if(!codice)    { showMsg('Inserisci il codice.',     'err'); fCodice.focus(); return; }
 
-  if (!nome)      { showMsg('Inserisci nome e cognome.','err'); fNome.focus();   return; }
-  if (!indirizzo) { showMsg('Inserisci via e civico.',  'err'); fVia.focus();    return; }
-  if (!codice)    { showMsg('Inserisci il codice.',     'err'); fCodice.focus(); return; }
-
-  if (editingIdx >= 0) {
-    /* MODIFICA */
-    /* Duplicato nome solo se cambiato */
-    const nomeCambiato = normalise(nome) !== normalise(DB[editingIdx].nome);
-    if (nomeCambiato && DB.some(r => normalise(r.nome) === normalise(nome))) {
-      showMsg('Nome già presente in rubrica.','err'); return;
-    }
-    DB[editingIdx] = { nome, indirizzo, codice };
-    saveDB(); updateCount(); clearForm();
-    showMsg(`"${nome}" aggiornato.`,'ok');
+  if(editingIdx>=0){
+    const nomeCambiato=normalise(nome)!==normalise(DB[editingIdx].nome);
+    if(nomeCambiato&&DB.some(r=>normalise(r.nome)===normalise(nome))){ showMsg('Nome già presente.','err'); return; }
+    DB[editingIdx]={nome,indirizzo,cap,codice};
+    saveDB(); updateCount(); clearForm(); showMsg(`"${nome}" aggiornato.`,'ok');
   } else {
-    /* NUOVO */
-    if (DB.some(r => normalise(r.nome) === normalise(nome))) {
-      showMsg('Nome già presente in rubrica.','err'); return;
-    }
-    DB.push({ nome, indirizzo, codice });
-    saveDB(); updateCount(); clearForm();
-    showMsg(`"${nome}" aggiunto con codice ${codice}.`,'ok');
+    if(DB.some(r=>normalise(r.nome)===normalise(nome))){ showMsg('Nome già presente.','err'); return; }
+    DB.push({nome,indirizzo,cap,codice});
+    saveDB(); updateCount(); clearForm(); showMsg(`"${nome}" aggiunto con codice ${codice}.`,'ok');
   }
 });
 
-/* ── LISTA ────────────────────────────────────────── */
-function renderList() {
-  dbList.innerHTML = '';
-  if (!DB.length) {
-    dbList.innerHTML = `<div class="db-empty">Nessun record.<br>Aggiungi il primo dalla scheda "Aggiungi".</div>`;
-    return;
-  }
-  DB.forEach((r, i) => {
-    const row = document.createElement('div');
-    row.className = 'db-item';
-    row.innerHTML = `
+/* ═══════════════════════════════════════════════════════
+   MODAL — LISTA
+═══════════════════════════════════════════════════════ */
+function renderList(){
+  dbList.innerHTML='';
+  if(!DB.length){ dbList.innerHTML=`<div class="db-empty">Nessun record.<br>Aggiungi il primo dalla scheda "Aggiungi".</div>`; return; }
+  DB.forEach((r,i)=>{
+    const row=document.createElement('div'); row.className='db-item';
+    row.innerHTML=`
       <div class="db-item-info">
         <div class="db-item-nome">${r.nome}</div>
-        <div class="db-item-addr">${r.indirizzo}</div>
+        <div class="db-item-addr">${r.indirizzo}${r.cap?' · <span class="db-item-cap">'+r.cap+'</span>':''}</div>
       </div>
       <span class="db-item-code">${r.codice}</span>
       <button class="btn-edit" data-idx="${i}" aria-label="Modifica">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-        </svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       </button>
       <button class="btn-del" data-idx="${i}" aria-label="Elimina">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="3 6 5 6 21 6"/>
-          <path d="M19 6l-1 14H6L5 6"/>
-          <path d="M10 11v6M14 11v6"/>
-          <path d="M9 6V4h6v2"/>
-        </svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
       </button>`;
     dbList.appendChild(row);
   });
-
-  dbList.querySelectorAll('.btn-edit').forEach(btn => {
-    btn.addEventListener('click', () => startEdit(parseInt(btn.dataset.idx)));
-  });
-
-  dbList.querySelectorAll('.btn-del').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const idx = parseInt(btn.dataset.idx);
-      DB.splice(idx, 1);
-      saveDB();
-      updateCount();
-      renderList();
-    });
-  });
+  dbList.querySelectorAll('.btn-edit').forEach(b=>b.addEventListener('click',()=>startEdit(parseInt(b.dataset.idx))));
+  dbList.querySelectorAll('.btn-del').forEach(b=>b.addEventListener('click',()=>{ DB.splice(parseInt(b.dataset.idx),1); saveDB(); updateCount(); renderList(); }));
 }
+
+/* ═══════════════════════════════════════════════════════
+   IMPOSTAZIONI — API KEY
+═══════════════════════════════════════════════════════ */
+btnSaveKey.addEventListener('click',()=>{
+  const k=apiKeyInput.value.trim();
+  if(!k){ keyStatus.className='key-status err'; keyStatus.textContent='Inserisci una chiave valida.'; return; }
+  setApiKey(k);
+  keyStatus.className='key-status ok'; keyStatus.textContent='Chiave salvata sul dispositivo.';
+  setTimeout(()=>{ keyStatus.className='key-status'; },3000);
+});
+
+/* ═══════════════════════════════════════════════════════
+   BACKUP — ESPORTA / IMPORTA
+═══════════════════════════════════════════════════════ */
+document.getElementById('btnExport').addEventListener('click',()=>{
+  const json=JSON.stringify(DB,null,2);
+  const blob=new Blob([json],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const date=new Date().toISOString().slice(0,10);
+  a.href=url; a.download='consegna-backup-'+date+'.json';
+  a.click(); URL.revokeObjectURL(url);
+});
+
+document.getElementById('btnImport').addEventListener('change',async(e)=>{
+  const file=e.target.files[0]; if(!file) return;
+  const bs=document.getElementById('backupStatus');
+  try {
+    const text=await file.text();
+    const parsed=JSON.parse(text);
+    if(!Array.isArray(parsed)) throw new Error('Formato non valido');
+    const valid=parsed.filter(r=>r.nome&&r.indirizzo&&r.codice);
+    if(!valid.length) throw new Error('Nessun record valido trovato');
+    const merged=new Map();
+    DB.forEach(r=>merged.set(normalise(r.nome),r));
+    valid.forEach(r=>merged.set(normalise(r.nome),r));
+    DB=[...merged.values()];
+    saveDB(); updateCount();
+    bs.className='key-status ok';
+    bs.textContent=valid.length+' record importati. Totale: '+DB.length+'.';
+  } catch(err) {
+    bs.className='key-status err';
+    bs.textContent='Errore: '+err.message;
+  }
+  setTimeout(()=>{ bs.className='key-status'; },4000);
+  e.target.value='';
+});
+
+
+/* ═══════════════════════════════════════════════════════
+   OCR — IMPORT DA SCREENSHOT (GEMINI)
+═══════════════════════════════════════════════════════ */
+ocrInput.addEventListener('change',async()=>{
+  const file=ocrInput.files[0]; if(!file) return;
+  const key=getApiKey();
+  if(!key){
+    showMsg('Aggiungi la tua Gemini API key nelle Impostazioni.','err');
+    // switch to impostazioni tab
+    tabBtns.forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+    document.querySelector('[data-tab="impostazioni"]').classList.add('active');
+    document.getElementById('tab-impostazioni').classList.add('active');
+    return;
+  }
+
+  // Mostra preview
+  const reader=new FileReader();
+  reader.onload=e=>{ ocrImg.src=e.target.result; ocrPreview.classList.add('visible'); };
+  reader.readAsDataURL(file);
+
+  // Converti in base64 per API
+  const b64=await new Promise(res=>{
+    const r=new FileReader();
+    r.onload=()=>res(r.result.split(',')[1]);
+    r.readAsDataURL(file);
+  });
+
+  ocrSpinner.classList.add('active');
+
+  try {
+    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        contents:[{
+          parts:[
+            { text: `Analizza questa immagine (può essere uno screenshot di un'app di consegna, una ricevuta, un documento, o qualsiasi testo) ed estrai le informazioni di spedizione/consegna.
+Restituisci SOLO un oggetto JSON valido, senza markdown, senza backtick, senza spiegazioni.
+Formato esatto:
+{"nome":"Nome Cognome","indirizzo":"Via e numero civico","cap":"12345"}
+Se un campo non è presente o non è leggibile, usa stringa vuota "".
+Estrai solo nome del destinatario (non mittente), indirizzo di consegna e CAP.` },
+            { inline_data:{ mime_type:file.type, data:b64 } }
+          ]
+        }],
+        generationConfig:{ temperature:0, maxOutputTokens:200 }
+      })
+    });
+
+    if(!res.ok){
+      const err=await res.json().catch(()=>({}));
+      throw new Error(err?.error?.message||`HTTP ${res.status}`);
+    }
+
+    const data=await res.json();
+    const raw=data?.candidates?.[0]?.content?.parts?.[0]?.text||'';
+    const clean=raw.replace(/```json|```/g,'').trim();
+    const parsed=JSON.parse(clean);
+
+    if(parsed.nome)      fNome.value=parsed.nome;
+    if(parsed.indirizzo) fVia.value=parsed.indirizzo;
+    if(parsed.cap)       fCap.value=parsed.cap;
+
+    showMsg('Dati estratti! Aggiungi il codice e salva.','ok');
+    fCodice.focus();
+
+  } catch(err){
+    showMsg('Errore Gemini: '+err.message,'err');
+  } finally {
+    ocrSpinner.classList.remove('active');
+    ocrInput.value='';
+  }
+});
 
 /* ═══════════════════════════════════════════════════════
    PWA SERVICE WORKER
 ═══════════════════════════════════════════════════════ */
-if ('serviceWorker' in navigator) {
-  const sw = `
-    const CACHE='consegna-v2';
-    self.addEventListener('install', e=>self.skipWaiting());
-    self.addEventListener('activate',e=>self.clients.claim());
-    self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));
-  `;
-  const blob = new Blob([sw],{type:'application/javascript'});
+if('serviceWorker' in navigator){
+  const sw=`const CACHE='consegna-v3';self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>self.clients.claim());self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));`;
+  const blob=new Blob([sw],{type:'application/javascript'});
   navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
 }
 </script>
