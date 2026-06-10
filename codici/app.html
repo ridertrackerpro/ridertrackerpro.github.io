@@ -796,11 +796,20 @@ Estrai tutto quello che trovi, anche se il testo sembra una nota o appunto perso
     if(parsed.indirizzo) fVia.value=parsed.indirizzo;
     if(parsed.cap)       fCap.value=parsed.cap;
 
-    showMsg('Dati estratti! Aggiungi il codice e salva.','ok');
+    const estratti=[];
+    if(parsed.nome)       estratti.push('Nome: '+parsed.nome);
+    if(parsed.indirizzo)  estratti.push('Via: '+parsed.indirizzo);
+    if(parsed.cap)        estratti.push('CAP: '+parsed.cap);
+
+    if(estratti.length>0){
+      showMsg('Estratto: '+estratti.join(' · '), 'ok');
+    } else {
+      showMsg('Gemini non ha trovato dati. Risposta grezza: '+raw.slice(0,120),'err');
+    }
     fCodice.focus();
 
   } catch(err){
-    showMsg('Errore Gemini: '+err.message,'err');
+    showMsg('Errore: '+err.message,'err');
   } finally {
     ocrSpinner.classList.remove('active');
     ocrInput.value='';
