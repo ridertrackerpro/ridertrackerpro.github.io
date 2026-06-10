@@ -766,12 +766,15 @@ ocrInput.addEventListener('change',async()=>{
       body:JSON.stringify({
         contents:[{
           parts:[
-            { text: `Analizza questa immagine (può essere uno screenshot di un'app di consegna, una ricevuta, un documento, o qualsiasi testo) ed estrai le informazioni di spedizione/consegna.
-Restituisci SOLO un oggetto JSON valido, senza markdown, senza backtick, senza spiegazioni.
-Formato esatto:
-{"nome":"Nome Cognome","indirizzo":"Via e numero civico","cap":"12345"}
-Se un campo non è presente o non è leggibile, usa stringa vuota "".
-Estrai solo nome del destinatario (non mittente), indirizzo di consegna e CAP.` },
+            { text: `Guarda questa immagine ed estrai le seguenti informazioni se presenti nel testo visibile:
+1. Nome e cognome di una persona (può essere un destinatario, un cliente, o semplicemente il primo nome cognome che vedi)
+2. Via/Corso/Piazza con numero civico (cerca pattern come "Via ...", "Corso ...", "V. ..." seguiti da un numero)
+3. CAP (numero di 5 cifre)
+
+Restituisci SOLO un oggetto JSON, niente altro, niente markdown, niente backtick.
+Formato esatto: {"nome":"Nome Cognome","indirizzo":"Via Example 10","cap":"12345"}
+Se un campo non è presente usa stringa vuota "".
+Estrai tutto quello che trovi, anche se il testo sembra una nota o appunto personale.` },
             { inline_data:{ mime_type:file.type, data:b64 } }
           ]
         }],
