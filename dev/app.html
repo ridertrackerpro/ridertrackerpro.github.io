@@ -820,10 +820,14 @@ body {
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
             <h3 data-translate="new_shift" style="margin:0; font-size:14px;">Nuovo Turno</h3>
             <div style="display:flex; align-items:center; gap:8px;">
+                <button onclick="apriImportScreenshot()" title="Importa da screenshot" style="background:none; border:1px solid var(--primary); border-radius:8px; color:var(--primary); font-size:14px; cursor:pointer; padding:5px 7px; line-height:1; display:flex; align-items:center;">
+                    <i class="fas fa-camera"></i>
+                </button>
                 <div id="dateT" class="date-row" style="margin:0; font-size:11px;"></div>
                 <button id="btnChiudiTurnoSenzaAnnullare" onclick="chiudiTurnoSenzaAnnullare()" style="display:none; background:none; border:none; color:#888; font-size:20px; cursor:pointer; padding:0 0 0 4px; line-height:1;">✕</button>
             </div>
         </div>
+        <input type="file" id="fileScreenshotTurno" accept="image/*" multiple hidden onchange="gestisciScreenshotSelezionati(event)">
 
         <!-- ── BANNER VEICOLO ATTIVO + carburante inline ── -->
         <div id="turnoVeicoloRow" style="display:none; margin-bottom:8px; padding:10px 14px; background:#1a1a1a; border-radius:12px; border:1px solid #2a2a2a; align-items:center; gap:10px;" >
@@ -892,21 +896,18 @@ body {
         </div>
         <div id="consHint" style="font-size:10px; color:var(--primary); margin:0 0 6px 2px; min-height:0; font-style:italic; line-height:1.2;"></div>
 
-        <!-- ── ORE LAVORATE + LORDO + SOLO VIAGGIO affiancati ── -->
+        <!-- ── ORE LAVORATE + LORDO + CONTANTI affiancati ── -->
         <div id="rowOreLbls" style="display:flex; gap:8px; margin-bottom:2px; padding-top:8px;">
-            <div style="flex:1; min-width:0; text-align:center; font-size:9px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.8px;">ORE LAVORATE</div>
+            <div style="flex:0 0 70px; text-align:center; font-size:9px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.8px;">ORE LAV.</div>
             <div style="flex:1; min-width:0; text-align:center; font-size:9px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.8px;" id="lblTL">LORDO (€)</div>
-            <div style="flex:0 0 72px; text-align:center; font-size:9px; font-weight:900; color:#aaa; text-transform:uppercase; letter-spacing:0.8px;">🗺️ VIAGGIO</div>
+            <div style="flex:1; min-width:0; text-align:center; font-size:9px; font-weight:900; color:#aaa; text-transform:uppercase; letter-spacing:0.8px;">CONTANTI (€)</div>
         </div>
         <div id="rowOre" style="display:flex; gap:8px; margin-bottom:6px; margin-top:0; padding-top:0;">
-            <input type="number" id="tO" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" data-translate-placeholder="ph_ore_short" step="0.1" inputmode="decimal" autocomplete="off">
-            <input type="number" id="tL" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" data-translate-placeholder="ph_lordo_short" inputmode="decimal" autocomplete="off">
-            <div onclick="toggleSoloViaggio()" style="flex:0 0 72px; display:flex; align-items:center; justify-content:center; background:#252525; border:1px solid #444; border-radius:10px; cursor:pointer; padding:0 8px;">
-                <div id="soloViaggioToggle" style="width:38px; height:22px; border-radius:11px; background:#333; position:relative; transition:background .2s; flex-shrink:0;">
-                    <div id="soloViaggioKnob" style="width:18px; height:18px; border-radius:50%; background:#fff; position:absolute; top:2px; left:2px; transition:left .2s;"></div>
-                </div>
-            </div>
+            <input type="number" id="tO" style="text-align:center; padding:11px 8px; flex:0 0 70px; min-width:0; margin-bottom:0;" placeholder="0" step="0.1" inputmode="decimal" autocomplete="off">
+            <input type="number" id="tL" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" data-translate-placeholder="ph_lordo_short" inputmode="decimal" autocomplete="off" oninput="aggiornaAnteprimaContanti()">
+            <input type="number" id="tContanti" placeholder="0.00" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" step="0.01" inputmode="decimal" autocomplete="off" oninput="aggiornaAnteprimaContanti()">
         </div>
+        <div id="contantiHint" style="font-size:10px; color:#aaa; margin:0 0 6px 2px; min-height:12px; font-style:italic; line-height:1.2;"></div>
 
         <!-- ── CELLA GPS ── -->
         <div style="border:1px solid #333; border-radius:14px; padding:12px 12px 10px; margin-top:0; margin-bottom:10px;">
@@ -1087,6 +1088,57 @@ body {
             <button style="flex:1; padding:12px; border-radius:12px; border:none; font-weight:bold; font-size:12px; background:#333; color:#fff; cursor:pointer;" onclick="annullaPickerOra()" data-translate="cancel">ANNULLA</button>
         </div>
         <button style="width:100%; margin-top:8px; padding:12px; border-radius:12px; border:none; font-weight:bold; font-size:12px; background:#252525; color:var(--primary); cursor:pointer;" onclick="tornaAlTurnoSenzaSalvare()" data-translate="btn_back_to_shift">TORNA AL TURNO</button>
+    </div>
+</div>
+
+<!-- ── MODAL CHIAVE API GEMINI ── -->
+<div id="modalGeminiKey" class="modal no-print" style="z-index:10005;">
+    <div class="modal-content" style="border-color:var(--primary);">
+        <h3 style="color:var(--primary); font-size:15px; margin-bottom:10px;">🔑 Chiave API Gemini</h3>
+        <p style="font-size:12px; color:#aaa; margin-bottom:12px;">Per leggere gli screenshot serve una chiave API Gemini gratuita. La trovi su aistudio.google.com/apikey. Viene salvata solo su questo dispositivo.</p>
+        <input type="text" id="inputGeminiKey" placeholder="Incolla qui la chiave API" style="width:100%; padding:11px; margin-bottom:12px; box-sizing:border-box;">
+        <div style="display:flex; gap:8px;">
+            <button style="flex:1; padding:12px; border-radius:12px; border:none; font-weight:bold; font-size:12px; background:#333; color:#fff; cursor:pointer;" onclick="document.getElementById('modalGeminiKey').style.display='none';">ANNULLA</button>
+            <button style="flex:1; padding:12px; border-radius:12px; border:none; font-weight:bold; font-size:12px; background:var(--primary); color:#000; cursor:pointer;" onclick="salvaChiaveGeminiEContinua()">SALVA E CONTINUA</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── MODAL CARICAMENTO SCREENSHOT (loading) ── -->
+<div id="modalScreenshotLoading" class="modal no-print" style="z-index:10005;">
+    <div class="modal-content" style="border-color:var(--primary); text-align:center;">
+        <div style="font-size:36px; margin-bottom:10px;">🔎</div>
+        <h3 style="color:var(--primary); font-size:15px; margin-bottom:8px;">Lettura screenshot in corso...</h3>
+        <p style="font-size:12px; color:#aaa;">Sto analizzando le immagini con Gemini. Qualche secondo.</p>
+    </div>
+</div>
+
+<!-- ── MODAL RIEPILOGO IMPORT SCREENSHOT ── -->
+<div id="modalRiepilogoScreenshot" class="modal no-print" style="z-index:10005;">
+    <div class="modal-content" style="border-color:var(--primary);">
+        <h3 style="color:var(--primary); font-size:15px; margin-bottom:12px; text-align:center;">📋 Dati rilevati</h3>
+        <div style="background:#1a1a1a; border-radius:12px; padding:14px; margin-bottom:12px;">
+            <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #2a2a2a;">
+                <span style="font-size:12px; color:#aaa;">Lordo rilevato</span>
+                <span id="riepLordoRilevato" style="font-size:14px; font-weight:700; color:#fff;">€0.00</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #2a2a2a;">
+                <span style="font-size:12px; color:#aaa;">Ore calcolate</span>
+                <span id="riepOreRilevate" style="font-size:14px; font-weight:700; color:#fff;">0.0h</span>
+            </div>
+            <div id="riepPauseRow" style="display:none; padding:4px 0; border-bottom:1px solid #2a2a2a;">
+                <span style="font-size:10px; color:#888; font-style:italic;" id="riepPauseTesto"></span>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding:6px 0;">
+                <span style="font-size:12px; color:#aaa;">Contanti rilevati</span>
+                <span id="riepContantiRilevati" style="font-size:14px; font-weight:700; color:var(--primary);">€0.00</span>
+            </div>
+        </div>
+        <p style="font-size:11px; color:#888; margin-bottom:12px; text-align:center;">Controlla i dati prima di confermare. Potrai comunque modificarli a mano nel turno.</p>
+        <div style="display:flex; gap:8px;">
+            <button style="flex:1; padding:12px; border-radius:12px; border:none; font-weight:bold; font-size:12px; background:#333; color:#fff; cursor:pointer;" onclick="document.getElementById('modalRiepilogoScreenshot').style.display='none';">MODIFICA A MANO</button>
+            <button style="flex:1; padding:12px; border-radius:12px; border:none; font-weight:bold; font-size:12px; background:var(--primary); color:#000; cursor:pointer;" onclick="confermaImportScreenshot()">OK, USA QUESTI DATI</button>
+        </div>
     </div>
 </div>
 
@@ -1382,6 +1434,16 @@ body {
 </div>
 
 <hr>
+
+<div class="summary-row">
+<span>LORDO REALE (senza contanti scalati):</span>
+<span id="repLordoReale">0.00</span>
+</div>
+
+<div class="summary-row" id="rigaContantiRep" style="display:none;">
+<span>CONTANTI SCALATI DAI TURNI:</span>
+<span id="repContantiTot">0.00</span>
+</div>
 
 <div class="summary-row" style="font-weight:700; font-size:15px;">
 <span data-translate="total_gross">LORDO TOTALE:</span>
@@ -3222,6 +3284,8 @@ function apriReport(meseKey) {
 
     let htmlTurni = '';
     let lordoTot = 0;
+    let lordoLordoTot = 0;
+    let contantiTot = 0;
     let spesaBTot = 0;
     let tassazioneTot = 0;
     let tK = 0;
@@ -3242,6 +3306,8 @@ function apriReport(meseKey) {
 
         if (!t.soloViaggio) {
             lordoTot += t.lordo;
+            lordoLordoTot += (t.lordoLordo !== undefined ? t.lordoLordo : t.lordo);
+            contantiTot += (t.contanti || 0);
             spesaBTot += costoB;
             tassazioneTot += (t.lordo * (getTaxPerc(t) / 100));
             tK += t.km;
@@ -3279,7 +3345,7 @@ function apriReport(meseKey) {
         } else {
             htmlTurni += `<tr>
                 <td style="text-align:center;font-size:14px;">${(function(){ var _rv=getVeicoli().find(function(v){return v.id===t.veicoloId;}); return _getMezzoIcona(_rv?_rv.tipo:t.mezzo); })()}</td>
-                <td>${t.data}</td>
+                <td>${t.data}${t.contanti ? '<br><span style="font-size:9px;color:#aaa;white-space:nowrap;">− '+currencySymbol()+fromEuro(t.contanti).toFixed(2)+' cont.</span>' : ''}</td>
                 <td>${currencySymbol()}${fromEuro(t.lordo).toFixed(2)}</td>
                 <td>${currencySymbol()}${fromEuro(netto).toFixed(2)}</td>
                 <td>${t.ore.toFixed(1)}</td>
@@ -3353,6 +3419,19 @@ periodi.forEach(p => {
 
     document.getElementById('repLordo').innerText =
     currencySymbol() + roundCurrency(safeNumber(fromEuro(lordoTot)));
+
+const repLordoReale = document.getElementById('repLordoReale');
+if (repLordoReale) {
+    repLordoReale.innerText = currencySymbol() + roundCurrency(safeNumber(fromEuro(lordoLordoTot)));
+}
+const repContantiTot = document.getElementById('repContantiTot');
+if (repContantiTot) {
+    repContantiTot.innerText = '-' + currencySymbol() + roundCurrency(safeNumber(fromEuro(contantiTot)));
+}
+const rigaContantiRep = document.getElementById('rigaContantiRep');
+if (rigaContantiRep) {
+    rigaContantiRep.style.display = contantiTot > 0 ? '' : 'none';
+}
 
 document.getElementById('repSpesaB').innerText =
     currencySymbol() + roundCurrency(safeNumber(fromEuro(spesaBTotReale)));
@@ -3832,8 +3911,8 @@ function toggleSoloViaggio() {
     var lblTL = document.getElementById('lblTL');
     var rowOreLbls = document.getElementById('rowOreLbls');
     if (_soloViaggio) {
-        toggle.style.background = 'var(--primary)';
-        knob.style.left = '18px';
+        if (toggle) toggle.style.background = 'var(--primary)';
+        if (knob) knob.style.left = '18px';
         if (tO) { tO.style.visibility = 'hidden'; tO.value = ''; }
         if (tL) { tL.style.visibility = 'hidden'; tL.value = ''; }
         // Aggiorna label ore
@@ -3841,8 +3920,8 @@ function toggleSoloViaggio() {
         if (lblOre) lblOre.style.visibility = 'hidden';
         if (lblTL) lblTL.style.visibility = 'hidden';
     } else {
-        toggle.style.background = '#333';
-        knob.style.left = '2px';
+        if (toggle) toggle.style.background = '#333';
+        if (knob) knob.style.left = '2px';
         if (tO) tO.style.visibility = '';
         if (tL) tL.style.visibility = '';
         var lblOre = rowOreLbls ? rowOreLbls.children[0] : null;
@@ -4119,9 +4198,10 @@ function _resetCampiTurno() {
     if (tL) tL.style.visibility = '';
     if (lblTL) lblTL.style.visibility = '';
     if (rowOreLbls && rowOreLbls.children[0]) rowOreLbls.children[0].style.visibility = '';
-    ['tL','tO','tK','tC','tKStart','tKEnd'].forEach(function(id){
+    ['tL','tO','tK','tC','tKStart','tKEnd','tContanti'].forEach(function(id){
         var e=document.getElementById(id); if(e) e.value='';
     });
+    var cch = document.getElementById('contantiHint'); if(cch) cch.innerText='';
     document.getElementById('tOStart').value = '';
     document.getElementById('tOEnd').value = '';
     document.getElementById('labelOraStart').innerText = currentLang==='en'?'Start time':'Ora inizio';
@@ -4643,12 +4723,28 @@ function getTaxPerc(turno) {
     return (db.tax !== null && db.tax !== undefined) ? db.tax : 0;
 }
 
+function aggiornaAnteprimaContanti() {
+    var hint = document.getElementById('contantiHint');
+    if (!hint) return;
+    var lordoLordo = parseFloat(document.getElementById('tL').value) || 0;
+    var contanti = parseFloat(document.getElementById('tContanti').value) || 0;
+    if (contanti <= 0) {
+        hint.innerText = '';
+        return;
+    }
+    var netto = Math.max(0, lordoLordo - contanti);
+    hint.innerText = 'Lordo da registrare: € ' + netto.toFixed(2) + ' (€ ' + lordoLordo.toFixed(2) + ' − € ' + contanti.toFixed(2) + ' contanti)';
+}
+
 function effettuaSalvataggioTurno(prezzo, rif) {
     const dataCompleta = `${document.getElementById('dateTD').value.padStart(2,'0')}/${document.getElementById('dateTM').value.padStart(2,'0')}/${document.getElementById('dateTY').value}`;
 
     const consInput = parseFloat(document.getElementById('tC').value) || 0;
     const _oraStartVal = document.getElementById('tOStart').value;
     const _oraEndVal   = document.getElementById('tOEnd').value;
+    const _contantiVal = Math.max(0, parseFloat(document.getElementById('tContanti').value) || 0);
+    const _lordoLordo = parseFloat(document.getElementById('tL').value) || 0;
+    const _lordoNetto = Math.max(0, _lordoLordo - _contantiVal);
     const obj = {
         id: Date.now(),
         data: dataCompleta,
@@ -4656,7 +4752,9 @@ function effettuaSalvataggioTurno(prezzo, rif) {
         oraStart: _oraStartVal || null,
         oraEnd:   _oraEndVal   || null,
         mezzo: document.getElementById('tMezzo').value,
-        lordo: _soloViaggio ? 0 : toEuro(parseFloat(document.getElementById('tL').value) || 0),
+        lordo: _soloViaggio ? 0 : toEuro(_lordoNetto),
+        lordoLordo: _soloViaggio ? 0 : toEuro(_lordoLordo),
+        contanti: _soloViaggio ? 0 : toEuro(_contantiVal),
         ore: _soloViaggio ? 0 : (parseFloat(document.getElementById('tO').value) || 0),
         km: toKm(parseFloat(document.getElementById('tK').value) || 0),
         cons: consDisplayToL100km(consInput),
@@ -5077,10 +5175,12 @@ function modificaVoce(categoria, id) {
         document.getElementById('dateTD').value = parseInt(item.data.substring(0,2));
         document.getElementById('dateTM').value = parseInt(item.data.substring(3,5));
         document.getElementById('dateTY').value = parseInt(item.data.substring(6));
-        document.getElementById('tL').value = parseFloat(fromEuro(item.lordo).toFixed(2));
+        document.getElementById('tL').value = parseFloat(fromEuro(item.lordoLordo !== undefined ? item.lordoLordo : item.lordo).toFixed(2));
+        document.getElementById('tContanti').value = item.contanti ? parseFloat(fromEuro(item.contanti).toFixed(2)) : '';
         document.getElementById('tO').value = item.ore;
         document.getElementById('tK').value = fromKm(item.km).toFixed(1);
         document.getElementById('tC').value = consL100kmToDisplayValue(item.cons);
+        aggiornaAnteprimaContanti();
         // Ripristina solo viaggio se era flaggato
         if (item.soloViaggio) {
             _soloViaggio = false;
@@ -8486,6 +8586,10 @@ function apriDettaglioStorico(categoria, id) {
         rows.push(['KM percorsi', item.km ? fromKm(item.km).toFixed(1) + ' ' + distU : '—']);
         if (!item.soloViaggio) {
             rows.push(['Lordo', sym + fromEuro(item.lordo).toFixed(2)]);
+            if (item.contanti) {
+                rows.push(['Contanti scalati', '− ' + sym + fromEuro(item.contanti).toFixed(2)]);
+                rows.push(['Lordo lordo (pre-contanti)', sym + fromEuro(item.lordoLordo !== undefined ? item.lordoLordo : item.lordo).toFixed(2)]);
+            }
             var netto = fromEuro(item.lordo - item.lordo*(getTaxPerc(item)/100) - item.km*(item.cons/100)*(item.prezzo||0)).toFixed(2);
             rows.push(['Netto stimato', sym + netto]);
         }
@@ -8551,6 +8655,169 @@ function confermaKmArrivoGps() {
     var vaC = getVeicoloAttivo();
     if (vaC) setLastKmVeicolo(vaC.id, km);
     mostraAlertApp('Rilevamento GPS completato! Compila LORDO GUADAGNATO e premi SALVA TURNO.');
+}
+
+// ========== IMPORT DA SCREENSHOT DELIVEROO (GEMINI) ==========
+const GEMINI_KEY_STORAGE = 'gemini_api_key';
+var _screenshotFilesSelezionati = [];
+var _datiScreenshotRilevati = null;
+
+function getGeminiKey() {
+    return localStorage.getItem(GEMINI_KEY_STORAGE) || '';
+}
+
+function apriImportScreenshot() {
+    if (!getGeminiKey()) {
+        document.getElementById('inputGeminiKey').value = '';
+        document.getElementById('modalGeminiKey').style.display = 'flex';
+        return;
+    }
+    document.getElementById('fileScreenshotTurno').value = '';
+    document.getElementById('fileScreenshotTurno').click();
+}
+
+function salvaChiaveGeminiEContinua() {
+    var key = document.getElementById('inputGeminiKey').value.trim();
+    if (!key) { mostraAlertApp('Inserisci una chiave API valida.'); return; }
+    localStorage.setItem(GEMINI_KEY_STORAGE, key);
+    document.getElementById('modalGeminiKey').style.display = 'none';
+    document.getElementById('fileScreenshotTurno').value = '';
+    document.getElementById('fileScreenshotTurno').click();
+}
+
+function _fileToBase64(file) {
+    return new Promise(function(resolve, reject) {
+        var r = new FileReader();
+        r.onload = function() { resolve(r.result.split(',')[1]); };
+        r.onerror = reject;
+        r.readAsDataURL(file);
+    });
+}
+
+// Calcola ore lavorate da lista orari "HH:MM", scartando gap > 60 minuti
+function calcolaOreLavorateDaOrari(orari) {
+    if (!orari || orari.length < 2) return { ore: null, pauseTesto: '' };
+    var minuti = orari.map(function(o) {
+        var p = o.split(':');
+        return parseInt(p[0]) * 60 + parseInt(p[1]);
+    }).sort(function(a, b) { return a - b; });
+
+    var primo = minuti[0];
+    var ultimo = minuti[minuti.length - 1];
+    var totaleLordo = ultimo - primo;
+    var scartato = 0;
+    var pause = [];
+
+    for (var i = 1; i < minuti.length; i++) {
+        var gap = minuti[i] - minuti[i-1];
+        if (gap > 60) {
+            scartato += gap;
+            pause.push(Math.round(gap/60*10)/10 + 'h');
+        }
+    }
+
+    var oreNette = Math.round(((totaleLordo - scartato) / 60) * 10) / 10;
+    var pauseTesto = pause.length > 0 ? ('Scartate ' + pause.length + ' pausa/e: ' + pause.join(', ') + ' non conteggiate') : '';
+    return { ore: oreNette, pauseTesto: pauseTesto };
+}
+
+async function gestisciScreenshotSelezionati(event) {
+    var files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
+    _screenshotFilesSelezionati = files;
+
+    document.getElementById('modalScreenshotLoading').style.display = 'flex';
+
+    try {
+        var key = getGeminiKey();
+        var parts = [];
+
+        parts.push({ text:
+`Analizza queste immagini di screenshot dell'app Deliveroo Rider (schermate scure).
+
+La PRIMA immagine è il riepilogo di una giornata di consegne. Da questa estrai:
+1. "orari": array di TUTTI gli orari nel formato "HH:MM" associati a ogni ordine nella lista "Attività" (es. "22:54", "22:33", ecc). Includi ogni orario che vedi accanto a un nome di ristorante/attività.
+2. "lordo": il totale lordo della giornata, il numero grande in alto (es. se vedi "€84.11" scrivi 84.11)
+
+Le immagini SUCCESSIVE (se presenti) sono dettagli di singoli ordini con un badge viola/rosa che dice "riscossi in contanti" seguito da un importo, e più sotto una riga "Rettifica contanti" con lo STESSO importo ripetuto. Conta questo importo UNA SOLA VOLTA per immagine, ignorando la riga "Rettifica contanti" perché è un duplicato dello stesso valore.
+3. "contantiPerImmagine": array con un numero per ciascuna immagine successiva alla prima (l'importo "riscossi in contanti" di quell'ordine). Se un'immagine non ha questo badge, metti 0.
+
+Restituisci SOLO un oggetto JSON valido, senza markdown, senza backtick, nessun testo aggiuntivo.
+Formato esatto: {"orari":["22:54","22:33"],"lordo":84.11,"contantiPerImmagine":[1.27]}
+Se non trovi un dato usa null per lordo, array vuoto per gli altri.` });
+
+        for (var i = 0; i < files.length; i++) {
+            var b64 = await _fileToBase64(files[i]);
+            parts.push({ inline_data: { mime_type: files[i].type, data: b64 } });
+        }
+
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: parts }],
+                generationConfig: { temperature: 0, maxOutputTokens: 500 }
+            })
+        });
+
+        if (!res.ok) {
+            var errBody = await res.json().catch(function(){ return {}; });
+            throw new Error(errBody?.error?.message || ('HTTP ' + res.status));
+        }
+
+        const data = await res.json();
+        const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        const clean = raw.replace(/```json|```/g, '').trim();
+        const parsed = JSON.parse(clean);
+
+        var lordoRilevato = (typeof parsed.lordo === 'number') ? parsed.lordo : 0;
+        var contantiTotali = Array.isArray(parsed.contantiPerImmagine)
+            ? parsed.contantiPerImmagine.reduce(function(a,b){ return a + (parseFloat(b) || 0); }, 0)
+            : 0;
+        var risultatoOre = calcolaOreLavorateDaOrari(parsed.orari || []);
+
+        _datiScreenshotRilevati = {
+            lordo: lordoRilevato,
+            contanti: Math.round(contantiTotali * 100) / 100,
+            ore: risultatoOre.ore
+        };
+
+        document.getElementById('modalScreenshotLoading').style.display = 'none';
+
+        document.getElementById('riepLordoRilevato').innerText = '€' + lordoRilevato.toFixed(2);
+        document.getElementById('riepOreRilevate').innerText = (risultatoOre.ore !== null ? risultatoOre.ore.toFixed(1) : '—') + 'h';
+        document.getElementById('riepContantiRilevati').innerText = '€' + _datiScreenshotRilevati.contanti.toFixed(2);
+
+        var pauseRow = document.getElementById('riepPauseRow');
+        if (risultatoOre.pauseTesto) {
+            document.getElementById('riepPauseTesto').innerText = risultatoOre.pauseTesto;
+            pauseRow.style.display = 'block';
+        } else {
+            pauseRow.style.display = 'none';
+        }
+
+        document.getElementById('modalRiepilogoScreenshot').style.display = 'flex';
+
+    } catch (err) {
+        document.getElementById('modalScreenshotLoading').style.display = 'none';
+        mostraAlertApp('Errore lettura screenshot: ' + err.message);
+    }
+}
+
+function confermaImportScreenshot() {
+    if (!_datiScreenshotRilevati) return;
+    document.getElementById('modalRiepilogoScreenshot').style.display = 'none';
+
+    if (_datiScreenshotRilevati.lordo) {
+        document.getElementById('tL').value = _datiScreenshotRilevati.lordo.toFixed(2);
+    }
+    if (_datiScreenshotRilevati.ore !== null) {
+        document.getElementById('tO').value = _datiScreenshotRilevati.ore.toFixed(1);
+    }
+    if (_datiScreenshotRilevati.contanti > 0) {
+        document.getElementById('tContanti').value = _datiScreenshotRilevati.contanti.toFixed(2);
+    }
+    aggiornaAnteprimaContanti();
 }
 
 </script>
