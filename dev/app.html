@@ -8694,30 +8694,32 @@ function _fileToBase64(file) {
     });
 }
 
-// Calcola ore lavorate da lista orari "HH:MM", scartando gap > 60 minuti
-function calcolaOreLavorateDaOrari(orari) {
-    if (!orari || orari.length < 2) return { ore: null, pauseTesto: '' };
-    var minuti = orari.map(function(o) {
-        var p = o.split(':');
+// Calcola ore lavorate da primo/ultimo orario, sottraendo le pause (>60min) già individuate da Gemini
+function calcolaOreLavorateDaEstremi(primoOrario, ultimoOrario, pause) {
+    if (!primoOrario || !ultimoOrario) return { ore: null, pauseTesto: '' };
+
+    function toMin(hhmm) {
+        var p = hhmm.split(':');
         return parseInt(p[0]) * 60 + parseInt(p[1]);
-    }).sort(function(a, b) { return a - b; });
-
-    var primo = minuti[0];
-    var ultimo = minuti[minuti.length - 1];
-    var totaleLordo = ultimo - primo;
-    var scartato = 0;
-    var pause = [];
-
-    for (var i = 1; i < minuti.length; i++) {
-        var gap = minuti[i] - minuti[i-1];
-        if (gap > 60) {
-            scartato += gap;
-            pause.push(Math.round(gap/60*10)/10 + 'h');
-        }
     }
 
+    var primo = toMin(primoOrario);
+    var ultimo = toMin(ultimoOrario);
+    var totaleLordo = ultimo - primo;
+    var scartato = 0;
+    var pauseDescrizioni = [];
+
+    (pause || []).forEach(function(p) {
+        if (!p || !p.da || !p.a) return;
+        var gap = toMin(p.a) - toMin(p.da);
+        if (gap > 60) {
+            scartato += gap;
+            pauseDescrizioni.push(Math.round(gap/60*10)/10 + 'h (' + p.da + '–' + p.a + ')');
+        }
+    });
+
     var oreNette = Math.round(((totaleLordo - scartato) / 60) * 10) / 10;
-    var pauseTesto = pause.length > 0 ? ('Scartate ' + pause.length + ' pausa/e: ' + pause.join(', ') + ' non conteggiate') : '';
+    var pauseTesto = pauseDescrizioni.length > 0 ? ('Scartate: ' + pauseDescrizioni.join(', ')) : '';
     return { ore: oreNette, pauseTesto: pauseTesto };
 }
 
@@ -8735,16 +8737,19 @@ async function gestisciScreenshotSelezionati(event) {
         parts.push({ text:
 `Analizza queste immagini di screenshot dell'app Deliveroo Rider (schermate scure).
 
-La PRIMA immagine è il riepilogo di una giornata di consegne. Da questa estrai:
-1. "orari": array di TUTTI gli orari nel formato "HH:MM" associati a ogni ordine nella lista "Attività" (es. "22:54", "22:33", ecc). Includi ogni orario che vedi accanto a un nome di ristorante/attività.
-2. "lordo": il totale lordo della giornata, il numero grande in alto (es. se vedi "€84.11" scrivi 84.11)
+La PRIMA immagine è il riepilogo di una giornata di consegne, con una lista di ordini ognuno con un orario "HH:MM" (possono essere anche 40 ordini, una lista lunga). Da questa immagine estrai SOLO:
+
+1. "primoOrario": l'orario "HH:MM" dell'ordine più VECCHIO nella lista (quello con orario più basso/antecedente)
+2. "ultimoOrario": l'orario "HH:MM" dell'ordine più RECENTE nella lista (quello con orario più alto/successivo)
+3. "pause": array di eventuali intervalli di tempo tra due ordini CONSECUTIVI nella lista che superano 60 minuti di distanza. Per ogni pausa così trovata, scrivi i due orari come oggetto {"da":"HH:MM","a":"HH:MM"}. Se non ci sono pause superiori a 60 minuti, restituisci un array vuoto []. Non elencare gli orari di tutti gli ordini, solo le pause superiori a 60 minuti.
+4. "lordo": il totale lordo della giornata, il numero grande in alto (es. se vedi "€84.11" scrivi 84.11)
 
 Le immagini SUCCESSIVE (se presenti) sono dettagli di singoli ordini con un badge viola/rosa che dice "riscossi in contanti" seguito da un importo, e più sotto una riga "Rettifica contanti" con lo STESSO importo ripetuto. Conta questo importo UNA SOLA VOLTA per immagine, ignorando la riga "Rettifica contanti" perché è un duplicato dello stesso valore.
-3. "contantiPerImmagine": array con un numero per ciascuna immagine successiva alla prima (l'importo "riscossi in contanti" di quell'ordine). Se un'immagine non ha questo badge, metti 0.
+5. "contantiPerImmagine": array con un numero per ciascuna immagine successiva alla prima (l'importo "riscossi in contanti" di quell'ordine). Se un'immagine non ha questo badge, metti 0.
 
-Restituisci SOLO un oggetto JSON valido, senza markdown, senza backtick, nessun testo aggiuntivo.
-Formato esatto: {"orari":["22:54","22:33"],"lordo":84.11,"contantiPerImmagine":[1.27]}
-Se non trovi un dato usa null per lordo, array vuoto per gli altri.` });
+Restituisci SOLO un oggetto JSON valido, breve, senza markdown, senza backtick, nessun testo aggiuntivo.
+Formato esatto: {"primoOrario":"12:16","ultimoOrario":"21:48","pause":[{"da":"16:33","a":"19:44"}],"lordo":84.11,"contantiPerImmagine":[1.27]}
+Se non trovi un dato usa null.` });
 
         for (var i = 0; i < files.length; i++) {
             var b64 = await _fileToBase64(files[i]);
@@ -8756,7 +8761,7 @@ Se non trovi un dato usa null per lordo, array vuoto per gli altri.` });
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 contents: [{ parts: parts }],
-                generationConfig: { temperature: 0, maxOutputTokens: 500 }
+                generationConfig: { temperature: 0, maxOutputTokens: 2000 }
             })
         });
 
@@ -8767,14 +8772,29 @@ Se non trovi un dato usa null per lordo, array vuoto per gli altri.` });
 
         const data = await res.json();
         const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        const clean = raw.replace(/```json|```/g, '').trim();
-        const parsed = JSON.parse(clean);
+        const finishReason = data?.candidates?.[0]?.finishReason || '';
+
+        // Estrae solo il blocco { ... } più esterno, ignorando testo prima/dopo o markdown residuo
+        var firstBrace = raw.indexOf('{');
+        var lastBrace = raw.lastIndexOf('}');
+        if (firstBrace === -1 || lastBrace === -1 || lastBrace < firstBrace) {
+            throw new Error('Risposta non contiene un JSON valido. Testo ricevuto: ' + raw.slice(0, 200));
+        }
+        const clean = raw.slice(firstBrace, lastBrace + 1);
+
+        var parsed;
+        try {
+            parsed = JSON.parse(clean);
+        } catch (parseErr) {
+            var motivoTroncamento = (finishReason === 'MAX_TOKENS') ? ' (risposta troncata per limite token, riprova con meno immagini insieme)' : '';
+            throw new Error('JSON non valido' + motivoTroncamento + '. Dettaglio: ' + parseErr.message);
+        }
 
         var lordoRilevato = (typeof parsed.lordo === 'number') ? parsed.lordo : 0;
         var contantiTotali = Array.isArray(parsed.contantiPerImmagine)
             ? parsed.contantiPerImmagine.reduce(function(a,b){ return a + (parseFloat(b) || 0); }, 0)
             : 0;
-        var risultatoOre = calcolaOreLavorateDaOrari(parsed.orari || []);
+        var risultatoOre = calcolaOreLavorateDaEstremi(parsed.primoOrario, parsed.ultimoOrario, parsed.pause);
 
         _datiScreenshotRilevati = {
             lordo: lordoRilevato,
