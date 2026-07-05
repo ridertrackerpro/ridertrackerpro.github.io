@@ -4709,8 +4709,12 @@ function aggiornaSuggerimentoConsumo(tipoCarburante) {
         return;
     }
     hint.style.color = 'var(--primary)';
+    var _resetTs = _va && _va.dataResetConsumo ? new Date(_va.dataResetConsumo).getTime() : 0;
     var nRif = db.rifornimenti.filter(function(r) {
-        return _va && r.veicoloId === _va.id && r.km > 0 && r.litri > 0;
+        if (!_va || r.veicoloId !== _va.id || !(r.km > 0) || !(r.litri > 0)) return false;
+        if (!_resetTs) return true;
+        var rTs = r.dataUnix || (r.data ? new Date(r.data.split('/').reverse().join('-')).getTime() : 0);
+        return rTs >= _resetTs;
     }).length;
     var _rWord = nRif === 1 ? 'rifornimento' : 'rifornimenti';
     hint.innerText = '~consumo reale da ' + nRif + ' ' + _rWord + ' (odometro)';
