@@ -8703,23 +8703,41 @@ function calcolaOreLavorateDaEstremi(primoOrario, ultimoOrario, pause) {
         return parseInt(p[0]) * 60 + parseInt(p[1]);
     }
 
+    var BUFFER_INIZIO = 30; // minuti aggiunti prima del primo ordine di ogni segmento (viaggio verso il locale)
+    var BUFFER_FINE = 30;   // minuti aggiunti dopo l'ultimo ordine di ogni segmento (consegna + rientro/rifornimento)
+
     var primo = toMin(primoOrario);
     var ultimo = toMin(ultimoOrario);
-    var totaleLordo = ultimo - primo;
-    var scartato = 0;
-    var pauseDescrizioni = [];
 
-    (pause || []).forEach(function(p) {
-        if (!p || !p.da || !p.a) return;
-        var gap = toMin(p.a) - toMin(p.da);
-        if (gap > 60) {
-            scartato += gap;
-            pauseDescrizioni.push(Math.round(gap/60*10)/10 + 'h (' + p.da + '–' + p.a + ')');
-        }
+    // Filtra solo le pause reali (>60min) e le ordina cronologicamente
+    var pauseValide = (pause || [])
+        .filter(function(p) { return p && p.da && p.a && (toMin(p.a) - toMin(p.da)) > 60; })
+        .sort(function(a, b) { return toMin(a.da) - toMin(b.da); });
+
+    // Ricostruisce i segmenti di lavoro effettivi a partire da primo/ultimo orario e dalle pause
+    var segmenti = [];
+    var cursore = primo;
+    pauseValide.forEach(function(p) {
+        segmenti.push({ inizio: cursore, fine: toMin(p.da) });
+        cursore = toMin(p.a);
+    });
+    segmenti.push({ inizio: cursore, fine: ultimo });
+
+    var totaleMinConBuffer = 0;
+    segmenti.forEach(function(s) {
+        totaleMinConBuffer += (s.fine - s.inizio) + BUFFER_INIZIO + BUFFER_FINE;
     });
 
-    var oreNette = Math.round(((totaleLordo - scartato) / 60) * 10) / 10;
-    var pauseTesto = pauseDescrizioni.length > 0 ? ('Scartate: ' + pauseDescrizioni.join(', ')) : '';
+    var pauseDescrizioni = pauseValide.map(function(p) {
+        var gap = toMin(p.a) - toMin(p.da);
+        return Math.round(gap/60*10)/10 + 'h (' + p.da + '–' + p.a + ')';
+    });
+
+    var oreNette = Math.round((totaleMinConBuffer / 60) * 10) / 10;
+    var segmentiTesto = segmenti.length > 1 ? (segmenti.length + ' sessioni, +30min inizio/fine su ciascuna') : '+30min inizio e +30min fine sessione';
+    var pauseTesto = pauseDescrizioni.length > 0
+        ? ('Pause scartate: ' + pauseDescrizioni.join(', ') + '. ' + segmentiTesto)
+        : segmentiTesto;
     return { ore: oreNette, pauseTesto: pauseTesto };
 }
 
