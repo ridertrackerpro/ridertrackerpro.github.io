@@ -6829,21 +6829,16 @@ function resetTagliando() {
 function resetMediaConsumoVeicolo() {
     var va = getVeicoloAttivo();
     if (!va) return;
-    // Conferma
-    if (!confirm('Resettare la media consumo? Verranno rimossi i rifornimenti senza km odometro e azzerato il consumo storico dei turni di questo veicolo. I dati economici restano intatti.')) return;
-    // Rimuovi rifornimenti senza km odometro di questo veicolo
-    db.rifornimenti = db.rifornimenti.filter(function(r) {
-        if (r.veicoloId !== va.id) return true;
-        return r.km && r.km > 0;
-    });
-    // Azzera cons nei turni di questo veicolo (usa il consMedio del veicolo come fallback)
-    var consDefault = va.consMedio || 0;
-    db.turni.forEach(function(t) {
-        if (t.veicoloId === va.id) t.cons = consDefault;
-    });
+    if (!confirm('Resettare la media consumo? Lo storico rifornimenti e turni resta intatto, ma la media riparte da zero: verrà calcolata solo sui dati da adesso in poi.')) return;
+    var vv = getVeicoli();
+    var vObj = vv.find(function(v){ return v.id === va.id; });
+    if (vObj) {
+        vObj.dataResetConsumo = new Date().toISOString();
+        salvaVeicoli(vv);
+    }
     salvaDB();
     document.getElementById('modalVeicolo').style.display = 'none';
-    mostraAlertApp('Reset completato. La media consumo ripartirà dai prossimi rifornimenti.');
+    mostraAlertApp('Reset completato. La media consumo ripartirà dai prossimi dati registrati.');
 }
 
 function salvaVeicolo() {
@@ -6935,8 +6930,17 @@ function _syncVeicoloAttivo() {
 
 // Calcola consumo medio reale del veicolo da storico rifornimenti con km odometro
 function getConsMedioRealeVeicolo(veicoloId) {
+    var vObjPre = (typeof getVeicoli === 'function' ? getVeicoli() : []).find(function(v){ return v.id === veicoloId; });
+    var resetTs = vObjPre && vObjPre.dataResetConsumo ? new Date(vObjPre.dataResetConsumo).getTime() : 0;
+
+    function _dopoReset(r) {
+        if (!resetTs) return true;
+        var rTs = r.dataUnix || (r.data ? new Date(r.data.split('/').reverse().join('-')).getTime() : 0);
+        return rTs >= resetTs;
+    }
+
     var rifs = db.rifornimenti.filter(function(r) {
-        return r.veicoloId === veicoloId && r.km > 0 && r.litri > 0;
+        return r.veicoloId === veicoloId && r.km > 0 && r.litri > 0 && _dopoReset(r);
     }).sort(function(a, b) { return a.km - b.km; });
     if (rifs.length >= 2) {
         var totKm = 0, totLitri = 0;
@@ -6946,8 +6950,13 @@ function getConsMedioRealeVeicolo(veicoloId) {
         }
         if (totKm > 0 && totLitri > 0) return (totLitri / totKm) * 100;
     }
-    // Fallback 1: media ponderata consumi turni
-    var turniV = db.turni.filter(function(t) { return t.veicoloId === veicoloId && t.km > 0 && t.cons > 0; });
+    // Fallback 1: media ponderata consumi turni (solo turni successivi al reset)
+    var turniV = db.turni.filter(function(t) {
+        if (t.veicoloId !== veicoloId || !(t.km > 0) || !(t.cons > 0)) return false;
+        if (!resetTs) return true;
+        var tTs = t.data ? new Date(t.data.split('/').reverse().join('-')).getTime() : 0;
+        return tTs >= resetTs;
+    });
     if (turniV.length >= 1) {
         var totKm2 = turniV.reduce(function(a,t){ return a + t.km; }, 0);
         var totCons = turniV.reduce(function(a,t){ return a + (t.km * t.cons / 100); }, 0);
