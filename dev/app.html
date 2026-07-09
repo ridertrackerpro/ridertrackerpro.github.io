@@ -1091,12 +1091,25 @@ body {
     </div>
 </div>
 
-<!-- ── MODAL CHIAVE API GEMINI ── -->
+<!-- ── MODAL CHIAVI API SCREENSHOT ── -->
 <div id="modalGeminiKey" class="modal no-print" style="z-index:10005;">
     <div class="modal-content" style="border-color:var(--primary);">
-        <h3 style="color:var(--primary); font-size:15px; margin-bottom:10px;">🔑 Chiave API Gemini</h3>
-        <p style="font-size:12px; color:#aaa; margin-bottom:12px;">Per leggere gli screenshot serve una chiave API Gemini gratuita. La trovi su aistudio.google.com/apikey. Viene salvata solo su questo dispositivo.</p>
-        <input type="text" id="inputGeminiKey" placeholder="Incolla qui la chiave API" style="width:100%; padding:11px; margin-bottom:12px; box-sizing:border-box;">
+        <h3 style="color:var(--primary); font-size:15px; margin-bottom:6px;">🔑 Chiavi API Lettura Screenshot</h3>
+        <p style="font-size:11px; color:#aaa; margin-bottom:10px;">Inserisci almeno una chiave. L'app le usa in ordine e passa alla successiva automaticamente se una non funziona.</p>
+
+        <div style="margin-bottom:8px;">
+            <div style="font-size:11px; color:var(--primary); margin-bottom:3px;">Gemini — <span style="color:#aaa;">aistudio.google.com/apikey</span></div>
+            <input type="text" id="inputGeminiKey" placeholder="Chiave Gemini (gratuita)" style="width:100%; padding:9px; box-sizing:border-box; font-size:12px;">
+        </div>
+        <div style="margin-bottom:8px;">
+            <div style="font-size:11px; color:var(--primary); margin-bottom:3px;">Groq — <span style="color:#aaa;">console.groq.com/keys</span></div>
+            <input type="text" id="inputGroqKey" placeholder="Chiave Groq (gratuita)" style="width:100%; padding:9px; box-sizing:border-box; font-size:12px;">
+        </div>
+        <div style="margin-bottom:12px;">
+            <div style="font-size:11px; color:var(--primary); margin-bottom:3px;">OpenRouter — <span style="color:#aaa;">openrouter.ai/keys</span></div>
+            <input type="text" id="inputOpenRouterKey" placeholder="Chiave OpenRouter (gratuita)" style="width:100%; padding:9px; box-sizing:border-box; font-size:12px;">
+        </div>
+
         <div style="display:flex; gap:8px;">
             <button style="flex:1; padding:12px; border-radius:12px; border:none; font-weight:bold; font-size:12px; background:#333; color:#fff; cursor:pointer;" onclick="document.getElementById('modalGeminiKey').style.display='none';">ANNULLA</button>
             <button style="flex:1; padding:12px; border-radius:12px; border:none; font-weight:bold; font-size:12px; background:var(--primary); color:#000; cursor:pointer;" onclick="salvaChiaveGeminiEContinua()">SALVA E CONTINUA</button>
@@ -8670,18 +8683,22 @@ function confermaKmArrivoGps() {
     mostraAlertApp('Rilevamento GPS completato! Compila LORDO GUADAGNATO e premi SALVA TURNO.');
 }
 
-// ========== IMPORT DA SCREENSHOT DELIVEROO (GEMINI) ==========
-const GEMINI_KEY_STORAGE = 'gemini_api_key';
+// ========== IMPORT DA SCREENSHOT DELIVEROO (MULTI-PROVIDER) ==========
+const GEMINI_KEY_STORAGE    = 'gemini_api_key';
+const GROQ_KEY_STORAGE      = 'groq_api_key';
+const OPENROUTER_KEY_STORAGE = 'openrouter_api_key';
 var _screenshotFilesSelezionati = [];
 var _datiScreenshotRilevati = null;
 
-function getGeminiKey() {
-    return localStorage.getItem(GEMINI_KEY_STORAGE) || '';
-}
+function getGeminiKey()      { return localStorage.getItem(GEMINI_KEY_STORAGE) || ''; }
+function getGroqKey()        { return localStorage.getItem(GROQ_KEY_STORAGE) || ''; }
+function getOpenRouterKey()  { return localStorage.getItem(OPENROUTER_KEY_STORAGE) || ''; }
 
 function apriImportScreenshot() {
-    if (!getGeminiKey()) {
+    if (!getGeminiKey() && !getGroqKey() && !getOpenRouterKey()) {
         document.getElementById('inputGeminiKey').value = '';
+        document.getElementById('inputGroqKey').value = '';
+        document.getElementById('inputOpenRouterKey').value = '';
         document.getElementById('modalGeminiKey').style.display = 'flex';
         return;
     }
@@ -8690,9 +8707,13 @@ function apriImportScreenshot() {
 }
 
 function salvaChiaveGeminiEContinua() {
-    var key = document.getElementById('inputGeminiKey').value.trim();
-    if (!key) { mostraAlertApp('Inserisci una chiave API valida.'); return; }
-    localStorage.setItem(GEMINI_KEY_STORAGE, key);
+    var kg = document.getElementById('inputGeminiKey').value.trim();
+    var kq = document.getElementById('inputGroqKey').value.trim();
+    var ko = document.getElementById('inputOpenRouterKey').value.trim();
+    if (!kg && !kq && !ko) { mostraAlertApp('Inserisci almeno una chiave API.'); return; }
+    if (kg) localStorage.setItem(GEMINI_KEY_STORAGE, kg);
+    if (kq) localStorage.setItem(GROQ_KEY_STORAGE, kq);
+    if (ko) localStorage.setItem(OPENROUTER_KEY_STORAGE, ko);
     document.getElementById('modalGeminiKey').style.display = 'none';
     document.getElementById('fileScreenshotTurno').value = '';
     document.getElementById('fileScreenshotTurno').click();
@@ -8762,7 +8783,6 @@ async function gestisciScreenshotSelezionati(event) {
     document.getElementById('modalScreenshotLoading').style.display = 'flex';
 
     try {
-        var key = getGeminiKey();
         var parts = [];
 
         parts.push({ text:
@@ -8787,113 +8807,166 @@ Se non trovi un dato usa null.` });
             parts.push({ inline_data: { mime_type: files[i].type, data: b64 } });
         }
 
-        // Seleziona automaticamente il modello Gemini flash più recente disponibile
-        var geminiModel = await (async function() {
-            var FALLBACK = 'gemini-3.5-flash';
-            try {
-                var mRes = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + key);
-                if (!mRes.ok) return FALLBACK;
-                var mData = await mRes.json();
-                var candidates = (mData.models || []).filter(function(m) {
-                    var n = (m.name || '').toLowerCase();
-                    // deve essere un modello flash gemini
-                    if (!n.includes('gemini') || !n.includes('flash')) return false;
-                    // escludi modelli non adatti
-                    if (n.includes('preview') || n.includes('exp') || n.includes('-lite') ||
-                        n.includes('image') || n.includes('live') || n.includes('audio') ||
-                        n.includes('video') || n.includes('tts')) return false;
-                    // deve supportare generateContent
-                    var methods = m.supportedGenerationMethods || [];
-                    return methods.includes('generateContent');
-                });
-                if (candidates.length === 0) return FALLBACK;
-                // Ordina per versione numerica decrescente (es. gemini-3.5-flash > gemini-2.5-flash)
-                candidates.sort(function(a, b) {
-                    var va = (a.name || '').replace(/[^0-9.]/g, '');
-                    var vb = (b.name || '').replace(/[^0-9.]/g, '');
-                    var pa = va.split('.').map(Number);
-                    var pb = vb.split('.').map(Number);
-                    for (var i = 0; i < Math.max(pa.length, pb.length); i++) {
-                        var diff = (pb[i] || 0) - (pa[i] || 0);
-                        if (diff !== 0) return diff;
-                    }
-                    return 0;
-                });
-                // Estrai solo il nome modello (es. "models/gemini-3.5-flash" → "gemini-3.5-flash")
-                var best = candidates[0].name.replace('models/', '');
-                return best;
-            } catch(e) {
-                return FALLBACK;
-            }
-        })();
+        // ── Helper: aggiorna testo modal loading ──
+        function _setLoadingText(txt) {
+            var p = document.querySelector('#modalScreenshotLoading p');
+            if (p) p.innerText = txt;
+        }
 
-        // Chiama Gemini con retry automatico su 503 e fallback al modello successivo
-        var _geminiBody = JSON.stringify({ contents: [{ parts: parts }], generationConfig: { temperature: 0, maxOutputTokens: 2000 } });
-        var _geminiHeaders = { 'Content-Type': 'application/json' };
-
-        async function _callGemini(model) {
-            var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + key;
-            for (var attempt = 1; attempt <= 3; attempt++) {
-                if (attempt > 1) {
-                    var waitMs = attempt * 2000;
-                    document.querySelector('#modalScreenshotLoading p').innerText =
-                        'Server Gemini sovraccarico, riprovo (' + attempt + '/3)...';
-                    await new Promise(function(r){ setTimeout(r, waitMs); });
+        // ── Helper: ordina array di stringhe per versione numerica decrescente ──
+        function _sortByVersion(arr) {
+            return arr.sort(function(a, b) {
+                var pa = (a||'').replace(/[^0-9.]/g,'').split('.').map(Number);
+                var pb = (b||'').replace(/[^0-9.]/g,'').split('.').map(Number);
+                for (var i = 0; i < Math.max(pa.length, pb.length); i++) {
+                    var d = (pb[i]||0) - (pa[i]||0);
+                    if (d !== 0) return d;
                 }
-                var r = await fetch(url, { method: 'POST', headers: _geminiHeaders, body: _geminiBody });
-                if (r.status !== 503) return r;
-            }
-            return null; // tutti i tentativi falliti
+                return 0;
+            });
         }
 
-        // Prova il modello principale, poi eventualmente il secondo della lista
-        var res = await _callGemini(geminiModel);
-        if (!res) {
-            // Prova il secondo modello disponibile se esiste
-            var _altModel = await (async function() {
+        // ── Helper: fetch con retry automatico su 503/529 ──
+        async function _fetchWithRetry(url, opts, label) {
+            for (var att = 1; att <= 3; att++) {
+                if (att > 1) {
+                    _setLoadingText(label + ' sovraccarico, riprovo (' + att + '/3)...');
+                    await new Promise(function(r){ setTimeout(r, att * 2000); });
+                }
+                var r = await fetch(url, opts);
+                if (r.status !== 503 && r.status !== 529) return r;
+            }
+            return null;
+        }
+
+        // ── Converti parts in formato OpenAI (per Groq e OpenRouter) ──
+        function _partsToOpenAI(parts) {
+            var content = [{ type: 'text', text: parts[0].text }];
+            for (var i = 1; i < parts.length; i++) {
+                content.push({ type: 'image_url', image_url: {
+                    url: 'data:' + parts[i].inline_data.mime_type + ';base64,' + parts[i].inline_data.data
+                }});
+            }
+            return content;
+        }
+
+        var _rawText = null;
+        var _finishReason = '';
+
+        // ══════════════════════════════════════════
+        // PROVIDER 1: GEMINI
+        // ══════════════════════════════════════════
+        var _geminiKey = getGeminiKey();
+        if (!_rawText && _geminiKey) {
+            try {
+                _setLoadingText('Selezione modello Gemini...');
+                var _gModel = 'gemini-3.5-flash';
                 try {
-                    var mRes2 = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + key);
-                    if (!mRes2.ok) return null;
-                    var mData2 = await mRes2.json();
-                    var cands2 = (mData2.models || []).filter(function(m) {
-                        var n = (m.name || '').toLowerCase();
-                        if (!n.includes('gemini') || !n.includes('flash')) return false;
-                        if (n.includes('preview') || n.includes('exp') || n.includes('-lite') ||
-                            n.includes('image') || n.includes('live') || n.includes('audio') ||
-                            n.includes('video') || n.includes('tts')) return false;
-                        var methods = m.supportedGenerationMethods || [];
-                        return methods.includes('generateContent');
-                    }).sort(function(a, b) {
-                        var pa = (a.name || '').replace(/[^0-9.]/g, '').split('.').map(Number);
-                        var pb = (b.name || '').replace(/[^0-9.]/g, '').split('.').map(Number);
-                        for (var i = 0; i < Math.max(pa.length, pb.length); i++) {
-                            var diff = (pb[i]||0) - (pa[i]||0);
-                            if (diff !== 0) return diff;
-                        }
-                        return 0;
-                    });
-                    // Prende il secondo (indice 1), diverso dal principale
-                    var alt = cands2.find(function(m){ return m.name.replace('models/','') !== geminiModel; });
-                    return alt ? alt.name.replace('models/','') : null;
-                } catch(e) { return null; }
-            })();
-            if (_altModel) {
-                document.querySelector('#modalScreenshotLoading p').innerText =
-                    'Provo modello alternativo (' + _altModel + ')...';
-                res = await _callGemini(_altModel);
-            }
-        }
-        if (!res) {
-            throw new Error('Server Gemini sovraccarico (503). Riprova tra qualche minuto.');
-        }
-        if (!res.ok) {
-            var errBody = await res.json().catch(function(){ return {}; });
-            throw new Error(errBody?.error?.message || ('HTTP ' + res.status));
+                    var _gList = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + _geminiKey);
+                    if (_gList.ok) {
+                        var _gData = await _gList.json();
+                        var _gCands = (_gData.models || []).filter(function(m) {
+                            var n = (m.name||'').toLowerCase();
+                            if (!n.includes('gemini') || !n.includes('flash')) return false;
+                            if (n.includes('preview')||n.includes('exp')||n.includes('-lite')||
+                                n.includes('image')||n.includes('live')||n.includes('audio')||
+                                n.includes('video')||n.includes('tts')) return false;
+                            return (m.supportedGenerationMethods||[]).includes('generateContent');
+                        }).map(function(m){ return m.name.replace('models/',''); });
+                        _sortByVersion(_gCands);
+                        if (_gCands.length > 0) _gModel = _gCands[0];
+                    }
+                } catch(e) {}
+                _setLoadingText('Analisi con Gemini (' + _gModel + ')...');
+                var _gRes = await _fetchWithRetry(
+                    'https://generativelanguage.googleapis.com/v1beta/models/' + _gModel + ':generateContent?key=' + _geminiKey,
+                    { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ contents: [{ parts: parts }], generationConfig: { temperature: 0, maxOutputTokens: 2000 } }) },
+                    'Gemini'
+                );
+                if (_gRes && _gRes.ok) {
+                    var _gJson = await _gRes.json();
+                    _rawText = _gJson?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                    _finishReason = _gJson?.candidates?.[0]?.finishReason || '';
+                }
+            } catch(e) {}
         }
 
-        const data = await res.json();
-        const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        const finishReason = data?.candidates?.[0]?.finishReason || '';
+        // ══════════════════════════════════════════
+        // PROVIDER 2: GROQ
+        // ══════════════════════════════════════════
+        var _groqKey = getGroqKey();
+        if (!_rawText && _groqKey) {
+            try {
+                _setLoadingText('Selezione modello Groq...');
+                var _qModel = 'meta-llama/llama-4-scout-17b-16e-instruct';
+                try {
+                    var _qList = await fetch('https://api.groq.com/openai/v1/models',
+                        { headers: { 'Authorization': 'Bearer ' + _groqKey } });
+                    if (_qList.ok) {
+                        var _qData = await _qList.json();
+                        var _qCands = (_qData.data||[])
+                            .filter(function(m){ var id=(m.id||'').toLowerCase(); return id.includes('llama')&&!id.includes('guard')&&!id.includes('tool'); })
+                            .map(function(m){ return m.id; });
+                        _sortByVersion(_qCands);
+                        if (_qCands.length > 0) _qModel = _qCands[0];
+                    }
+                } catch(e) {}
+                _setLoadingText('Analisi con Groq (' + _qModel + ')...');
+                var _qRes = await _fetchWithRetry(
+                    'https://api.groq.com/openai/v1/chat/completions',
+                    { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _groqKey },
+                      body: JSON.stringify({ model: _qModel, messages: [{ role: 'user', content: _partsToOpenAI(parts) }], temperature: 0, max_tokens: 2000 }) },
+                    'Groq'
+                );
+                if (_qRes && _qRes.ok) {
+                    var _qJson = await _qRes.json();
+                    _rawText = _qJson?.choices?.[0]?.message?.content || '';
+                }
+            } catch(e) {}
+        }
+
+        // ══════════════════════════════════════════
+        // PROVIDER 3: OPENROUTER
+        // ══════════════════════════════════════════
+        var _orKey = getOpenRouterKey();
+        if (!_rawText && _orKey) {
+            try {
+                _setLoadingText('Selezione modello OpenRouter...');
+                var _orModel = 'meta-llama/llama-4-scout:free';
+                try {
+                    var _orList = await fetch('https://openrouter.ai/api/v1/models',
+                        { headers: { 'Authorization': 'Bearer ' + _orKey } });
+                    if (_orList.ok) {
+                        var _orData = await _orList.json();
+                        var _orCands = (_orData.data||[]).filter(function(m){
+                            var id=(m.id||'').toLowerCase();
+                            return id.includes(':free') && (m.architecture?.modality||'').includes('image');
+                        }).map(function(m){ return m.id; });
+                        _sortByVersion(_orCands);
+                        if (_orCands.length > 0) _orModel = _orCands[0];
+                    }
+                } catch(e) {}
+                _setLoadingText('Analisi con OpenRouter (' + _orModel + ')...');
+                var _orRes = await _fetchWithRetry(
+                    'https://openrouter.ai/api/v1/chat/completions',
+                    { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _orKey, 'HTTP-Referer': 'https://ridertrackerpro.github.io' },
+                      body: JSON.stringify({ model: _orModel, messages: [{ role: 'user', content: _partsToOpenAI(parts) }], temperature: 0, max_tokens: 2000 }) },
+                    'OpenRouter'
+                );
+                if (_orRes && _orRes.ok) {
+                    var _orJson = await _orRes.json();
+                    _rawText = _orJson?.choices?.[0]?.message?.content || '';
+                }
+            } catch(e) {}
+        }
+
+        if (!_rawText) {
+            throw new Error('Tutti i provider AI non disponibili. Controlla le chiavi API o riprova più tardi.');
+        }
+
+        const raw = _rawText;
+        const finishReason = _finishReason;
 
         // Estrae solo il blocco { ... } più esterno, ignorando testo prima/dopo o markdown residuo
         var firstBrace = raw.indexOf('{');
