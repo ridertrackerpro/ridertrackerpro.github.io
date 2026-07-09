@@ -8827,15 +8827,65 @@ Se non trovi un dato usa null.` });
             }
         })();
 
-        const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + geminiModel + ':generateContent?key=' + key, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: parts }],
-                generationConfig: { temperature: 0, maxOutputTokens: 2000 }
-            })
-        });
+        // Chiama Gemini con retry automatico su 503 e fallback al modello successivo
+        var _geminiBody = JSON.stringify({ contents: [{ parts: parts }], generationConfig: { temperature: 0, maxOutputTokens: 2000 } });
+        var _geminiHeaders = { 'Content-Type': 'application/json' };
 
+        async function _callGemini(model) {
+            var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + key;
+            for (var attempt = 1; attempt <= 3; attempt++) {
+                if (attempt > 1) {
+                    var waitMs = attempt * 2000;
+                    document.querySelector('#modalScreenshotLoading p').innerText =
+                        'Server Gemini sovraccarico, riprovo (' + attempt + '/3)...';
+                    await new Promise(function(r){ setTimeout(r, waitMs); });
+                }
+                var r = await fetch(url, { method: 'POST', headers: _geminiHeaders, body: _geminiBody });
+                if (r.status !== 503) return r;
+            }
+            return null; // tutti i tentativi falliti
+        }
+
+        // Prova il modello principale, poi eventualmente il secondo della lista
+        var res = await _callGemini(geminiModel);
+        if (!res) {
+            // Prova il secondo modello disponibile se esiste
+            var _altModel = await (async function() {
+                try {
+                    var mRes2 = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + key);
+                    if (!mRes2.ok) return null;
+                    var mData2 = await mRes2.json();
+                    var cands2 = (mData2.models || []).filter(function(m) {
+                        var n = (m.name || '').toLowerCase();
+                        if (!n.includes('gemini') || !n.includes('flash')) return false;
+                        if (n.includes('preview') || n.includes('exp') || n.includes('-lite') ||
+                            n.includes('image') || n.includes('live') || n.includes('audio') ||
+                            n.includes('video') || n.includes('tts')) return false;
+                        var methods = m.supportedGenerationMethods || [];
+                        return methods.includes('generateContent');
+                    }).sort(function(a, b) {
+                        var pa = (a.name || '').replace(/[^0-9.]/g, '').split('.').map(Number);
+                        var pb = (b.name || '').replace(/[^0-9.]/g, '').split('.').map(Number);
+                        for (var i = 0; i < Math.max(pa.length, pb.length); i++) {
+                            var diff = (pb[i]||0) - (pa[i]||0);
+                            if (diff !== 0) return diff;
+                        }
+                        return 0;
+                    });
+                    // Prende il secondo (indice 1), diverso dal principale
+                    var alt = cands2.find(function(m){ return m.name.replace('models/','') !== geminiModel; });
+                    return alt ? alt.name.replace('models/','') : null;
+                } catch(e) { return null; }
+            })();
+            if (_altModel) {
+                document.querySelector('#modalScreenshotLoading p').innerText =
+                    'Provo modello alternativo (' + _altModel + ')...';
+                res = await _callGemini(_altModel);
+            }
+        }
+        if (!res) {
+            throw new Error('Server Gemini sovraccarico (503). Riprova tra qualche minuto.');
+        }
         if (!res.ok) {
             var errBody = await res.json().catch(function(){ return {}; });
             throw new Error(errBody?.error?.message || ('HTTP ' + res.status));
