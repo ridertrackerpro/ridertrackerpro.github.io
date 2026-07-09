@@ -8716,8 +8716,8 @@ function calcolaOreLavorateDaEstremi(primoOrario, ultimoOrario, pause) {
         return parseInt(p[0]) * 60 + parseInt(p[1]);
     }
 
-    var BUFFER_INIZIO = 30; // minuti aggiunti prima del primo ordine di ogni segmento (viaggio verso il locale)
-    var BUFFER_FINE = 30;   // minuti aggiunti dopo l'ultimo ordine di ogni segmento (consegna + rientro/rifornimento)
+    var BUFFER_INIZIO = 20; // minuti aggiunti prima del primo ordine di ogni segmento (viaggio verso il locale)
+    var BUFFER_FINE = 20;   // minuti aggiunti dopo l'ultimo ordine di ogni segmento (consegna + rientro/rifornimento)
 
     var primo = toMin(primoOrario);
     var ultimo = toMin(ultimoOrario);
@@ -8787,7 +8787,47 @@ Se non trovi un dato usa null.` });
             parts.push({ inline_data: { mime_type: files[i].type, data: b64 } });
         }
 
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${key}`, {
+        // Seleziona automaticamente il modello Gemini flash più recente disponibile
+        var geminiModel = await (async function() {
+            var FALLBACK = 'gemini-3.5-flash';
+            try {
+                var mRes = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + key);
+                if (!mRes.ok) return FALLBACK;
+                var mData = await mRes.json();
+                var candidates = (mData.models || []).filter(function(m) {
+                    var n = (m.name || '').toLowerCase();
+                    // deve essere un modello flash gemini
+                    if (!n.includes('gemini') || !n.includes('flash')) return false;
+                    // escludi modelli non adatti
+                    if (n.includes('preview') || n.includes('exp') || n.includes('-lite') ||
+                        n.includes('image') || n.includes('live') || n.includes('audio') ||
+                        n.includes('video') || n.includes('tts')) return false;
+                    // deve supportare generateContent
+                    var methods = m.supportedGenerationMethods || [];
+                    return methods.includes('generateContent');
+                });
+                if (candidates.length === 0) return FALLBACK;
+                // Ordina per versione numerica decrescente (es. gemini-3.5-flash > gemini-2.5-flash)
+                candidates.sort(function(a, b) {
+                    var va = (a.name || '').replace(/[^0-9.]/g, '');
+                    var vb = (b.name || '').replace(/[^0-9.]/g, '');
+                    var pa = va.split('.').map(Number);
+                    var pb = vb.split('.').map(Number);
+                    for (var i = 0; i < Math.max(pa.length, pb.length); i++) {
+                        var diff = (pb[i] || 0) - (pa[i] || 0);
+                        if (diff !== 0) return diff;
+                    }
+                    return 0;
+                });
+                // Estrai solo il nome modello (es. "models/gemini-3.5-flash" → "gemini-3.5-flash")
+                var best = candidates[0].name.replace('models/', '');
+                return best;
+            } catch(e) {
+                return FALLBACK;
+            }
+        })();
+
+        const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + geminiModel + ':generateContent?key=' + key, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
