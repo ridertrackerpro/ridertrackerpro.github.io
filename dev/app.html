@@ -6258,13 +6258,13 @@ function stampaPagina() {
 
         <!-- ── HEADER FISSO ── -->
         <div style="flex-shrink:0;">
-            <h3 style="font-size:15px; text-align:center; margin:0 0 14px; color:var(--primary); letter-spacing:.5px;">
-                <span id="settingsTitle">⚙️ Preferenze</span>
-            </h3>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin:0 0 14px;">
+                <span id="settingsTitle" style="font-size:20px;">⚙️</span>
+                <button onclick="chiudiModalSettings(); apriModalApiKeys();" style="background:transparent; border:1px solid var(--primary); border-radius:10px; color:var(--primary); font-size:11px; font-weight:900; letter-spacing:.8px; padding:6px 14px; cursor:pointer; text-transform:uppercase;">🔑 CHIAVI API</button>
+            </div>
 
             <!-- Solo consumi -->
             <div style="display:flex; flex-direction:column; gap:8px;">
-                <!-- Consumi -->
                 <div style="display:flex; align-items:center; justify-content:space-between; background:#1a1a1a; border-radius:12px; padding:6px 10px; border:1px solid #2a2a2a;">
                     <label id="lblSettingsCons" style="color:#aaa; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; margin:0;">⛽ Consumi</label>
                     <select id="settingsConsumption" style="background:#252525; color:#fff; border:1px solid #444; border-radius:8px; font-size:13px; font-weight:600; padding:6px 10px; outline:none; cursor:pointer; min-width:130px; text-align:right;">
@@ -6302,6 +6302,51 @@ function stampaPagina() {
 
     </div>
 </div>
+
+<!-- ── MODAL CHIAVI API ── -->
+<div id="modalApiKeys" class="modal no-print" style="z-index:10006;">
+    <div class="modal-content" style="border-color:var(--primary); padding:16px 14px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+            <span style="font-size:20px;">🔑</span>
+            <span style="font-size:13px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:.8px;">Chiavi API Screenshot</span>
+            <span style="width:24px;"></span>
+        </div>
+        <p style="font-size:10px; color:#666; margin:0 0 14px; line-height:1.5;">Inserisci almeno una chiave. L'app le usa in ordine e passa alla successiva automaticamente se una non funziona.</p>
+
+        <!-- Gemini -->
+        <div style="margin-bottom:10px;">
+            <div style="font-size:10px; color:var(--primary); font-weight:700; margin-bottom:4px;">GEMINI <span style="color:#555; font-weight:400;">— aistudio.google.com/apikey</span></div>
+            <div style="display:flex; align-items:center; gap:6px;">
+                <input type="password" id="apiKeyGemini" placeholder="Chiave Gemini (gratuita)" style="flex:1; padding:9px; font-size:12px; background:#1a1a1a; border:1px solid #333; border-radius:10px; color:#fff; outline:none;">
+                <button onclick="var i=document.getElementById('apiKeyGemini'); i.type=i.type==='password'?'text':'password';" style="background:none; border:none; color:#555; font-size:15px; cursor:pointer; padding:4px;">👁</button>
+            </div>
+        </div>
+
+        <!-- Groq -->
+        <div style="margin-bottom:10px;">
+            <div style="font-size:10px; color:var(--primary); font-weight:700; margin-bottom:4px;">GROQ <span style="color:#555; font-weight:400;">— console.groq.com/keys</span></div>
+            <div style="display:flex; align-items:center; gap:6px;">
+                <input type="password" id="apiKeyGroq" placeholder="Chiave Groq (gratuita)" style="flex:1; padding:9px; font-size:12px; background:#1a1a1a; border:1px solid #333; border-radius:10px; color:#fff; outline:none;">
+                <button onclick="var i=document.getElementById('apiKeyGroq'); i.type=i.type==='password'?'text':'password';" style="background:none; border:none; color:#555; font-size:15px; cursor:pointer; padding:4px;">👁</button>
+            </div>
+        </div>
+
+        <!-- OpenRouter -->
+        <div style="margin-bottom:16px;">
+            <div style="font-size:10px; color:var(--primary); font-weight:700; margin-bottom:4px;">OPENROUTER <span style="color:#555; font-weight:400;">— openrouter.ai/keys</span></div>
+            <div style="display:flex; align-items:center; gap:6px;">
+                <input type="password" id="apiKeyOpenRouter" placeholder="Chiave OpenRouter (gratuita)" style="flex:1; padding:9px; font-size:12px; background:#1a1a1a; border:1px solid #333; border-radius:10px; color:#fff; outline:none;">
+                <button onclick="var i=document.getElementById('apiKeyOpenRouter'); i.type=i.type==='password'?'text':'password';" style="background:none; border:none; color:#555; font-size:15px; cursor:pointer; padding:4px;">👁</button>
+            </div>
+        </div>
+
+        <div style="display:flex; gap:8px;">
+            <button style="flex:1; padding:12px; border-radius:12px; border:none; font-weight:900; font-size:12px; background:#222; color:#aaa; cursor:pointer;" onclick="chiudiModalApiKeys();">ANNULLA</button>
+            <button style="flex:1; padding:12px; border-radius:12px; border:none; font-weight:900; font-size:12px; background:var(--primary); color:#000; cursor:pointer;" onclick="salvaApiKeys();">✔ SALVA</button>
+        </div>
+    </div>
+</div>
+
 <script>
 function apriInfo() {
     document.getElementById('modalInfo').style.display = 'flex';
@@ -6354,6 +6399,35 @@ function chiudiModalSettings() {
         window._playIntroOnHome = false;
         setTimeout(function() { _meterSweepIntro(); }, 300);
     }
+}
+
+function apriModalApiKeys() {
+    document.getElementById('apiKeyGemini').value = getGeminiKey();
+    document.getElementById('apiKeyGroq').value = getGroqKey();
+    document.getElementById('apiKeyOpenRouter').value = getOpenRouterKey();
+    // Rimetti type password al riapertura
+    ['apiKeyGemini','apiKeyGroq','apiKeyOpenRouter'].forEach(function(id){
+        document.getElementById(id).type = 'password';
+    });
+    document.getElementById('modalApiKeys').style.display = 'flex';
+}
+
+function chiudiModalApiKeys() {
+    document.getElementById('modalApiKeys').style.display = 'none';
+}
+
+function salvaApiKeys() {
+    var gk = document.getElementById('apiKeyGemini').value.trim();
+    var qk = document.getElementById('apiKeyGroq').value.trim();
+    var ok = document.getElementById('apiKeyOpenRouter').value.trim();
+    if (gk) localStorage.setItem(GEMINI_KEY_STORAGE, gk);
+    else localStorage.removeItem(GEMINI_KEY_STORAGE);
+    if (qk) localStorage.setItem(GROQ_KEY_STORAGE, qk);
+    else localStorage.removeItem(GROQ_KEY_STORAGE);
+    if (ok) localStorage.setItem(OPENROUTER_KEY_STORAGE, ok);
+    else localStorage.removeItem(OPENROUTER_KEY_STORAGE);
+    chiudiModalApiKeys();
+    mostraAlertApp('Chiavi API salvate.');
 }
 
 function salvaSettingsEChiudi() {
