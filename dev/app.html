@@ -8842,7 +8842,7 @@ function calcolaOreLavorateDaEstremi(primoOrario, ultimoOrario, pause) {
     });
 
     var oreNette = Math.round((totaleMinConBuffer / 60) * 10) / 10;
-    var segmentiTesto = segmenti.length > 1 ? (segmenti.length + ' sessioni, +30min inizio/fine su ciascuna') : '+30min inizio e +30min fine sessione';
+    var segmentiTesto = segmenti.length > 1 ? (segmenti.length + ' sessioni, +20min inizio/fine su ciascuna') : '+20min inizio e +20min fine sessione';
     var pauseTesto = pauseDescrizioni.length > 0
         ? ('Pause scartate: ' + pauseDescrizioni.join(', ') + '. ' + segmentiTesto)
         : segmentiTesto;
@@ -8973,24 +8973,28 @@ Se non trovi un dato usa null.` });
         if (!_rawText && _groqKey) {
             try {
                 _setLoadingText('Selezione modello Groq...');
-                var _qModel = 'meta-llama/llama-4-scout-17b-16e-instruct';
+                var _qModel = 'qwen/qwen3.6-27b'; // modello vision attivo su Groq (luglio 2026)
                 try {
                     var _qList = await fetch('https://api.groq.com/openai/v1/models',
                         { headers: { 'Authorization': 'Bearer ' + _groqKey } });
                     if (_qList.ok) {
                         var _qData = await _qList.json();
-                        var _qCands = (_qData.data||[])
-                            .filter(function(m){ var id=(m.id||'').toLowerCase(); return id.includes('llama')&&!id.includes('guard')&&!id.includes('tool'); })
-                            .map(function(m){ return m.id; });
+                        var _qCands = (_qData.data||[]).filter(function(m){
+                            var id=(m.id||'').toLowerCase();
+                            if (id.includes('guard')||id.includes('tool')||id.includes('whisper')||
+                                id.includes('tts')||id.includes('orpheus')) return false;
+                            return id.includes('qwen')||id.includes('gpt-oss')||id.includes('llama-4');
+                        }).map(function(m){ return m.id; });
                         _sortByVersion(_qCands);
                         if (_qCands.length > 0) _qModel = _qCands[0];
                     }
                 } catch(e) {}
+                var _qSystemPrompt = 'Sei un estrattore di dati JSON da screenshot. Rispondi SOLO con un oggetto JSON valido, senza markdown, senza backtick, senza testo aggiuntivo. Schema richiesto: {"primoOrario":"HH:MM","ultimoOrario":"HH:MM","pause":[{"da":"HH:MM","a":"HH:MM"}],"lordo":0.00,"contantiPerImmagine":[]}';
                 _setLoadingText('Analisi con Groq (' + _qModel + ')...');
                 var _qRes = await _fetchWithRetry(
                     'https://api.groq.com/openai/v1/chat/completions',
                     { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _groqKey },
-                      body: JSON.stringify({ model: _qModel, messages: [{ role: 'user', content: _partsToOpenAI(parts) }], temperature: 0, max_tokens: 2000 }) },
+                      body: JSON.stringify({ model: _qModel, messages: [{ role: 'system', content: _qSystemPrompt }, { role: 'user', content: _partsToOpenAI(parts) }], temperature: 0, max_tokens: 2000, response_format: { type: 'json_object' } }) },
                     'Groq'
                 );
                 if (_qRes && _qRes.ok) {
@@ -9021,11 +9025,12 @@ Se non trovi un dato usa null.` });
                         if (_orCands.length > 0) _orModel = _orCands[0];
                     }
                 } catch(e) {}
+                var _orSystemPrompt = 'Sei un estrattore di dati JSON da screenshot. Rispondi SOLO con un oggetto JSON valido, senza markdown, senza backtick, senza testo aggiuntivo. Schema richiesto: {"primoOrario":"HH:MM","ultimoOrario":"HH:MM","pause":[{"da":"HH:MM","a":"HH:MM"}],"lordo":0.00,"contantiPerImmagine":[]}';
                 _setLoadingText('Analisi con OpenRouter (' + _orModel + ')...');
                 var _orRes = await _fetchWithRetry(
                     'https://openrouter.ai/api/v1/chat/completions',
                     { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _orKey, 'HTTP-Referer': 'https://ridertrackerpro.github.io' },
-                      body: JSON.stringify({ model: _orModel, messages: [{ role: 'user', content: _partsToOpenAI(parts) }], temperature: 0, max_tokens: 2000 }) },
+                      body: JSON.stringify({ model: _orModel, messages: [{ role: 'system', content: _orSystemPrompt }, { role: 'user', content: _partsToOpenAI(parts) }], temperature: 0, max_tokens: 2000, response_format: { type: 'json_object' } }) },
                     'OpenRouter'
                 );
                 if (_orRes && _orRes.ok) {
