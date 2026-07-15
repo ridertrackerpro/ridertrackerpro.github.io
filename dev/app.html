@@ -8900,14 +8900,30 @@ Se non trovi un dato usa null.` });
             });
         }
 
-        // ── Helper: fetch con retry automatico su 503/529 ──
+        // ── Helper: fetch con timeout (evita blocco infinito se il server non risponde) ──
+        async function _fetchConTimeout(url, opts, timeoutMs) {
+            var controller = new AbortController();
+            var timer = setTimeout(function(){ controller.abort(); }, timeoutMs || 20000);
+            try {
+                var r = await fetch(url, Object.assign({}, opts, { signal: controller.signal }));
+                clearTimeout(timer);
+                return r;
+            } catch (e) {
+                clearTimeout(timer);
+                return null; // timeout scaduto o errore di rete: trattato come tentativo fallito
+            }
+        }
+
+        // ── Helper: fetch con retry automatico su 503/529 e timeout per tentativo ──
         async function _fetchWithRetry(url, opts, label) {
             for (var att = 1; att <= 3; att++) {
                 if (att > 1) {
                     _setLoadingText(label + ' sovraccarico, riprovo (' + att + '/3)...');
                     await new Promise(function(r){ setTimeout(r, att * 2000); });
                 }
-                var r = await fetch(url, opts);
+                _setLoadingText(label + ': tentativo ' + att + '/3 (timeout 20s)...');
+                var r = await _fetchConTimeout(url, opts, 20000);
+                if (r === null) continue; // timeout o errore rete: passa al tentativo successivo
                 if (r.status !== 503 && r.status !== 529) return r;
             }
             return null;
@@ -8936,8 +8952,8 @@ Se non trovi un dato usa null.` });
                 _setLoadingText('Selezione modello Gemini...');
                 var _gModel = 'gemini-3.5-flash';
                 try {
-                    var _gList = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + _geminiKey);
-                    if (_gList.ok) {
+                    var _gList = await _fetchConTimeout('https://generativelanguage.googleapis.com/v1beta/models?key=' + _geminiKey, {}, 8000);
+                    if (_gList && _gList.ok) {
                         var _gData = await _gList.json();
                         var _gCands = (_gData.models || []).filter(function(m) {
                             var n = (m.name||'').toLowerCase();
@@ -8975,9 +8991,9 @@ Se non trovi un dato usa null.` });
                 _setLoadingText('Selezione modello Groq...');
                 var _qModel = 'qwen/qwen3.6-27b'; // modello vision attivo su Groq (luglio 2026)
                 try {
-                    var _qList = await fetch('https://api.groq.com/openai/v1/models',
-                        { headers: { 'Authorization': 'Bearer ' + _groqKey } });
-                    if (_qList.ok) {
+                    var _qList = await _fetchConTimeout('https://api.groq.com/openai/v1/models',
+                        { headers: { 'Authorization': 'Bearer ' + _groqKey } }, 8000);
+                    if (_qList && _qList.ok) {
                         var _qData = await _qList.json();
                         var _qCands = (_qData.data||[]).filter(function(m){
                             var id=(m.id||'').toLowerCase();
@@ -9013,9 +9029,9 @@ Se non trovi un dato usa null.` });
                 _setLoadingText('Selezione modello OpenRouter...');
                 var _orModel = 'meta-llama/llama-4-scout:free';
                 try {
-                    var _orList = await fetch('https://openrouter.ai/api/v1/models',
-                        { headers: { 'Authorization': 'Bearer ' + _orKey } });
-                    if (_orList.ok) {
+                    var _orList = await _fetchConTimeout('https://openrouter.ai/api/v1/models',
+                        { headers: { 'Authorization': 'Bearer ' + _orKey } }, 8000);
+                    if (_orList && _orList.ok) {
                         var _orData = await _orList.json();
                         var _orCands = (_orData.data||[]).filter(function(m){
                             var id=(m.id||'').toLowerCase();
