@@ -2794,7 +2794,12 @@ function apriM(id) {
                 _campoC.placeholder = _volUnit + '/' + _distUnit;
             }
         }
-        aggiornaSuggerimentoConsumo(ultimoCarb);
+        // BUGFIX: aggiornaSuggerimentoConsumo sovrascrive SEMPRE il campo tC con la media
+        // attuale, cancellando il valore storico congelato caricato da modificaVoce().
+        // Va chiamata SOLO per un turno nuovo, mai in modifica di un turno esistente.
+        if (editingId === null) {
+            aggiornaSuggerimentoConsumo(ultimoCarb);
+        }
 
         // Placeholder km/mi inizio/fine in base all'unità di distanza selezionata
         (function() {
@@ -6717,6 +6722,18 @@ setTimeout(function(){ if (typeof aggiornaTagliando === 'function') aggiornaTagl
   </div>
 </div>
 
+<!-- ── MODAL CONFERMA RESET MEDIA CONSUMO ── -->
+<div id="modalResetMediaConsumo" class="modal no-print" style="z-index:10007;">
+    <div class="modal-content" style="border-color:var(--accent);">
+        <h3 style="color:var(--accent); font-size:15px; margin-bottom:10px;">🔄 Reset Media Consumo</h3>
+        <p style="font-size:12px; color:#aaa; margin-bottom:16px; line-height:1.5;">Lo storico turni e rifornimenti resta completamente invariato — ogni turno passato manterrà il suo valore consumo così come fu salvato.<br><br>Da questo momento, la media consumo mostrata in homepage verrà ricalcolata solo sui nuovi dati registrati.</p>
+        <div class="confirm-buttons" style="display:flex; gap:8px;">
+            <button style="flex:1; padding:12px; border-radius:12px; border:none; font-weight:bold; font-size:12px; background:#333; color:#fff; cursor:pointer;" onclick="document.getElementById('modalResetMediaConsumo').style.display='none';">ANNULLA</button>
+            <button style="flex:1; padding:12px; border-radius:12px; border:none; font-weight:bold; font-size:12px; background:var(--accent); color:#fff; cursor:pointer;" onclick="eseguiResetMediaConsumo()">RESET</button>
+        </div>
+    </div>
+</div>
+
 <script>
 /* ════════════════════════════════════════════════════
    GESTIONE VEICOLI
@@ -6920,16 +6937,23 @@ function resetTagliando() {
 function resetMediaConsumoVeicolo() {
     var va = getVeicoloAttivo();
     if (!va) return;
-    if (!confirm('Resettare la media consumo? Lo storico rifornimenti e turni resta intatto, ma la media riparte da zero: verrà calcolata solo sui dati da adesso in poi.')) return;
+    document.getElementById('modalResetMediaConsumo').style.display = 'flex';
+}
+function eseguiResetMediaConsumo() {
+    var va = getVeicoloAttivo();
+    if (!va) return;
+    // IMPORTANTE: il reset scrive SOLO vObj.dataResetConsumo.
+    // Non deve mai toccare db.turni o db.rifornimenti: i valori storici (t.cons)
+    // restano congelati così come salvati al momento di ogni turno.
     var vv = getVeicoli();
     var vObj = vv.find(function(v){ return v.id === va.id; });
     if (vObj) {
         vObj.dataResetConsumo = new Date().toISOString();
         salvaVeicoli(vv);
     }
-    salvaDB();
+    document.getElementById('modalResetMediaConsumo').style.display = 'none';
     document.getElementById('modalVeicolo').style.display = 'none';
-    mostraAlertApp('Reset completato. La media consumo ripartirà dai prossimi dati registrati.');
+    mostraAlertApp('Reset completato. La media consumo ripartirà dai prossimi dati registrati. Lo storico turni/rifornimenti resta invariato.');
 }
 
 function salvaVeicolo() {
