@@ -6906,6 +6906,9 @@ function mostraDettaglioTagliando() {
 
 function resetTagliandoVeicolo() {
     // Chiamata dalle impostazioni veicolo
+    // IMPORTANTE: questa funzione deve toccare SOLO tagliandoKm/tagliandoData del veicolo.
+    // Non deve MAI iterare o scrivere su db.turni (in passato un bug qui aveva sovrascritto
+    // il consumo di tutti i turni storici con lo stesso valore).
     var editId = document.getElementById('vehEditId') ? document.getElementById('vehEditId').value : null;
     var vv = getVeicoli();
     var v = editId ? vv.find(function(x){ return x.id === parseInt(editId); }) : getVeicoloAttivo();
@@ -6919,6 +6922,8 @@ function resetTagliandoVeicolo() {
 }
 
 function resetTagliando() {
+    // IMPORTANTE: questa funzione deve toccare SOLO tagliandoKm/tagliandoData del veicolo.
+    // Non deve MAI iterare o scrivere su db.turni.
     var va = getVeicoloAttivo();
     if (!va) return;
     var kmAttuali = getLastKmVeicolo(va.id);
