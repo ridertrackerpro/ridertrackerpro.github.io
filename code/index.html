@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Registro Posizioni</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b0e0c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Registro GPS">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root{
+    --bg:#0b0e0c;
+    --panel:#121613;
+    --line:#212821;
+    --text:#e8ede9;
+    --dim:#7c8a80;
+    --accent:#4fd1a5;
+    --accent-dim:#2a5c48;
+    --warn:#e0a84f;
+    --mono:'JetBrains Mono','SF Mono',Consolas,monospace;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--mono);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .card{
+    width:100%;
+    max-width:380px;
+  }
+  .eyebrow{
+    font-size:11px;
+    letter-spacing:.18em;
+    color:var(--dim);
+    text-transform:uppercase;
+    margin-bottom:6px;
+  }
+  h1{
+    font-size:19px;
+    font-weight:600;
+    margin:0 0 28px;
+    letter-spacing:-.01em;
+  }
+  .coord-box{
+    border:1px solid var(--line);
+    border-radius:2px;
+    padding:16px 18px;
+    margin-bottom:18px;
+    min-height:64px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    gap:4px;
+    background:var(--panel);
+  }
+  .coord-row{
+    display:flex;
+    justify-content:space-between;
+    font-size:13px;
+  }
+  .coord-label{ color:var(--dim); }
+  .coord-val{ color:var(--text); }
+  .coord-placeholder{
+    color:var(--dim);
+    font-size:13px;
+  }
+
+  button.locate{
+    width:100%;
+    padding:16px;
+    background:transparent;
+    border:1px solid var(--accent);
+    color:var(--accent);
+    font-family:var(--mono);
+    font-size:14px;
+    letter-spacing:.04em;
+    border-radius:2px;
+    cursor:pointer;
+    transition:background .15s ease, color .15s ease;
+  }
+  button.locate:active{
+    background:var(--accent);
+    color:#04140d;
+  }
+  button.locate:disabled{
+    opacity:.4;
+    cursor:default;
+  }
+
+  .result{
+    margin-top:20px;
+    border-left:2px solid var(--line);
+    padding-left:14px;
+    font-size:13px;
+    line-height:1.7;
+    min-height:20px;
+  }
+  .result.state-new{ border-left-color:var(--accent); }
+  .result.state-exists{ border-left-color:var(--warn); }
+  .result.state-error{ border-left-color:#c96a4f; }
+
+  .result .status{
+    text-transform:uppercase;
+    letter-spacing:.1em;
+    font-size:10.5px;
+    color:var(--dim);
+    margin-bottom:4px;
+  }
+  .result .msg{ color:var(--text); }
+  .result .code-big{
+    font-size:26px;
+    font-weight:600;
+    letter-spacing:.08em;
+    color:var(--accent);
+  }
+  .result.state-exists .code-big{ color:var(--warn); }
+
+  /* input codice inline */
+  .code-entry{
+    display:flex;
+    gap:10px;
+    margin-top:10px;
+  }
+  .code-entry input{
+    width:64px;
+    padding:10px 0;
+    text-align:center;
+    background:var(--bg);
+    border:1px solid var(--line);
+    color:var(--text);
+    font-family:var(--mono);
+    font-size:20px;
+    letter-spacing:.1em;
+    border-radius:2px;
+  }
+  .code-entry input:focus{
+    outline:none;
+    border-color:var(--accent);
+  }
+  .code-entry button{
+    padding:0 18px;
+    background:var(--accent);
+    color:#04140d;
+    border:none;
+    font-family:var(--mono);
+    font-size:13px;
+    font-weight:600;
+    border-radius:2px;
+    cursor:pointer;
+  }
+  .code-entry button:disabled{
+    opacity:.35;
+    cursor:default;
+  }
+
+  .hint{
+    margin-top:6px;
+    font-size:11px;
+    color:var(--dim);
+  }
+
+  .log-toggle{
+    margin-top:32px;
+    font-size:11px;
+    color:var(--dim);
+    letter-spacing:.05em;
+    cursor:pointer;
+    border-top:1px solid var(--line);
+    padding-top:12px;
+    display:flex;
+    justify-content:space-between;
+  }
+  .log-toggle:active{ color:var(--text); }
+
+  .modal-overlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.6);
+    align-items:flex-end;
+    justify-content:center;
+    z-index:100;
+  }
+  .modal-overlay.open{ display:flex; }
+  .modal-sheet{
+    width:100%;
+    max-width:380px;
+    max-height:70vh;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-bottom:none;
+    border-radius:8px 8px 0 0;
+    padding:20px 20px 28px;
+    display:flex;
+    flex-direction:column;
+  }
+  .modal-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:14px;
+    flex-shrink:0;
+  }
+  .modal-title{
+    font-size:13px;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    color:var(--dim);
+  }
+  .modal-close{
+    background:none;
+    border:none;
+    color:var(--dim);
+    font-family:var(--mono);
+    font-size:20px;
+    line-height:1;
+    cursor:pointer;
+    padding:2px 6px;
+  }
+  .modal-close:active{ color:var(--text); }
+
+  .log-list{
+    overflow-y:auto;
+  }
+  .log-item{
+    display:flex;
+    justify-content:space-between;
+    font-size:11.5px;
+    padding:7px 0;
+    border-bottom:1px solid var(--line);
+    color:var(--dim);
+  }
+  .log-item .lc{ color:var(--text); font-weight:600; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="eyebrow">Rilevamento posizione</div>
+  <h1>Registro punti GPS</h1>
+
+  <div class="coord-box" id="coordBox">
+    <div class="coord-placeholder" id="coordPlaceholder">Nessuna posizione rilevata</div>
+  </div>
+
+  <button class="locate" id="btnLocate">RILEVA POSIZIONE</button>
+
+  <div class="result" id="result" style="display:none;"></div>
+
+  <div class="log-toggle" id="logToggle">
+    <span>Punti salvati (<span id="logCount">0</span>)</span>
+    <span>›</span>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <span class="modal-title">Punti salvati</span>
+      <button class="modal-close" id="modalClose">✕</button>
+    </div>
+    <div class="log-list" id="logList"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var STORAGE_KEY = 'gps_codice_registro_v1';
+  var RADIUS_M = 30; // stessa posizione = entro questo raggio
+
+  var btnLocate = document.getElementById('btnLocate');
+  var coordBox = document.getElementById('coordBox');
+  var resultEl = document.getElementById('result');
+  var logToggle = document.getElementById('logToggle');
+  var logList = document.getElementById('logList');
+  var logCount = document.getElementById('logCount');
+  var logCaret = document.getElementById('logCaret');
+
+  function getRecords(){
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch(e){ return []; }
+  }
+  function saveRecords(recs){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(recs));
+  }
+
+  // Distanza in metri tra due coordinate (formula haversine)
+  function distanzaMetri(lat1, lon1, lat2, lon2){
+    var R = 6371000;
+    var toRad = function(d){ return d * Math.PI / 180; };
+    var dLat = toRad(lat2 - lat1);
+    var dLon = toRad(lon2 - lon1);
+    var a = Math.sin(dLat/2)*Math.sin(dLat/2) +
+            Math.cos(toRad(lat1))*Math.cos(toRad(lat2)) *
+            Math.sin(dLon/2)*Math.sin(dLon/2);
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  }
+
+  function trovaRecordVicino(lat, lon){
+    var recs = getRecords();
+    for (var i = 0; i < recs.length; i++){
+      if (distanzaMetri(lat, lon, recs[i].lat, recs[i].lon) <= RADIUS_M){
+        return recs[i];
+      }
+    }
+    return null;
+  }
+
+  function renderLog(){
+    var recs = getRecords().slice().reverse();
+    logCount.innerText = recs.length;
+    if (recs.length === 0){
+      logList.innerHTML = '<div class="log-item"><span>Ancora nessun punto salvato</span></div>';
+      return;
+    }
+    logList.innerHTML = recs.map(function(r){
+      var d = new Date(r.ts);
+      var dataStr = d.toLocaleDateString('it-IT') + ' ' + d.toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'});
+      return '<div class="log-item"><span class="lc">' + r.codice + '</span><span>' + dataStr + '</span></div>';
+    }).join('');
+  }
+
+  function mostraCoord(lat, lon, precisione){
+    coordBox.innerHTML =
+      '<div class="coord-row"><span class="coord-label">LAT</span><span class="coord-val">' + lat.toFixed(6) + '</span></div>' +
+      '<div class="coord-row"><span class="coord-label">LON</span><span class="coord-val">' + lon.toFixed(6) + '</span></div>' +
+      '<div class="coord-row"><span class="coord-label">PRECISIONE</span><span class="coord-val">±' + Math.round(precisione) + ' m</span></div>';
+  }
+
+  function mostraRisultatoEsistente(record){
+    resultEl.className = 'result state-exists';
+    resultEl.innerHTML =
+      '<div class="status">Punto già registrato</div>' +
+      '<div class="msg">Questa posizione risulta già salvata con il codice</div>' +
+      '<div class="code-big">' + record.codice + '</div>';
+    resultEl.style.display = 'block';
+  }
+
+  function mostraRisultatoErrore(msg){
+    resultEl.className = 'result state-error';
+    resultEl.innerHTML = '<div class="status">Errore</div><div class="msg">' + msg + '</div>';
+    resultEl.style.display = 'block';
+  }
+
+  function mostraFormNuovoCodice(lat, lon){
+    resultEl.className = 'result state-new';
+    resultEl.innerHTML =
+      '<div class="status">Nuova posizione</div>' +
+      '<div class="msg">Inserisci il codice a due cifre da associare a questo punto.</div>' +
+      '<div class="code-entry">' +
+        '<input type="text" inputmode="numeric" maxlength="2" id="codeInput" placeholder="00">' +
+        '<button id="btnSalvaCodice" disabled>SALVA</button>' +
+      '</div>' +
+      '<div class="hint">Il raggio di riconoscimento è di ' + RADIUS_M + ' metri.</div>';
+    resultEl.style.display = 'block';
+
+    var input = document.getElementById('codeInput');
+    var btn = document.getElementById('btnSalvaCodice');
+
+    input.addEventListener('input', function(){
+      input.value = input.value.replace(/[^0-9]/g, '').slice(0,2);
+      btn.disabled = input.value.length !== 2;
+    });
+    input.focus();
+
+    btn.addEventListener('click', function(){
+      var codice = input.value;
+      if (codice.length !== 2) return;
+      var recs = getRecords();
+      recs.push({ lat: lat, lon: lon, codice: codice, ts: Date.now() });
+      saveRecords(recs);
+      renderLog();
+
+      resultEl.className = 'result state-new';
+      resultEl.innerHTML =
+        '<div class="status">Salvato</div>' +
+        '<div class="msg">Punto registrato con il codice</div>' +
+        '<div class="code-big">' + codice + '</div>';
+    });
+
+    input.addEventListener('keydown', function(e){
+      if (e.key === 'Enter' && !btn.disabled) btn.click();
+    });
+  }
+
+  function rileva(){
+    if (!navigator.geolocation){
+      mostraRisultatoErrore('Il dispositivo non supporta la geolocalizzazione.');
+      return;
+    }
+    btnLocate.disabled = true;
+    btnLocate.innerText = 'RILEVAMENTO IN CORSO…';
+    resultEl.style.display = 'none';
+
+    navigator.geolocation.getCurrentPosition(
+      function(pos){
+        btnLocate.disabled = false;
+        btnLocate.innerText = 'RILEVA POSIZIONE';
+
+        var lat = pos.coords.latitude;
+        var lon = pos.coords.longitude;
+        var acc = pos.coords.accuracy || 0;
+
+        mostraCoord(lat, lon, acc);
+
+        var esistente = trovaRecordVicino(lat, lon);
+        if (esistente){
+          mostraRisultatoEsistente(esistente);
+        } else {
+          mostraFormNuovoCodice(lat, lon);
+        }
+      },
+      function(err){
+        btnLocate.disabled = false;
+        btnLocate.innerText = 'RILEVA POSIZIONE';
+        var msg = 'Impossibile rilevare la posizione.';
+        if (err.code === 1) msg = 'Permesso posizione negato. Abilitalo nelle impostazioni del browser.';
+        else if (err.code === 2) msg = 'Posizione non disponibile al momento.';
+        else if (err.code === 3) msg = 'Tempo scaduto durante il rilevamento.';
+        mostraRisultatoErrore(msg);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+  }
+
+  btnLocate.addEventListener('click', rileva);
+
+  var modalOverlay = document.getElementById('modalOverlay');
+  var modalClose = document.getElementById('modalClose');
+
+  logToggle.addEventListener('click', function(){
+    renderLog();
+    modalOverlay.classList.add('open');
+  });
+  modalClose.addEventListener('click', function(){
+    modalOverlay.classList.remove('open');
+  });
+  modalOverlay.addEventListener('click', function(e){
+    if (e.target === modalOverlay) modalOverlay.classList.remove('open');
+  });
+
+  renderLog();
+})();
+</script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function(){
+      navigator.serviceWorker.register('sw.js').catch(function(e){
+        console.warn('Service worker non registrato:', e);
+      });
+    });
+  }
+</script>
+
+</body>
+</html>
