@@ -1,4 +1,4 @@
-const CACHE_NAME = 'registro-gps-v1';
+const CACHE_NAME = 'registro-gps-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -31,19 +31,23 @@ self.addEventListener('activate', function(e){
 self.addEventListener('fetch', function(e){
   // Solo GET, e solo stesse origine (mai intercettare chiamate GPS/rete esterne)
   if (e.request.method !== 'GET') return;
+
+  // NETWORK-FIRST: prova sempre la rete per avere l'ultima versione;
+  // usa la cache solo come fallback se offline. Così ogni aggiornamento
+  // caricato su GitHub viene visto subito, senza restare bloccati su una
+  // versione vecchia salvata in cache.
   e.respondWith(
-    caches.match(e.request).then(function(cached){
-      return cached || fetch(e.request).then(function(res){
-        // aggiorna la cache con la versione fresca, se disponibile
-        if (res && res.status === 200 && res.type === 'basic') {
-          var resClone = res.clone();
-          caches.open(CACHE_NAME).then(function(cache){
-            cache.put(e.request, resClone);
-          });
-        }
-        return res;
-      }).catch(function(){
-        // offline e non in cache: per index.html torna comunque la pagina base
+    fetch(e.request).then(function(res){
+      if (res && res.status === 200 && res.type === 'basic') {
+        var resClone = res.clone();
+        caches.open(CACHE_NAME).then(function(cache){
+          cache.put(e.request, resClone);
+        });
+      }
+      return res;
+    }).catch(function(){
+      return caches.match(e.request).then(function(cached){
+        if (cached) return cached;
         if (e.request.mode === 'navigate') return caches.match('./index.html');
       });
     })
