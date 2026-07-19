@@ -262,6 +262,31 @@
     color:var(--dim);
   }
   .log-item .lc{ color:var(--text); font-weight:600; }
+
+  .backup-row{
+    display:flex;
+    gap:8px;
+    margin-top:16px;
+    padding-top:14px;
+    border-top:1px solid var(--line);
+    flex-shrink:0;
+  }
+  .backup-btn{
+    flex:1;
+    padding:11px 6px;
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--dim);
+    font-family:var(--mono);
+    font-size:10.5px;
+    letter-spacing:.04em;
+    border-radius:2px;
+    cursor:pointer;
+  }
+  .backup-btn:active{
+    border-color:var(--accent);
+    color:var(--accent);
+  }
 </style>
 </head>
 <body>
@@ -291,6 +316,11 @@
       <button class="modal-close" id="modalClose">✕</button>
     </div>
     <div class="log-list" id="logList"></div>
+    <div class="backup-row">
+      <button class="backup-btn" id="btnEsporta">↓ ESPORTA BACKUP</button>
+      <button class="backup-btn" id="btnImporta">↑ IMPORTA BACKUP</button>
+    </div>
+    <input type="file" id="fileImporta" accept="application/json" style="display:none;">
   </div>
 </div>
 
@@ -528,6 +558,85 @@
   });
   modalOverlay.addEventListener('click', function(e){
     if (e.target === modalOverlay) modalOverlay.classList.remove('open');
+  });
+
+  // ── Esporta backup ──
+  var btnEsporta = document.getElementById('btnEsporta');
+  btnEsporta.addEventListener('click', function(){
+    var recs = getRecords();
+    var payload = {
+      app: 'registro-gps-codici',
+      versione: 2,
+      esportatoIl: new Date().toISOString(),
+      punti: recs
+    };
+    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    var ts = new Date();
+    var dataStr = ts.getFullYear() + '-' + String(ts.getMonth()+1).padStart(2,'0') + '-' + String(ts.getDate()).padStart(2,'0');
+    a.href = url;
+    a.download = 'registro_gps_backup_' + dataStr + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  // ── Importa backup ──
+  var btnImporta = document.getElementById('btnImporta');
+  var fileImporta = document.getElementById('fileImporta');
+  btnImporta.addEventListener('click', function(){
+    fileImporta.value = '';
+    fileImporta.click();
+  });
+  fileImporta.addEventListener('change', function(){
+    var file = fileImporta.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e){
+      try {
+        var payload = JSON.parse(e.target.result);
+        var puntiImportati = Array.isArray(payload) ? payload : payload.punti;
+        if (!Array.isArray(puntiImportati)) throw new Error('formato non valido');
+
+        // Normalizza eventuale vecchio formato { codice, ts } -> { codici: [...] }
+        puntiImportati = puntiImportati.map(function(r){
+          if (r.codici) return r;
+          return { lat: r.lat, lon: r.lon, codici: [{ codice: r.codice, ts: r.ts }] };
+        });
+
+        var recsAttuali = getRecords();
+        var aggiunti = 0, uniti = 0;
+
+        puntiImportati.forEach(function(imp){
+          var esistente = recsAttuali.find(function(r){
+            return distanzaMetri(r.lat, r.lon, imp.lat, imp.lon) <= 1;
+          });
+          if (esistente){
+            var qualcheCodiceAggiunto = false;
+            imp.codici.forEach(function(c){
+              var giaPresente = esistente.codici.some(function(ec){ return ec.codice === c.codice; });
+              if (!giaPresente){
+                esistente.codici.push(c);
+                qualcheCodiceAggiunto = true;
+              }
+            });
+            if (qualcheCodiceAggiunto) uniti++;
+          } else {
+            recsAttuali.push(imp);
+            aggiunti++;
+          }
+        });
+
+        saveRecords(recsAttuali);
+        renderLog();
+        alert('Import completato.\nPunti nuovi: ' + aggiunti + '\nPunti uniti (codici aggiunti): ' + uniti);
+      } catch(err){
+        alert('File di backup non valido o corrotto.');
+      }
+    };
+    reader.readAsText(file);
   });
 
   renderLog();
