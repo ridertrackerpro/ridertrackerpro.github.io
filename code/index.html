@@ -125,6 +125,27 @@
   }
   .result.state-exists .code-big{ color:var(--warn); }
 
+  .code-chips{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-top:8px;
+  }
+  .code-chip{
+    display:inline-block;
+    padding:8px 14px;
+    background:var(--accent-dim);
+    color:var(--accent);
+    border-radius:2px;
+    font-size:18px;
+    font-weight:600;
+    letter-spacing:.06em;
+  }
+  .result.state-exists .code-chip{
+    background:#f3e6cf;
+    color:var(--warn);
+  }
+
   /* input codice inline */
   .code-entry{
     display:flex;
@@ -289,7 +310,16 @@
   function getRecords(){
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : [];
+      var recs = raw ? JSON.parse(raw) : [];
+      // Migrazione automatica dal vecchio formato { codice, ts } a { codici: [{codice, ts}] }
+      var migrato = false;
+      recs = recs.map(function(r){
+        if (r.codici) return r;
+        migrato = true;
+        return { lat: r.lat, lon: r.lon, codici: [{ codice: r.codice, ts: r.ts }] };
+      });
+      if (migrato) localStorage.setItem(STORAGE_KEY, JSON.stringify(recs));
+      return recs;
     } catch(e){ return []; }
   }
   function saveRecords(recs){
@@ -321,15 +351,19 @@
 
   function renderLog(){
     var recs = getRecords().slice().reverse();
-    logCount.innerText = recs.length;
+    var totCodici = recs.reduce(function(a, r){ return a + r.codici.length; }, 0);
+    logCount.innerText = totCodici;
     if (recs.length === 0){
       logList.innerHTML = '<div class="log-item"><span>Ancora nessun punto salvato</span></div>';
       return;
     }
     logList.innerHTML = recs.map(function(r){
-      var d = new Date(r.ts);
+      var codiciOrdinati = r.codici.slice().sort(function(a,b){ return a.ts - b.ts; });
+      var codiciStr = codiciOrdinati.map(function(c){ return c.codice; }).join(', ');
+      var ultimoTs = codiciOrdinati[codiciOrdinati.length-1].ts;
+      var d = new Date(ultimoTs);
       var dataStr = d.toLocaleDateString('it-IT') + ' ' + d.toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'});
-      return '<div class="log-item"><span class="lc">' + r.codice + '</span><span>' + dataStr + '</span></div>';
+      return '<div class="log-item"><span class="lc">' + codiciStr + '</span><span>' + dataStr + '</span></div>';
     }).join('');
   }
 
@@ -341,12 +375,60 @@
   }
 
   function mostraRisultatoEsistente(record){
+    var codiciOrdinati = record.codici.slice().sort(function(a,b){ return a.ts - b.ts; });
+    var listaHtml = codiciOrdinati.map(function(c){
+      return '<span class="code-chip">' + c.codice + '</span>';
+    }).join('');
+
     resultEl.className = 'result state-exists';
     resultEl.innerHTML =
       '<div class="status">Punto già registrato</div>' +
-      '<div class="msg">Questa posizione risulta già salvata con il codice</div>' +
-      '<div class="code-big">' + record.codice + '</div>';
+      '<div class="msg">Codici già salvati in questa posizione</div>' +
+      '<div class="code-chips">' + listaHtml + '</div>' +
+      '<div class="code-entry">' +
+        '<input type="text" inputmode="numeric" maxlength="2" id="codeInput" placeholder="00">' +
+        '<button id="btnSalvaCodice" disabled>AGGIUNGI</button>' +
+      '</div>' +
+      '<div class="hint">Aggiungi un altro codice a questa stessa posizione, se necessario.</div>';
     resultEl.style.display = 'block';
+
+    var input = document.getElementById('codeInput');
+    var btn = document.getElementById('btnSalvaCodice');
+
+    input.addEventListener('input', function(){
+      input.value = input.value.replace(/[^0-9]/g, '').slice(0,2);
+      btn.disabled = input.value.length !== 2;
+    });
+
+    btn.addEventListener('click', function(){
+      var codice = input.value;
+      if (codice.length !== 2) return;
+      var recs = getRecords();
+      var target = recs.find(function(r){ return r === record || (r.lat === record.lat && r.lon === record.lon); });
+      // Ricerca robusta per riferimento non affidabile dopo JSON round-trip: usa distanza
+      if (!target){
+        target = recs.find(function(r){ return distanzaMetri(r.lat, r.lon, record.lat, record.lon) <= 1; });
+      }
+      if (!target) return;
+
+      var giaPresente = target.codici.some(function(c){ return c.codice === codice; });
+      if (giaPresente){
+        input.value = '';
+        btn.disabled = true;
+        var hint = resultEl.querySelector('.hint');
+        if (hint) hint.innerText = 'Il codice ' + codice + ' è già presente in questa posizione.';
+        return;
+      }
+
+      target.codici.push({ codice: codice, ts: Date.now() });
+      saveRecords(recs);
+      renderLog();
+      mostraRisultatoEsistente(target);
+    });
+
+    input.addEventListener('keydown', function(e){
+      if (e.key === 'Enter' && !btn.disabled) btn.click();
+    });
   }
 
   function mostraRisultatoErrore(msg){
@@ -364,7 +446,7 @@
         '<input type="text" inputmode="numeric" maxlength="2" id="codeInput" placeholder="00">' +
         '<button id="btnSalvaCodice" disabled>SALVA</button>' +
       '</div>' +
-      '<div class="hint">Il raggio di riconoscimento è di ' + RADIUS_M + ' metri.</div>';
+      '<div class="hint">Il raggio di riconoscimento è di ' + RADIUS_M + ' metri. Potrai aggiungere altri codici a questa stessa posizione in seguito.</div>';
     resultEl.style.display = 'block';
 
     var input = document.getElementById('codeInput');
@@ -380,15 +462,11 @@
       var codice = input.value;
       if (codice.length !== 2) return;
       var recs = getRecords();
-      recs.push({ lat: lat, lon: lon, codice: codice, ts: Date.now() });
+      var nuovoRecord = { lat: lat, lon: lon, codici: [{ codice: codice, ts: Date.now() }] };
+      recs.push(nuovoRecord);
       saveRecords(recs);
       renderLog();
-
-      resultEl.className = 'result state-new';
-      resultEl.innerHTML =
-        '<div class="status">Salvato</div>' +
-        '<div class="msg">Punto registrato con il codice</div>' +
-        '<div class="code-big">' + codice + '</div>';
+      mostraRisultatoEsistente(nuovoRecord);
     });
 
     input.addEventListener('keydown', function(e){
