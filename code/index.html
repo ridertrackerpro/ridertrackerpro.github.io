@@ -127,9 +127,14 @@
 
   .code-chips{
     display:flex;
-    flex-wrap:wrap;
+    flex-direction:column;
     gap:8px;
     margin-top:8px;
+  }
+  .code-chip-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
   }
   .code-chip{
     display:inline-block;
@@ -140,10 +145,18 @@
     font-size:18px;
     font-weight:600;
     letter-spacing:.06em;
+    flex-shrink:0;
   }
   .result.state-exists .code-chip{
     background:#f3e6cf;
     color:var(--warn);
+  }
+  .code-nota{
+    font-size:12px;
+    color:var(--dim);
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
   }
 
   /* input codice inline */
@@ -182,6 +195,26 @@
   .code-entry button:disabled{
     opacity:.35;
     cursor:default;
+  }
+
+  .nota-input{
+    width:100%;
+    margin-top:8px;
+    padding:9px 10px;
+    background:var(--bg);
+    border:1px solid var(--line);
+    color:var(--text);
+    font-family:var(--mono);
+    font-size:12px;
+    border-radius:2px;
+    box-sizing:border-box;
+  }
+  .nota-input:focus{
+    outline:none;
+    border-color:var(--accent);
+  }
+  .nota-input::placeholder{
+    color:var(--dim);
   }
 
   .hint{
@@ -389,7 +422,9 @@
     }
     logList.innerHTML = recs.map(function(r){
       var codiciOrdinati = r.codici.slice().sort(function(a,b){ return a.ts - b.ts; });
-      var codiciStr = codiciOrdinati.map(function(c){ return c.codice; }).join(', ');
+      var codiciStr = codiciOrdinati.map(function(c){
+        return c.nota ? (c.codice + ' (' + escapeHtml(c.nota) + ')') : c.codice;
+      }).join(', ');
       var ultimoTs = codiciOrdinati[codiciOrdinati.length-1].ts;
       var d = new Date(ultimoTs);
       var dataStr = d.toLocaleDateString('it-IT') + ' ' + d.toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'});
@@ -407,7 +442,8 @@
   function mostraRisultatoEsistente(record){
     var codiciOrdinati = record.codici.slice().sort(function(a,b){ return a.ts - b.ts; });
     var listaHtml = codiciOrdinati.map(function(c){
-      return '<span class="code-chip">' + c.codice + '</span>';
+      var nota = c.nota ? '<span class="code-nota">' + escapeHtml(c.nota) + '</span>' : '';
+      return '<div class="code-chip-row"><span class="code-chip">' + c.codice + '</span>' + nota + '</div>';
     }).join('');
 
     resultEl.className = 'result state-exists';
@@ -419,11 +455,13 @@
         '<input type="text" inputmode="numeric" maxlength="2" id="codeInput" placeholder="00">' +
         '<button id="btnSalvaCodice" disabled>AGGIUNGI</button>' +
       '</div>' +
+      '<input type="text" id="notaInput" class="nota-input" placeholder="Nome, via, civico… (facoltativo)" maxlength="60">' +
       '<div class="hint">Aggiungi un altro codice a questa stessa posizione, se necessario.</div>';
     resultEl.style.display = 'block';
 
     var input = document.getElementById('codeInput');
     var btn = document.getElementById('btnSalvaCodice');
+    var notaInput = document.getElementById('notaInput');
 
     input.addEventListener('input', function(){
       input.value = input.value.replace(/[^0-9]/g, '').slice(0,2);
@@ -450,7 +488,10 @@
         return;
       }
 
-      target.codici.push({ codice: codice, ts: Date.now() });
+      var nota = notaInput.value.trim();
+      var nuovoCodice = { codice: codice, ts: Date.now() };
+      if (nota) nuovoCodice.nota = nota;
+      target.codici.push(nuovoCodice);
       saveRecords(recs);
       renderLog();
       mostraRisultatoEsistente(target);
@@ -459,6 +500,12 @@
     input.addEventListener('keydown', function(e){
       if (e.key === 'Enter' && !btn.disabled) btn.click();
     });
+  }
+
+  function escapeHtml(str){
+    var div = document.createElement('div');
+    div.innerText = str;
+    return div.innerHTML;
   }
 
   function mostraRisultatoErrore(msg){
@@ -476,11 +523,13 @@
         '<input type="text" inputmode="numeric" maxlength="2" id="codeInput" placeholder="00">' +
         '<button id="btnSalvaCodice" disabled>SALVA</button>' +
       '</div>' +
+      '<input type="text" id="notaInput" class="nota-input" placeholder="Nome, via, civico… (facoltativo)" maxlength="60">' +
       '<div class="hint">Il raggio di riconoscimento è di ' + RADIUS_M + ' metri. Potrai aggiungere altri codici a questa stessa posizione in seguito.</div>';
     resultEl.style.display = 'block';
 
     var input = document.getElementById('codeInput');
     var btn = document.getElementById('btnSalvaCodice');
+    var notaInput = document.getElementById('notaInput');
 
     input.addEventListener('input', function(){
       input.value = input.value.replace(/[^0-9]/g, '').slice(0,2);
@@ -491,8 +540,11 @@
     btn.addEventListener('click', function(){
       var codice = input.value;
       if (codice.length !== 2) return;
+      var nota = notaInput.value.trim();
+      var nuovoCodice = { codice: codice, ts: Date.now() };
+      if (nota) nuovoCodice.nota = nota;
       var recs = getRecords();
-      var nuovoRecord = { lat: lat, lon: lon, codici: [{ codice: codice, ts: Date.now() }] };
+      var nuovoRecord = { lat: lat, lon: lon, codici: [nuovoCodice] };
       recs.push(nuovoRecord);
       saveRecords(recs);
       renderLog();
