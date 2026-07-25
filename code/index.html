@@ -157,6 +157,12 @@
     overflow:hidden;
     text-overflow:ellipsis;
     white-space:nowrap;
+    flex:1;
+    min-width:0;
+  }
+  .code-chip-row .log-code-del{
+    margin-left:auto;
+    font-size:16px;
   }
 
   /* input codice inline */
@@ -221,6 +227,13 @@
     margin-top:6px;
     font-size:11px;
     color:var(--dim);
+  }
+  .hint-warn{
+    color:#c0392b;
+    font-weight:600;
+  }
+  .nota-input.required-warn{
+    border-color:#c0392b;
   }
 
   .log-toggle{
@@ -289,12 +302,60 @@
   .log-item{
     display:flex;
     justify-content:space-between;
+    align-items:flex-start;
+    gap:10px;
     font-size:11.5px;
-    padding:7px 0;
+    padding:9px 0;
     border-bottom:1px solid var(--line);
     color:var(--dim);
   }
   .log-item .lc{ color:var(--text); font-weight:600; }
+  .log-codes{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    flex:1;
+    min-width:0;
+  }
+  .log-code-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:4px 6px 4px 10px;
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:2px;
+    font-family:var(--mono);
+    color:var(--text);
+    font-weight:600;
+    font-size:12px;
+    white-space:nowrap;
+  }
+  .log-code-pill .nota{
+    color:var(--dim);
+    font-weight:400;
+    font-size:10.5px;
+    max-width:110px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .log-code-del{
+    background:none;
+    border:none;
+    color:var(--dim);
+    font-family:var(--mono);
+    font-size:14px;
+    line-height:1;
+    cursor:pointer;
+    padding:2px 3px;
+    flex-shrink:0;
+  }
+  .log-code-del:active{ color:#c0392b; }
+  .log-item-date{
+    flex-shrink:0;
+    padding-top:6px;
+    font-size:11px;
+  }
 
   .backup-row{
     display:flex;
@@ -422,14 +483,52 @@
     }
     logList.innerHTML = recs.map(function(r){
       var codiciOrdinati = r.codici.slice().sort(function(a,b){ return a.ts - b.ts; });
-      var codiciStr = codiciOrdinati.map(function(c){
-        return c.nota ? (c.codice + ' (' + escapeHtml(c.nota) + ')') : c.codice;
-      }).join(', ');
+      var pillsHtml = codiciOrdinati.map(function(c){
+        var nota = c.nota ? '<span class="nota">' + escapeHtml(c.nota) + '</span>' : '';
+        return '<span class="log-code-pill" data-lat="' + r.lat + '" data-lon="' + r.lon + '" data-codice="' + escapeHtml(c.codice) + '" data-ts="' + c.ts + '">' +
+          c.codice + nota +
+          '<button class="log-code-del" aria-label="Elimina codice">✕</button>' +
+        '</span>';
+      }).join('');
       var ultimoTs = codiciOrdinati[codiciOrdinati.length-1].ts;
       var d = new Date(ultimoTs);
       var dataStr = d.toLocaleDateString('it-IT') + ' ' + d.toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'});
-      return '<div class="log-item"><span class="lc">' + codiciStr + '</span><span>' + dataStr + '</span></div>';
+      return '<div class="log-item"><span class="log-codes">' + pillsHtml + '</span><span class="log-item-date">' + dataStr + '</span></div>';
     }).join('');
+
+    logList.querySelectorAll('.log-code-del').forEach(function(btn){
+      btn.addEventListener('click', function(e){
+        e.stopPropagation();
+        var pill = btn.closest('.log-code-pill');
+        eliminaCodice(parseFloat(pill.dataset.lat), parseFloat(pill.dataset.lon), pill.dataset.codice, parseFloat(pill.dataset.ts));
+      });
+    });
+  }
+
+  function eliminaCodice(lat, lon, codice, ts){
+    if (!confirm('Eliminare il codice ' + codice + '?')) return;
+    var recs = getRecords();
+    var target = recs.find(function(r){ return distanzaMetri(r.lat, r.lon, lat, lon) <= 1; });
+    if (!target) return;
+
+    target.codici = target.codici.filter(function(c){
+      return !(c.codice === codice && c.ts === ts);
+    });
+
+    // Se il punto resta senza codici, rimuovi l'intero punto GPS
+    if (target.codici.length === 0){
+      recs = recs.filter(function(r){ return r !== target; });
+    }
+
+    saveRecords(recs);
+    renderLog();
+
+    // Se il risultato in primo piano mostra questo stesso punto, aggiornalo o nascondilo
+    if (resultEl.style.display === 'block' && resultEl.className.indexOf('state-exists') !== -1){
+      var ancoraEsiste = recs.find(function(r){ return distanzaMetri(r.lat, r.lon, lat, lon) <= 1; });
+      if (ancoraEsiste) mostraRisultatoEsistente(ancoraEsiste);
+      else resultEl.style.display = 'none';
+    }
   }
 
   function mostraCoord(lat, lon, precisione){
@@ -443,7 +542,10 @@
     var codiciOrdinati = record.codici.slice().sort(function(a,b){ return a.ts - b.ts; });
     var listaHtml = codiciOrdinati.map(function(c){
       var nota = c.nota ? '<span class="code-nota">' + escapeHtml(c.nota) + '</span>' : '';
-      return '<div class="code-chip-row"><span class="code-chip">' + c.codice + '</span>' + nota + '</div>';
+      return '<div class="code-chip-row" data-lat="' + record.lat + '" data-lon="' + record.lon + '" data-codice="' + escapeHtml(c.codice) + '" data-ts="' + c.ts + '">' +
+        '<span class="code-chip">' + c.codice + '</span>' + nota +
+        '<button class="log-code-del" aria-label="Elimina codice">✕</button>' +
+      '</div>';
     }).join('');
 
     resultEl.className = 'result state-exists';
@@ -459,14 +561,49 @@
       '<div class="hint">Aggiungi un altro codice a questa stessa posizione, se necessario.</div>';
     resultEl.style.display = 'block';
 
+    resultEl.querySelectorAll('.log-code-del').forEach(function(btnDel){
+      btnDel.addEventListener('click', function(e){
+        e.stopPropagation();
+        var row = btnDel.closest('.code-chip-row');
+        eliminaCodice(parseFloat(row.dataset.lat), parseFloat(row.dataset.lon), row.dataset.codice, parseFloat(row.dataset.ts));
+      });
+    });
+
     var input = document.getElementById('codeInput');
     var btn = document.getElementById('btnSalvaCodice');
     var notaInput = document.getElementById('notaInput');
+    var hint = resultEl.querySelector('.hint');
+    var hintDefault = hint ? hint.innerText : '';
+
+    function aggiornaStatoInput(){
+      var codice = input.value;
+      var duplicato = codice.length === 2 && target0().codici.some(function(c){ return c.codice === codice; });
+      if (duplicato){
+        notaInput.classList.add('required-warn');
+        if (hint){
+          hint.innerText = 'Il codice ' + codice + ' è già presente in questa posizione. Inserisci una nota per differenziarlo.';
+          hint.classList.add('hint-warn');
+        }
+        btn.disabled = codice.length !== 2 || notaInput.value.trim() === '';
+      } else {
+        notaInput.classList.remove('required-warn');
+        if (hint){ hint.innerText = hintDefault; hint.classList.remove('hint-warn'); }
+        btn.disabled = codice.length !== 2;
+      }
+    }
+
+    function target0(){
+      var recs = getRecords();
+      var t = recs.find(function(r){ return r === record || (r.lat === record.lat && r.lon === record.lon); });
+      if (!t) t = recs.find(function(r){ return distanzaMetri(r.lat, r.lon, record.lat, record.lon) <= 1; });
+      return t || { codici: [] };
+    }
 
     input.addEventListener('input', function(){
       input.value = input.value.replace(/[^0-9]/g, '').slice(0,2);
-      btn.disabled = input.value.length !== 2;
+      aggiornaStatoInput();
     });
+    notaInput.addEventListener('input', aggiornaStatoInput);
 
     btn.addEventListener('click', function(){
       var codice = input.value;
@@ -479,16 +616,13 @@
       }
       if (!target) return;
 
+      var nota = notaInput.value.trim();
       var giaPresente = target.codici.some(function(c){ return c.codice === codice; });
-      if (giaPresente){
-        input.value = '';
-        btn.disabled = true;
-        var hint = resultEl.querySelector('.hint');
-        if (hint) hint.innerText = 'Il codice ' + codice + ' è già presente in questa posizione.';
+      if (giaPresente && !nota){
+        aggiornaStatoInput();
         return;
       }
 
-      var nota = notaInput.value.trim();
       var nuovoCodice = { codice: codice, ts: Date.now() };
       if (nota) nuovoCodice.nota = nota;
       target.codici.push(nuovoCodice);
