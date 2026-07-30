@@ -3176,6 +3176,12 @@ function generaHtmlItem(i, mediaOraMese) {
             miscelaExtra = ` | ${(i.percMiscela).toFixed(1)}% → ${fromKg(kgOlio).toFixed(2)}${massUnit} ${t('oil_label')}`;
         }
 
+        var _consTraRif = getConsumoTraRifornimenti(i);
+        var _consTraRifHtml = '';
+        if (_consTraRif) {
+            _consTraRifHtml = ' • ' + formatConsumption(_consTraRif.km, _consTraRif.litri) + ' ' + iconaC;
+        }
+
         html += `<div class="tipo-label" style="color:var(--orange);">
             <i class="fas fa-gas-pump"></i> ${iconaC} ${getNomeCarburante(i.tipo_fuel).toUpperCase()}
         </div>
@@ -3184,7 +3190,7 @@ function generaHtmlItem(i, mediaOraMese) {
         </div>
         <div class="storico-main">${currencySymbol()}${fromEuro(i.euro).toFixed(2)}</div>
         <div class="storico-sub">
-    ${qtaDisplay} ${unitaDisplay} • ${currencySymbol()}${fromEuro(i.prezzo).toFixed(2)}/${unitaDisplay}${miscelaExtra}
+    ${qtaDisplay} ${unitaDisplay} • ${currencySymbol()}${fromEuro(i.prezzo).toFixed(2)}/${unitaDisplay}${miscelaExtra}${_consTraRifHtml}
 </div>`;
     } else if (i.tipo === 'E') {
         html += `<div class="tipo-label" style="color:var(--accent);">
@@ -7049,6 +7055,25 @@ function _syncVeicoloAttivo() {
 }
 
 // Calcola consumo medio reale del veicolo da storico rifornimenti con km odometro
+// Calcola il consumo (L/100km) tra un rifornimento e il precedente dello stesso veicolo,
+// basandosi sui km dell'odometro. Ritorna null se manca il precedente o i km.
+function getConsumoTraRifornimenti(rifornimento) {
+    if (!rifornimento || !rifornimento.km || !rifornimento.litri) return null;
+    var stessoVeicolo = db.rifornimenti.filter(function(r){
+        return r.veicoloId === rifornimento.veicoloId && r.km > 0;
+    }).sort(function(a, b){ return a.km - b.km; });
+
+    var idx = stessoVeicolo.findIndex(function(r){ return r.id === rifornimento.id; });
+    if (idx <= 0) return null; // non trovato, o è il primo rifornimento (nessun precedente)
+
+    var precedente = stessoVeicolo[idx - 1];
+    var kmPercorsi = rifornimento.km - precedente.km;
+    if (kmPercorsi <= 0) return null;
+
+    var litriPerL100 = (rifornimento.litri / kmPercorsi) * 100;
+    return { l100km: litriPerL100, km: kmPercorsi, litri: rifornimento.litri };
+}
+
 function getConsMedioRealeVeicolo(veicoloId) {
     // Media consumo calcolata automaticamente SOLO sul mese corrente.
     // Ogni mese riparte da zero senza bisogno di reset manuale: così il report
@@ -8736,6 +8761,10 @@ function apriDettaglioStorico(categoria, id) {
         rows.push(['Prezzo/L', sym + fromEuro(item.prezzo).toFixed(3)]);
         if (item.litri) rows.push(['Litri', item.litri.toFixed(2) + ' L']);
         if (item.km) rows.push(['KM odometro', item.km]);
+        var _consTraRifDet = getConsumoTraRifornimenti(item);
+        if (_consTraRifDet) {
+            rows.push(['Consumo dal rif. precedente', formatConsumption(_consTraRifDet.km, _consTraRifDet.litri) + ' su ' + _consTraRifDet.km.toFixed(0) + ' km']);
+        }
     } else if (categoria === 'extraKm') {
         title = '🔧 Spesa Extra — ' + item.data;
         rows.push(['Importo', sym + fromEuro(item.importo).toFixed(2)]);
