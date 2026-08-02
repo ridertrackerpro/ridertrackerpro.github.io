@@ -7098,7 +7098,14 @@ function getConsMedioRealeVeicolo(veicoloId) {
         }
         if (totKm > 0 && totLitri > 0) return (totLitri / totKm) * 100;
     }
-    // Fallback 1: media ponderata consumi turni del mese corrente
+    // Fallback 1: un solo rifornimento nel mese corrente -> usa il dato reale misurato
+    // tra questo rifornimento e il precedente (anche se a cavallo con il mese scorso),
+    // più preciso della media dei turni perché basato su litri/km effettivi del pieno.
+    if (rifs.length === 1) {
+        var _cTra = getConsumoTraRifornimenti(rifs[0]);
+        if (_cTra) return _cTra.l100km;
+    }
+    // Fallback 2: media ponderata consumi turni del mese corrente
     var turniV = db.turni.filter(function(t) {
         return t.veicoloId === veicoloId && t.km > 0 && t.cons > 0 && _delMeseCorrente(t.data);
     });
@@ -7107,7 +7114,7 @@ function getConsMedioRealeVeicolo(veicoloId) {
         var totCons = turniV.reduce(function(a,t){ return a + (t.km * t.cons / 100); }, 0);
         if (totKm2 > 0) return totCons / totKm2 * 100;
     }
-    // Fallback 2: consMedio dalle impostazioni veicolo
+    // Fallback 3: consMedio dalle impostazioni veicolo
     var vObj = (typeof getVeicoli === 'function' ? getVeicoli() : []).find(function(v){ return v.id === veicoloId; });
     if (vObj && vObj.consMedio && vObj.consMedio > 0) return vObj.consMedio;
     return null;
