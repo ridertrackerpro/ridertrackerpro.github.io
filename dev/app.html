@@ -885,27 +885,33 @@ body {
             </div>
         </div>
 
-        <!-- ── KM TOTALI + CONSUMI (nascosti per noCons) ── -->
-        <div style="display:flex; gap:8px; margin-bottom:2px;" id="rowKmConsLabels">
-            <div style="flex:1; min-width:0; text-align:center; font-size:9px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.8px;" id="lblTK">KM PERCORSI</div>
-            <div style="flex:1; min-width:0; text-align:center; font-size:9px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.8px;" id="lblTC">CONSUMO</div>
+        <!-- ── KM PERCORSI + CONSUMO + ORE LAVORATE (stessa riga) ── -->
+        <div style="display:flex; gap:8px; margin-bottom:2px;">
+            <div style="display:flex; gap:8px; flex:1; min-width:0;" id="rowKmConsLabels">
+                <div style="flex:1; min-width:0; text-align:center; font-size:9px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.8px;" id="lblTK">KM PERCORSI</div>
+                <div style="flex:1; min-width:0; text-align:center; font-size:9px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.8px;" id="lblTC">CONSUMO</div>
+            </div>
+            <div style="flex:0 0 70px; text-align:center; font-size:9px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.8px;" id="lblTOre">ORE LAV.</div>
         </div>
-        <div style="display:flex; gap:8px; margin-bottom:6px; margin-top:0;" id="rowKmCons">
-            <input type="number" id="tK" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" data-translate-placeholder="ph_km_short" inputmode="decimal" autocomplete="off">
-            <input type="number" id="tC" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" data-translate-placeholder="ph_cons_short" step="0.1" inputmode="decimal" autocomplete="off">
+        <div style="display:flex; gap:8px; margin-bottom:6px; margin-top:0;">
+            <div style="display:flex; gap:8px; flex:1; min-width:0;" id="rowKmCons">
+                <input type="number" id="tK" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" inputmode="decimal" autocomplete="off">
+                <input type="number" id="tC" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" data-translate-placeholder="ph_cons_short" step="0.1" inputmode="decimal" autocomplete="off">
+            </div>
+            <input type="number" id="tO" style="text-align:center; padding:11px 8px; flex:0 0 70px; min-width:0; margin-bottom:0;" placeholder="0" step="0.1" inputmode="decimal" autocomplete="off">
         </div>
         <div id="consHint" style="font-size:10px; color:var(--primary); margin:0 0 6px 2px; min-height:0; font-style:italic; line-height:1.2;"></div>
 
-        <!-- ── ORE LAVORATE + LORDO + CONTANTI affiancati ── -->
+        <!-- ── LORDO + CONTANTI + MANCE (stessa riga) ── -->
         <div id="rowOreLbls" style="display:flex; gap:8px; margin-bottom:2px; padding-top:8px;">
-            <div style="flex:0 0 70px; text-align:center; font-size:9px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.8px;">ORE LAV.</div>
             <div style="flex:1; min-width:0; text-align:center; font-size:9px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.8px;" id="lblTL">LORDO (€)</div>
             <div style="flex:1; min-width:0; text-align:center; font-size:9px; font-weight:900; color:#aaa; text-transform:uppercase; letter-spacing:0.8px;">CONTANTI (€)</div>
+            <div style="flex:1; min-width:0; text-align:center; font-size:9px; font-weight:900; color:#aaa; text-transform:uppercase; letter-spacing:0.8px;">MANCE (€)</div>
         </div>
         <div id="rowOre" style="display:flex; gap:8px; margin-bottom:6px; margin-top:0; padding-top:0;">
-            <input type="number" id="tO" style="text-align:center; padding:11px 8px; flex:0 0 70px; min-width:0; margin-bottom:0;" placeholder="0" step="0.1" inputmode="decimal" autocomplete="off">
-            <input type="number" id="tL" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" data-translate-placeholder="ph_lordo_short" inputmode="decimal" autocomplete="off" oninput="aggiornaAnteprimaContanti()">
+            <input type="number" id="tL" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" inputmode="decimal" autocomplete="off" oninput="aggiornaAnteprimaContanti()">
             <input type="number" id="tContanti" placeholder="0.00" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" step="0.01" inputmode="decimal" autocomplete="off" oninput="aggiornaAnteprimaContanti()">
+            <input type="number" id="tMance" placeholder="0.00" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" step="0.01" inputmode="decimal" autocomplete="off" oninput="aggiornaAnteprimaContanti()">
         </div>
         <div id="contantiHint" style="font-size:10px; color:#aaa; margin:0 0 6px 2px; min-height:12px; font-style:italic; line-height:1.2;"></div>
 
@@ -1142,9 +1148,13 @@ body {
             <div id="riepPauseRow" style="display:none; padding:4px 0; border-bottom:1px solid #2a2a2a;">
                 <span style="font-size:10px; color:#888; font-style:italic;" id="riepPauseTesto"></span>
             </div>
-            <div style="display:flex; justify-content:space-between; padding:6px 0;">
+            <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #2a2a2a;">
                 <span style="font-size:12px; color:#aaa;">Contanti rilevati</span>
                 <span id="riepContantiRilevati" style="font-size:14px; font-weight:700; color:var(--primary);">€0.00</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding:6px 0;">
+                <span style="font-size:12px; color:#aaa;">Mance rilevate</span>
+                <span id="riepManceRilevate" style="font-size:14px; font-weight:700; color:var(--primary);">€0.00</span>
             </div>
         </div>
         <p style="font-size:11px; color:#888; margin-bottom:12px; text-align:center;">Controlla i dati prima di confermare. Potrai comunque modificarli a mano nel turno.</p>
@@ -1190,6 +1200,43 @@ body {
         </div>
         <button class="btn-modal btn-save" onclick="salvaExtraKm()" data-translate="save" style="padding:14px; margin-top:4px;">SALVA</button>
         <button class="btn-modal btn-close" onclick="chiudiModali()" data-translate="cancel" style="padding:14px; margin-top:8px;">ANNULLA</button>
+    </div>
+</div>
+
+<!-- ── MODAL RICHIESTA INDENNITÀ/INTEGRAZIONI DELIVEROO A FINE MESE ── -->
+<div id="modalChiediExtraDeliveroo" class="modal no-print" style="z-index:10006;">
+    <div class="modal-content" style="border-color:var(--primary); text-align:center;">
+        <div style="font-size:36px; margin-bottom:10px;">🧾</div>
+        <h3 style="color:var(--primary); font-size:15px; margin-bottom:10px;">Indennità Deliveroo</h3>
+        <p style="font-size:12px; color:#aaa; margin-bottom:16px; line-height:1.4;">Vuoi inserire le indennità e integrazioni che Deliveroo ha aggiunto questo mese (maltempo, sali minerali, notturni, festivi, acqua, conguagli)? Le trovi nel prospetto Deliveroo alla voce "Modifiche e integrazioni".</p>
+        <div style="display:flex; gap:8px;">
+            <button style="flex:1; padding:12px; border-radius:12px; border:none; font-weight:bold; font-size:12px; background:#333; color:#fff; cursor:pointer;" onclick="rifiutaExtraDeliverooMese()">NO, GRAZIE</button>
+            <button style="flex:1; padding:12px; border-radius:12px; border:none; font-weight:bold; font-size:12px; background:var(--primary); color:#000; cursor:pointer;" onclick="apriModalExtraDeliveroo()">SÌ, AGGIUNGI</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── MODAL INSERIMENTO VOCI INDENNITÀ DELIVEROO ── -->
+<div id="modalExtraDeliveroo" class="modal no-print" style="z-index:10006;">
+    <div class="modal-content" style="border-color:var(--primary);">
+        <h3 style="color:var(--primary); font-size:15px; margin-bottom:6px; text-align:center;">🧾 Indennità e integrazioni Deliveroo</h3>
+        <p style="font-size:11px; color:#888; margin-bottom:12px; text-align:center;">Aggiungi una voce per ogni riga del prospetto Deliveroo (es. "Indennità Maltempo" — €1.27).</p>
+
+        <div id="listaExtraDeliverooMese" style="margin-bottom:12px;"></div>
+
+        <div style="display:flex; gap:8px; margin-bottom:10px;">
+            <input type="text" id="extraDeliverooDescInput" placeholder="Descrizione (es. Indennità Maltempo)" style="flex:1.3; text-align:center; margin-bottom:0;" autocomplete="off">
+            <input type="number" id="extraDeliverooImportoInput" placeholder="0.00" step="0.01" inputmode="decimal" style="flex:0.7; text-align:center; margin-bottom:0;" autocomplete="off">
+        </div>
+        <button class="btn-modal" style="background:#333; color:#fff; padding:12px; margin-bottom:14px;" onclick="aggiungiVoceExtraDeliveroo()">+ AGGIUNGI VOCE</button>
+
+        <div style="display:flex; justify-content:space-between; padding:8px 0; border-top:1px solid #2a2a2a; margin-bottom:14px;">
+            <span style="font-size:12px; color:#aaa; font-weight:700;">TOTALE MESE</span>
+            <span id="totaleExtraDeliverooMese" style="font-size:14px; font-weight:700; color:var(--primary);">€0.00</span>
+        </div>
+
+        <button class="btn-modal btn-save" onclick="salvaExtraDeliverooMese()" data-translate="save" style="padding:14px; margin-top:4px;">SALVA</button>
+        <button class="btn-modal btn-close" onclick="chiudiModaleExtraDeliveroo()" data-translate="cancel" style="padding:14px; margin-top:8px;">CHIUDI</button>
     </div>
 </div>
 <div id="modalInizio" class="modal no-print">
@@ -1351,6 +1398,7 @@ body {
 <th></th>
 <th data-translate="col_date">DATA</th>
 <th data-translate="col_gross">LORDO</th>
+<th id="thMance">MANCE</th>
 <th data-translate="col_net">NETTO</th>
 <th data-translate="col_hours">ORE</th>
 <th id="thDistanzaTurni">KM</th>
@@ -1448,19 +1496,24 @@ body {
 
 <hr>
 
-<div class="summary-row">
-<span>LORDO REALE (senza contanti scalati):</span>
-<span id="repLordoReale">0.00</span>
-</div>
-
-<div class="summary-row" id="rigaContantiRep" style="display:none;">
-<span>CONTANTI SCALATI DAI TURNI:</span>
-<span id="repContantiTot">0.00</span>
-</div>
-
 <div class="summary-row" style="font-weight:700; font-size:15px;">
 <span data-translate="total_gross">LORDO TOTALE:</span>
 <span id="repLordo">0.00</span>
+</div>
+
+<div class="summary-row" id="rigaManceRep" style="display:none;">
+<span>MANCE:</span>
+<span id="repManceTot">0.00</span>
+</div>
+
+<div class="summary-row" id="rigaExtraDeliverooRep" style="display:none;">
+<span>INDENNITÀ/INTEGRAZIONI DELIVEROO:</span>
+<span id="repExtraDeliverooTot">0.00</span>
+</div>
+
+<div class="summary-row" id="rigaContantiRep" style="display:none;">
+<span>CONTANTI GIÀ INCASSATI:</span>
+<span id="repContantiTot">0.00</span>
 </div>
 
 <div class="summary-row">
@@ -2231,9 +2284,13 @@ let db = JSON.parse(localStorage.getItem('rider_db_final_v34')) || {
     rifornimenti: [],
     riportoNegativo: {}, 
     extraKm: [], 
+    extraDeliveroo: [],
+    mesiExtraDeliverooChiesti: {},
     targets: {}, 
     tax: null 
 };
+if (!db.extraDeliveroo) db.extraDeliveroo = [];
+if (!db.mesiExtraDeliverooChiesti) db.mesiExtraDeliverooChiesti = {};
 let userSettings = JSON.parse(localStorage.getItem('user_settings')) || {
     distance: 'km',
     volume: 'liters',
@@ -3295,10 +3352,100 @@ function apriMulti(tipo) {
     document.getElementById('multiBody').innerHTML = html;
     document.getElementById('modalMulti').style.display = 'flex';
 }
+// ══════════════════════════════════════════
+// INDENNITÀ / INTEGRAZIONI DELIVEROO (fine mese)
+// ══════════════════════════════════════════
+var _tagExtraDeliverooCorrente = null;
+
+function _chiediExtraDeliverooSeNecessario(tag) {
+    if (!tag) return;
+    if (db.mesiExtraDeliverooChiesti && db.mesiExtraDeliverooChiesti[tag]) return;
+    _tagExtraDeliverooCorrente = tag;
+    var m = document.getElementById('modalChiediExtraDeliveroo');
+    if (m) m.style.display = 'flex';
+}
+
+function rifiutaExtraDeliverooMese() {
+    if (_tagExtraDeliverooCorrente) {
+        db.mesiExtraDeliverooChiesti[_tagExtraDeliverooCorrente] = true;
+        localStorage.setItem('rider_db_final_v34', JSON.stringify(db));
+    }
+    var m = document.getElementById('modalChiediExtraDeliveroo');
+    if (m) m.style.display = 'none';
+}
+
+function apriModalExtraDeliveroo() {
+    var m1 = document.getElementById('modalChiediExtraDeliveroo');
+    if (m1) m1.style.display = 'none';
+    document.getElementById('extraDeliverooDescInput').value = '';
+    document.getElementById('extraDeliverooImportoInput').value = '';
+    _renderListaExtraDeliverooMese();
+    var m2 = document.getElementById('modalExtraDeliveroo');
+    if (m2) m2.style.display = 'flex';
+}
+
+function _renderListaExtraDeliverooMese() {
+    var tag = _tagExtraDeliverooCorrente;
+    var lista = document.getElementById('listaExtraDeliverooMese');
+    var totEl = document.getElementById('totaleExtraDeliverooMese');
+    if (!lista || !tag) return;
+    var voci = (db.extraDeliveroo || []).filter(function(e){ return e.data.endsWith(tag); });
+    var sym = currencySymbol();
+    var tot = 0;
+    var html = '';
+    voci.forEach(function(v){
+        tot += (v.importo || 0);
+        html += '<div style="display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid #2a2a2a;">' +
+            '<span style="font-size:12px; color:#fff;">' + (v.desc || 'Voce') + '</span>' +
+            '<span style="display:flex; align-items:center; gap:8px;">' +
+            '<span style="font-size:12px; color:var(--primary); font-weight:700;">+' + sym + fromEuro(v.importo).toFixed(2) + '</span>' +
+            '<i class="fas fa-trash" style="color:#c0392b; font-size:12px; cursor:pointer;" onclick="rimuoviVoceExtraDeliveroo(' + v.id + ')"></i>' +
+            '</span></div>';
+    });
+    lista.innerHTML = html || '<p style="font-size:11px; color:#666; text-align:center; padding:8px 0;">Nessuna voce inserita.</p>';
+    if (totEl) totEl.innerText = '€' + fromEuro(tot).toFixed(2);
+}
+
+function aggiungiVoceExtraDeliveroo() {
+    var tag = _tagExtraDeliverooCorrente;
+    if (!tag) return;
+    var importo = parseFloat(document.getElementById('extraDeliverooImportoInput').value) || 0;
+    var desc = (document.getElementById('extraDeliverooDescInput').value || '').trim();
+    if (importo <= 0) { mostraAlertApp('Inserisci un importo valido.'); return; }
+    if (!desc) desc = 'Indennità Deliveroo';
+    var giorno = '01/' + tag; // voce mensile, non legata a un giorno specifico
+    db.extraDeliveroo.push({ id: Date.now(), data: giorno, importo: toEuro(importo), desc: desc });
+    localStorage.setItem('rider_db_final_v34', JSON.stringify(db));
+    document.getElementById('extraDeliverooDescInput').value = '';
+    document.getElementById('extraDeliverooImportoInput').value = '';
+    _renderListaExtraDeliverooMese();
+}
+
+function rimuoviVoceExtraDeliveroo(id) {
+    db.extraDeliveroo = (db.extraDeliveroo || []).filter(function(e){ return e.id !== id; });
+    localStorage.setItem('rider_db_final_v34', JSON.stringify(db));
+    _renderListaExtraDeliverooMese();
+}
+
+function salvaExtraDeliverooMese() {
+    if (_tagExtraDeliverooCorrente) {
+        db.mesiExtraDeliverooChiesti[_tagExtraDeliverooCorrente] = true;
+        localStorage.setItem('rider_db_final_v34', JSON.stringify(db));
+    }
+    chiudiModaleExtraDeliveroo();
+    apriReport(reportMeseKey || null);
+}
+
+function chiudiModaleExtraDeliveroo() {
+    var m = document.getElementById('modalExtraDeliveroo');
+    if (m) m.style.display = 'none';
+}
+
 function apriReport(meseKey) {
     reportMeseKey = meseKey;
     aggiornaArchivioBar();
     const tag = meseKey || `${(new Date().getMonth()+1).toString().padStart(2,'0')}/${new Date().getFullYear()}`;
+    _chiediExtraDeliverooSeNecessario(tag);
     
     aggiornaLabelKmReport();
     document.getElementById('reportMeseLabel').innerText = getNomeMese(tag);
@@ -3310,6 +3457,7 @@ function apriReport(meseKey) {
     let lordoTot = 0;
     let lordoLordoTot = 0;
     let contantiTot = 0;
+    let manceTot = 0;
     let spesaBTot = 0;
     let tassazioneTot = 0;
     let tK = 0;
@@ -3326,14 +3474,16 @@ function apriReport(meseKey) {
         const iconaC = getIconaCarburante(t.tipoCarburante);
         const nomeC = getNomeCarburante(t.tipoCarburante);
 
-        const netto = t.lordo - (t.lordo * (getTaxPerc(t) / 100)) - costoB;
+        const impPerTurno = t.lordo + (t.mance || 0);
+        const netto = impPerTurno - (t.contanti || 0) - (impPerTurno * (getTaxPerc(t) / 100)) - costoB;
 
         if (!t.soloViaggio) {
             lordoTot += t.lordo;
             lordoLordoTot += (t.lordoLordo !== undefined ? t.lordoLordo : t.lordo);
             contantiTot += (t.contanti || 0);
+            manceTot += (t.mance || 0);
             spesaBTot += costoB;
-            tassazioneTot += (t.lordo * (getTaxPerc(t) / 100));
+            tassazioneTot += (impPerTurno * (getTaxPerc(t) / 100));
             tK += t.km;
             tO += t.ore;
         }
@@ -3361,6 +3511,7 @@ function apriReport(meseKey) {
                 <td>—</td>
                 <td>—</td>
                 <td>—</td>
+                <td>—</td>
                 <td>${fromKm(t.km).toFixed(2)} ${userSettings.distance === 'miles' ? 'mi' : 'km'}</td>
                 <td>${isNoCons ? '—' : consL100kmToDisplayValue(t.cons)}</td>
                 <td class="tipo-abbrev-mi">${isNoCons ? '—' : iconaC}</td>
@@ -3371,6 +3522,7 @@ function apriReport(meseKey) {
                 <td style="text-align:center;font-size:14px;">${(function(){ var _rv=getVeicoli().find(function(v){return v.id===t.veicoloId;}); return _getMezzoIcona(_rv?_rv.tipo:t.mezzo); })()}</td>
                 <td>${t.data}${t.contanti ? '<br><span style="font-size:9px;color:#aaa;white-space:nowrap;">− '+currencySymbol()+fromEuro(t.contanti).toFixed(2)+' cont.</span>' : ''}</td>
                 <td>${currencySymbol()}${fromEuro(t.lordo).toFixed(2)}</td>
+                <td>${t.mance ? currencySymbol()+fromEuro(t.mance).toFixed(2) : '—'}</td>
                 <td>${currencySymbol()}${fromEuro(netto).toFixed(2)}</td>
                 <td>${t.ore.toFixed(1)}</td>
                 <td>${fromKm(t.km).toFixed(2)} ${userSettings.distance === 'miles' ? 'mi' : 'km'}</td>
@@ -3381,7 +3533,7 @@ function apriReport(meseKey) {
         }
     });
 
-    document.getElementById('repTurniBody').innerHTML = htmlTurni || '<tr><td colspan="9">—</td></tr>';
+    document.getElementById('repTurniBody').innerHTML = htmlTurni || '<tr><td colspan="10">—</td></tr>';
 
     let htmlBenza = '';
     rifMese.forEach(r => {
@@ -3439,7 +3591,9 @@ periodi.forEach(p => {
 
     const riportoRep = (db.riportoNegativo && db.riportoNegativo[tag]) ? db.riportoNegativo[tag] : 0;
     const spesaBTotReale = rifMese.reduce((a,b) => a+b.euro, 0);
-    const nettoTot = lordoTot - tassazioneTot - spesaBTotReale - spesaExtraRep - riportoRep;
+    const extraDeliverooMese = (db.extraDeliveroo || []).filter(e => e.data.endsWith(tag));
+    const extraDeliverooTot = extraDeliverooMese.reduce((a,b) => a + (b.importo || 0), 0);
+    const nettoTot = lordoTot + manceTot + extraDeliverooTot - contantiTot - tassazioneTot - spesaBTotReale - spesaExtraRep - riportoRep;
 
     document.getElementById('repLordo').innerText =
     currencySymbol() + roundCurrency(safeNumber(fromEuro(lordoTot)));
@@ -3455,6 +3609,22 @@ if (repContantiTot) {
 const rigaContantiRep = document.getElementById('rigaContantiRep');
 if (rigaContantiRep) {
     rigaContantiRep.style.display = contantiTot > 0 ? '' : 'none';
+}
+const repManceTot = document.getElementById('repManceTot');
+if (repManceTot) {
+    repManceTot.innerText = '+' + currencySymbol() + roundCurrency(safeNumber(fromEuro(manceTot)));
+}
+const rigaManceRep = document.getElementById('rigaManceRep');
+if (rigaManceRep) {
+    rigaManceRep.style.display = manceTot > 0 ? '' : 'none';
+}
+const repExtraDeliverooTot = document.getElementById('repExtraDeliverooTot');
+if (repExtraDeliverooTot) {
+    repExtraDeliverooTot.innerText = '+' + currencySymbol() + roundCurrency(safeNumber(fromEuro(extraDeliverooTot)));
+}
+const rigaExtraDeliverooRep = document.getElementById('rigaExtraDeliverooRep');
+if (rigaExtraDeliverooRep) {
+    rigaExtraDeliverooRep.style.display = extraDeliverooTot > 0 ? '' : 'none';
 }
 
 document.getElementById('repSpesaB').innerText =
@@ -3479,8 +3649,8 @@ const elRepExtraTot = document.getElementById('repExtraTot');
 if (elRepExtraTot) elRepExtraTot.innerText = '-' + currencySymbol() + roundCurrency(safeNumber(fromEuro(spesaExtraRep)));
 
 const elRowRepRiporto = document.getElementById('rowRepRiporto');
-// Subtotale = lordo - tasse - carburante - extra (senza riporto)
-var subtotale = lordoTot - tassazioneTot - spesaBTotReale - spesaExtraRep;
+// Subtotale = lordo + mance + indennità Deliveroo - contanti - tasse - carburante - extra (senza riporto)
+var subtotale = lordoTot + manceTot + extraDeliverooTot - contantiTot - tassazioneTot - spesaBTotReale - spesaExtraRep;
 var elSubtotale = document.getElementById('repSubtotale');
 if (elSubtotale) {
     var subSign = subtotale >= 0 ? '' : '-';
@@ -3933,14 +4103,12 @@ function toggleSoloViaggio() {
     var tO = document.getElementById('tO');
     var tL = document.getElementById('tL');
     var lblTL = document.getElementById('lblTL');
-    var rowOreLbls = document.getElementById('rowOreLbls');
+    var lblOre = document.getElementById('lblTOre');
     if (_soloViaggio) {
         if (toggle) toggle.style.background = 'var(--primary)';
         if (knob) knob.style.left = '18px';
         if (tO) { tO.style.visibility = 'hidden'; tO.value = ''; }
         if (tL) { tL.style.visibility = 'hidden'; tL.value = ''; }
-        // Aggiorna label ore
-        var lblOre = rowOreLbls ? rowOreLbls.children[0] : null;
         if (lblOre) lblOre.style.visibility = 'hidden';
         if (lblTL) lblTL.style.visibility = 'hidden';
     } else {
@@ -3948,7 +4116,6 @@ function toggleSoloViaggio() {
         if (knob) knob.style.left = '2px';
         if (tO) tO.style.visibility = '';
         if (tL) tL.style.visibility = '';
-        var lblOre = rowOreLbls ? rowOreLbls.children[0] : null;
         if (lblOre) lblOre.style.visibility = '';
         if (lblTL) lblTL.style.visibility = '';
     }
@@ -4215,14 +4382,14 @@ function _resetCampiTurno() {
     var tO = document.getElementById('tO');
     var tL = document.getElementById('tL');
     var lblTL = document.getElementById('lblTL');
-    var rowOreLbls = document.getElementById('rowOreLbls');
+    var lblOre = document.getElementById('lblTOre');
     if (toggle) toggle.style.background = '#333';
     if (knob) knob.style.left = '2px';
     if (tO) tO.style.visibility = '';
     if (tL) tL.style.visibility = '';
     if (lblTL) lblTL.style.visibility = '';
-    if (rowOreLbls && rowOreLbls.children[0]) rowOreLbls.children[0].style.visibility = '';
-    ['tL','tO','tK','tC','tKStart','tKEnd','tContanti'].forEach(function(id){
+    if (lblOre) lblOre.style.visibility = '';
+    ['tL','tO','tK','tC','tKStart','tKEnd','tContanti','tMance'].forEach(function(id){
         var e=document.getElementById(id); if(e) e.value='';
     });
     var cch = document.getElementById('contantiHint'); if(cch) cch.innerText='';
@@ -4754,14 +4921,21 @@ function getTaxPerc(turno) {
 function aggiornaAnteprimaContanti() {
     var hint = document.getElementById('contantiHint');
     if (!hint) return;
-    var lordoLordo = parseFloat(document.getElementById('tL').value) || 0;
-    var contanti = parseFloat(document.getElementById('tContanti').value) || 0;
-    if (contanti <= 0) {
+    var lordo = parseFloat(document.getElementById('tL').value) || 0;
+    var contantiEl = document.getElementById('tContanti');
+    var manceEl = document.getElementById('tMance');
+    var contanti = parseFloat(contantiEl ? contantiEl.value : 0) || 0;
+    var mance = parseFloat(manceEl ? manceEl.value : 0) || 0;
+    if (contanti <= 0 && mance <= 0) {
         hint.innerText = '';
         return;
     }
-    var netto = Math.max(0, lordoLordo - contanti);
-    hint.innerText = 'Lordo da registrare: € ' + netto.toFixed(2) + ' (€ ' + lordoLordo.toFixed(2) + ' − € ' + contanti.toFixed(2) + ' contanti)';
+    var daAccreditare = Math.max(0, lordo + mance - contanti);
+    var parti = [];
+    parti.push('€ ' + lordo.toFixed(2) + ' lordo');
+    if (mance > 0) parti.push('+ € ' + mance.toFixed(2) + ' mance');
+    if (contanti > 0) parti.push('− € ' + contanti.toFixed(2) + ' contanti');
+    hint.innerText = 'Da accreditare: € ' + daAccreditare.toFixed(2) + ' (' + parti.join(' ') + ')';
 }
 
 function effettuaSalvataggioTurno(prezzo, rif) {
@@ -4771,8 +4945,9 @@ function effettuaSalvataggioTurno(prezzo, rif) {
     const _oraStartVal = document.getElementById('tOStart').value;
     const _oraEndVal   = document.getElementById('tOEnd').value;
     const _contantiVal = Math.max(0, parseFloat(document.getElementById('tContanti').value) || 0);
-    const _lordoLordo = parseFloat(document.getElementById('tL').value) || 0;
-    const _lordoNetto = Math.max(0, _lordoLordo - _contantiVal);
+    const _manceEl = document.getElementById('tMance');
+    const _manceVal = Math.max(0, parseFloat(_manceEl ? _manceEl.value : 0) || 0);
+    const _lordoPuro = parseFloat(document.getElementById('tL').value) || 0;
     const obj = {
         id: Date.now(),
         data: dataCompleta,
@@ -4780,9 +4955,10 @@ function effettuaSalvataggioTurno(prezzo, rif) {
         oraStart: _oraStartVal || null,
         oraEnd:   _oraEndVal   || null,
         mezzo: document.getElementById('tMezzo').value,
-        lordo: _soloViaggio ? 0 : toEuro(_lordoNetto),
-        lordoLordo: _soloViaggio ? 0 : toEuro(_lordoLordo),
+        lordo: _soloViaggio ? 0 : toEuro(_lordoPuro),
+        lordoLordo: _soloViaggio ? 0 : toEuro(_lordoPuro),
         contanti: _soloViaggio ? 0 : toEuro(_contantiVal),
+        mance: _soloViaggio ? 0 : toEuro(_manceVal),
         ore: _soloViaggio ? 0 : (parseFloat(document.getElementById('tO').value) || 0),
         km: toKm(parseFloat(document.getElementById('tK').value) || 0),
         cons: consDisplayToL100km(consInput),
@@ -5205,6 +5381,8 @@ function modificaVoce(categoria, id) {
         document.getElementById('dateTY').value = parseInt(item.data.substring(6));
         document.getElementById('tL').value = parseFloat(fromEuro(item.lordoLordo !== undefined ? item.lordoLordo : item.lordo).toFixed(2));
         document.getElementById('tContanti').value = item.contanti ? parseFloat(fromEuro(item.contanti).toFixed(2)) : '';
+        var _tManceEl = document.getElementById('tMance');
+        if (_tManceEl) _tManceEl.value = item.mance ? parseFloat(fromEuro(item.mance).toFixed(2)) : '';
         document.getElementById('tO').value = item.ore;
         document.getElementById('tK').value = fromKm(item.km).toFixed(1);
         document.getElementById('tC').value = consL100kmToDisplayValue(item.cons);
@@ -8747,11 +8925,17 @@ function apriDettaglioStorico(categoria, id) {
         rows.push(['KM percorsi', item.km ? fromKm(item.km).toFixed(1) + ' ' + distU : '—']);
         if (!item.soloViaggio) {
             rows.push(['Lordo', sym + fromEuro(item.lordo).toFixed(2)]);
-            if (item.contanti) {
-                rows.push(['Contanti scalati', '− ' + sym + fromEuro(item.contanti).toFixed(2)]);
-                rows.push(['Lordo lordo (pre-contanti)', sym + fromEuro(item.lordoLordo !== undefined ? item.lordoLordo : item.lordo).toFixed(2)]);
+            if (item.mance) {
+                rows.push(['Mance', '+ ' + sym + fromEuro(item.mance).toFixed(2)]);
             }
-            var netto = fromEuro(item.lordo - item.lordo*(getTaxPerc(item)/100) - item.km*(item.cons/100)*(item.prezzo||0)).toFixed(2);
+            if (item.contanti) {
+                rows.push(['Contanti già incassati', '− ' + sym + fromEuro(item.contanti).toFixed(2)]);
+                if (item.lordoLordo !== undefined && item.lordoLordo !== item.lordo) {
+                    rows.push(['Lordo lordo (pre-contanti)', sym + fromEuro(item.lordoLordo).toFixed(2)]);
+                }
+            }
+            var _impTax = item.lordo + (item.mance||0);
+            var netto = fromEuro(_impTax - (item.contanti||0) - _impTax*(getTaxPerc(item)/100) - item.km*(item.cons/100)*(item.prezzo||0)).toFixed(2);
             rows.push(['Netto stimato', sym + netto]);
         }
         if (item.cons && !va_noCons(item)) rows.push(['Consumo', consL100kmToDisplayValue(item.cons) + ' ' + getConsUnit(item.tipoCarburante)]);
@@ -8927,18 +9111,19 @@ async function gestisciScreenshotSelezionati(event) {
         parts.push({ text:
 `Analizza queste immagini di screenshot dell'app Deliveroo Rider (schermate scure).
 
-La PRIMA immagine è il riepilogo di una giornata di consegne, con una lista di ordini ognuno con un orario "HH:MM" (possono essere anche 40 ordini, una lista lunga). Da questa immagine estrai SOLO:
+La PRIMA immagine è il riepilogo di una giornata di consegne, con in alto un totale grande (es. "€113.94") e sotto tre righe: "Ordini consegnati", "Pagamenti extra" e "Mance" (ognuna con il proprio importo in euro), poi una lista di ordini ognuno con un orario "HH:MM" (possono essere anche 40 ordini, una lista lunga). Da questa immagine estrai SOLO:
 
 1. "primoOrario": l'orario "HH:MM" dell'ordine più VECCHIO nella lista (quello con orario più basso/antecedente)
 2. "ultimoOrario": l'orario "HH:MM" dell'ordine più RECENTE nella lista (quello con orario più alto/successivo)
 3. "pause": array di eventuali intervalli di tempo tra due ordini CONSECUTIVI nella lista che superano 60 minuti di distanza. Per ogni pausa così trovata, scrivi i due orari come oggetto {"da":"HH:MM","a":"HH:MM"}. Se non ci sono pause superiori a 60 minuti, restituisci un array vuoto []. Non elencare gli orari di tutti gli ordini, solo le pause superiori a 60 minuti.
-4. "lordo": il totale lordo della giornata, il numero grande in alto (es. se vedi "€84.11" scrivi 84.11)
+4. "lordo": il totale lordo della giornata, il numero grande in alto (es. se vedi "€84.11" scrivi 84.11). Questo valore include già "Ordini consegnati" + "Pagamenti extra".
+5. "mance": il valore SOLO della riga "Mance" (es. se vedi "Mance 11,50 €" scrivi 11.50). NON confonderla con "Pagamenti extra", che è una riga diversa e NON va qui. Se la riga "Mance" non è presente o vale 0, scrivi 0.
 
 Le immagini SUCCESSIVE (se presenti) sono dettagli di singoli ordini con un badge viola/rosa che dice "riscossi in contanti" seguito da un importo, e più sotto una riga "Rettifica contanti" con lo STESSO importo ripetuto. Conta questo importo UNA SOLA VOLTA per immagine, ignorando la riga "Rettifica contanti" perché è un duplicato dello stesso valore.
-5. "contantiPerImmagine": array con un numero per ciascuna immagine successiva alla prima (l'importo "riscossi in contanti" di quell'ordine). Se un'immagine non ha questo badge, metti 0.
+6. "contantiPerImmagine": array con un numero per ciascuna immagine successiva alla prima (l'importo "riscossi in contanti" di quell'ordine). Se un'immagine non ha questo badge, metti 0.
 
 Restituisci SOLO un oggetto JSON valido, breve, senza markdown, senza backtick, nessun testo aggiuntivo.
-Formato esatto: {"primoOrario":"12:16","ultimoOrario":"21:48","pause":[{"da":"16:33","a":"19:44"}],"lordo":84.11,"contantiPerImmagine":[1.27]}
+Formato esatto: {"primoOrario":"12:16","ultimoOrario":"21:48","pause":[{"da":"16:33","a":"19:44"}],"lordo":84.11,"mance":11.50,"contantiPerImmagine":[1.27]}
 Se non trovi un dato usa null.` });
 
         for (var i = 0; i < files.length; i++) {
@@ -9070,7 +9255,7 @@ Se non trovi un dato usa null.` });
                         if (_qCands.length > 0) _qModel = _qCands[0];
                     }
                 } catch(e) {}
-                var _qSystemPrompt = 'Sei un estrattore di dati JSON da screenshot. Rispondi SOLO con un oggetto JSON valido, senza markdown, senza backtick, senza testo aggiuntivo. Schema richiesto: {"primoOrario":"HH:MM","ultimoOrario":"HH:MM","pause":[{"da":"HH:MM","a":"HH:MM"}],"lordo":0.00,"contantiPerImmagine":[]}';
+                var _qSystemPrompt = 'Sei un estrattore di dati JSON da screenshot. Rispondi SOLO con un oggetto JSON valido, senza markdown, senza backtick, senza testo aggiuntivo. Schema richiesto: {"primoOrario":"HH:MM","ultimoOrario":"HH:MM","pause":[{"da":"HH:MM","a":"HH:MM"}],"lordo":0.00,"mance":0.00,"contantiPerImmagine":[]}';
                 _setLoadingText('Analisi con Groq (' + _qModel + ')...');
                 var _qRes = await _fetchWithRetry(
                     'https://api.groq.com/openai/v1/chat/completions',
@@ -9106,7 +9291,7 @@ Se non trovi un dato usa null.` });
                         if (_orCands.length > 0) _orModel = _orCands[0];
                     }
                 } catch(e) {}
-                var _orSystemPrompt = 'Sei un estrattore di dati JSON da screenshot. Rispondi SOLO con un oggetto JSON valido, senza markdown, senza backtick, senza testo aggiuntivo. Schema richiesto: {"primoOrario":"HH:MM","ultimoOrario":"HH:MM","pause":[{"da":"HH:MM","a":"HH:MM"}],"lordo":0.00,"contantiPerImmagine":[]}';
+                var _orSystemPrompt = 'Sei un estrattore di dati JSON da screenshot. Rispondi SOLO con un oggetto JSON valido, senza markdown, senza backtick, senza testo aggiuntivo. Schema richiesto: {"primoOrario":"HH:MM","ultimoOrario":"HH:MM","pause":[{"da":"HH:MM","a":"HH:MM"}],"lordo":0.00,"mance":0.00,"contantiPerImmagine":[]}';
                 _setLoadingText('Analisi con OpenRouter (' + _orModel + ')...');
                 var _orRes = await _fetchWithRetry(
                     'https://openrouter.ai/api/v1/chat/completions',
@@ -9145,6 +9330,7 @@ Se non trovi un dato usa null.` });
         }
 
         var lordoRilevato = (typeof parsed.lordo === 'number') ? parsed.lordo : 0;
+        var manceRilevate = (typeof parsed.mance === 'number') ? parsed.mance : 0;
         var contantiTotali = Array.isArray(parsed.contantiPerImmagine)
             ? parsed.contantiPerImmagine.reduce(function(a,b){ return a + (parseFloat(b) || 0); }, 0)
             : 0;
@@ -9153,6 +9339,7 @@ Se non trovi un dato usa null.` });
         _datiScreenshotRilevati = {
             lordo: lordoRilevato,
             contanti: Math.round(contantiTotali * 100) / 100,
+            mance: Math.round(manceRilevate * 100) / 100,
             ore: risultatoOre.ore
         };
 
@@ -9161,6 +9348,8 @@ Se non trovi un dato usa null.` });
         document.getElementById('riepLordoRilevato').innerText = '€' + lordoRilevato.toFixed(2);
         document.getElementById('riepOreRilevate').innerText = (risultatoOre.ore !== null ? risultatoOre.ore.toFixed(1) : '—') + 'h';
         document.getElementById('riepContantiRilevati').innerText = '€' + _datiScreenshotRilevati.contanti.toFixed(2);
+        var _riepManceEl = document.getElementById('riepManceRilevate');
+        if (_riepManceEl) _riepManceEl.innerText = '€' + _datiScreenshotRilevati.mance.toFixed(2);
 
         var pauseRow = document.getElementById('riepPauseRow');
         if (risultatoOre.pauseTesto) {
@@ -9190,6 +9379,10 @@ function confermaImportScreenshot() {
     }
     if (_datiScreenshotRilevati.contanti > 0) {
         document.getElementById('tContanti').value = _datiScreenshotRilevati.contanti.toFixed(2);
+    }
+    if (_datiScreenshotRilevati.mance > 0) {
+        var _tManceImp = document.getElementById('tMance');
+        if (_tManceImp) _tManceImp.value = _datiScreenshotRilevati.mance.toFixed(2);
     }
     aggiornaAnteprimaContanti();
 }
