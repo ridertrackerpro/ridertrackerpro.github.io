@@ -1462,11 +1462,6 @@ body {
 </div>
 
 <div class="summary-row">
-<span id="labelKmTurni" data-translate="col_km_turns">KM TURNI:</span>
-<span id="repKmTurni">0</span>
-</div>
-
-<div class="summary-row">
 <span id="labelTotKm" data-translate="total_km">TOTALE KM:</span>
 <span id="repKmTot">0</span>
 </div>
@@ -1474,11 +1469,6 @@ body {
 <div class="summary-row">
 <span data-translate="fuel_expense">SPESA CARBURANTE:</span>
 <span id="repSpesaB">0.00</span>
-</div>
-
-<div class="summary-row">
-<span id="labelAvgCostKm" data-translate="avg_cost_km">COSTO MEDIO/KM:</span>
-<span id="repCostoKm">0.000</span>
 </div>
 
 <hr>
@@ -3565,7 +3555,7 @@ if (rigaContantiRep) {
 }
 const repManceTot = document.getElementById('repManceTot');
 if (repManceTot) {
-    repManceTot.innerText = '+' + currencySymbol() + roundCurrency(safeNumber(fromEuro(manceTot)));
+    repManceTot.innerText = currencySymbol() + roundCurrency(safeNumber(fromEuro(manceTot)));
 }
 const rigaManceRep = document.getElementById('rigaManceRep');
 if (rigaManceRep) {
