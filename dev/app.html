@@ -139,7 +139,7 @@ html, body { touch-action: pan-x pan-y; }
     text-transform: uppercase;
         }
         .report-fixed-footer { padding: 15px; padding-bottom: 45px; border-top: 1px solid #eee; background: #fff; }
-        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px; }
+        .action-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px; }
         .btn-rep-uniform { width: 100%; padding: 10px 5px; border-radius: 10px; font-weight: 700; text-transform: uppercase; font-size: 10px; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; border: 1.5px solid transparent; transition: 0.2s; }
         .btn-grey-light { background: #f8f8f8; color: #555; border-color: #ddd; }
         .btn-black { background: #1a1a1a; color: #fff; }
@@ -1203,32 +1203,6 @@ body {
     </div>
 </div>
 
-<!-- ── MODAL RICHIESTA STAMPA REPORT MESE PRECEDENTE (primo turno nuovo mese) ── -->
-<div id="modalChiediStampaReportPrec" class="modal no-print" style="z-index:10006;">
-    <div class="modal-content" style="border-color:var(--primary); text-align:center;">
-        <div style="font-size:36px; margin-bottom:10px;">🖨️</div>
-        <h3 style="color:var(--primary); font-size:15px; margin-bottom:10px;">Nuovo mese iniziato</h3>
-        <p id="msgStampaReportPrec" style="font-size:12px; color:#aaa; margin-bottom:16px; line-height:1.4;">Vuoi stampare/salvare il report del mese scorso prima di continuare?</p>
-        <div style="display:flex; gap:8px;">
-            <button style="flex:1; padding:12px; border-radius:12px; border:none; font-weight:bold; font-size:12px; background:#333; color:#fff; cursor:pointer;" onclick="rifiutaStampaReportPrec()">NO, GRAZIE</button>
-            <button style="flex:1; padding:12px; border-radius:12px; border:none; font-weight:bold; font-size:12px; background:var(--primary); color:#000; cursor:pointer;" onclick="accettaStampaReportPrec()">SÌ, STAMPA</button>
-        </div>
-    </div>
-</div>
-
-<!-- ── MODAL RICHIESTA INDENNITÀ/INTEGRAZIONI DELIVEROO A FINE MESE ── -->
-<div id="modalChiediExtraDeliveroo" class="modal no-print" style="z-index:10006;">
-    <div class="modal-content" style="border-color:var(--primary); text-align:center;">
-        <div style="font-size:36px; margin-bottom:10px;">🧾</div>
-        <h3 style="color:var(--primary); font-size:15px; margin-bottom:10px;">Indennità Deliveroo</h3>
-        <p style="font-size:12px; color:#aaa; margin-bottom:16px; line-height:1.4;">Vuoi inserire le indennità e integrazioni che Deliveroo ha aggiunto questo mese (maltempo, sali minerali, notturni, festivi, acqua, conguagli)? Le trovi nel prospetto Deliveroo alla voce "Modifiche e integrazioni".</p>
-        <div style="display:flex; gap:8px;">
-            <button style="flex:1; padding:12px; border-radius:12px; border:none; font-weight:bold; font-size:12px; background:#333; color:#fff; cursor:pointer;" onclick="rifiutaExtraDeliverooMese()">NO, GRAZIE</button>
-            <button style="flex:1; padding:12px; border-radius:12px; border:none; font-weight:bold; font-size:12px; background:var(--primary); color:#000; cursor:pointer;" onclick="apriModalExtraDeliveroo()">SÌ, AGGIUNGI</button>
-        </div>
-    </div>
-</div>
-
 <!-- ── MODAL INSERIMENTO VOCI INDENNITÀ DELIVEROO ── -->
 <div id="modalExtraDeliveroo" class="modal no-print" style="z-index:10006;">
     <div class="modal-content" style="border-color:var(--primary);">
@@ -1574,6 +1548,9 @@ body {
 <div class="action-grid">
 <button class="btn-rep-uniform btn-black" onclick="stampaPagina()">
 <i class="fas fa-print"></i> <span data-translate="print">STAMPA</span>
+</button>
+<button class="btn-rep-uniform" style="background:var(--primary); color:#000;" onclick="apriModalExtraDeliverooManuale()">
+<i class="fas fa-receipt"></i> <span>EXTRA</span>
 </button>
 <button class="btn-rep-uniform btn-grey-dark" onclick="document.getElementById('reportView').style.display='none';">
 <i class="fas fa-times"></i> <span data-translate="close">CHIUDI</span>
@@ -2285,12 +2262,10 @@ let db = JSON.parse(localStorage.getItem('rider_db_final_v34')) || {
     riportoNegativo: {}, 
     extraKm: [], 
     extraDeliveroo: [],
-    mesiExtraDeliverooChiesti: {},
     targets: {}, 
     tax: null 
 };
 if (!db.extraDeliveroo) db.extraDeliveroo = [];
-if (!db.mesiExtraDeliverooChiesti) db.mesiExtraDeliverooChiesti = {};
 let userSettings = JSON.parse(localStorage.getItem('user_settings')) || {
     distance: 'km',
     volume: 'liters',
@@ -3353,77 +3328,18 @@ function apriMulti(tipo) {
     document.getElementById('modalMulti').style.display = 'flex';
 }
 // ══════════════════════════════════════════
-// PRIMO GIORNO DEL MESE: STAMPA REPORT + INDENNITÀ DELIVEROO
-// Trigger: apertura app il giorno 1 del mese (o comunque appena la data corrente
-// risulta in un mese diverso dall'ultimo mese già "chiuso"), una sola volta per mese.
+// INDENNITÀ / INTEGRAZIONI DELIVEROO — inserimento manuale da pulsante EXTRA nel report
 // ══════════════════════════════════════════
 var _tagExtraDeliverooCorrente = null;
-var _tagMesePrecedenteDaChiudere = null;
 
-function _controllaPrimoGiornoMese() {
-    var now = new Date();
-    var meseCorrente = (now.getMonth()+1).toString().padStart(2,'0') + '/' + now.getFullYear();
-
-    // Determina l'ultimo mese con turni registrati, diverso da quello corrente
-    var turniAltriMesi = db.turni.filter(function(t){ return t.data.substring(3) !== meseCorrente; });
-    if (turniAltriMesi.length === 0) return; // nessuno storico da chiudere
-    turniAltriMesi.sort(function(a,b){ return b.id - a.id; });
-    var mesePrecedente = turniAltriMesi[0].data.substring(3);
-    if (mesePrecedente === meseCorrente) return;
-
-    // Già chiesto per quel mese? Non richiedere di nuovo
-    var giaChiesto = db.mesiExtraDeliverooChiesti && db.mesiExtraDeliverooChiesti[mesePrecedente];
-    if (giaChiesto) return;
-
-    _tagMesePrecedenteDaChiudere = mesePrecedente;
-    var msgEl = document.getElementById('msgStampaReportPrec');
-    if (msgEl) msgEl.innerText = 'È iniziato un nuovo mese. Vuoi stampare/salvare il report di ' + getNomeMese(mesePrecedente) + ' prima di continuare?';
-    var m = document.getElementById('modalChiediStampaReportPrec');
-    if (m) m.style.display = 'flex';
-}
-
-function rifiutaStampaReportPrec() {
-    var m = document.getElementById('modalChiediStampaReportPrec');
-    if (m) m.style.display = 'none';
-    _chiediExtraDeliverooSeNecessario(_tagMesePrecedenteDaChiudere);
-}
-
-function accettaStampaReportPrec() {
-    var m = document.getElementById('modalChiediStampaReportPrec');
-    if (m) m.style.display = 'none';
-    var tagPrec = _tagMesePrecedenteDaChiudere;
-    apriReport(tagPrec);
-    setTimeout(function() {
-        stampaPagina();
-        _chiediExtraDeliverooSeNecessario(tagPrec);
-    }, 300);
-}
-
-function _chiediExtraDeliverooSeNecessario(tag) {
-    if (!tag) return;
-    if (db.mesiExtraDeliverooChiesti && db.mesiExtraDeliverooChiesti[tag]) return;
+function apriModalExtraDeliverooManuale() {
+    var tag = reportMeseKey || `${(new Date().getMonth()+1).toString().padStart(2,'0')}/${new Date().getFullYear()}`;
     _tagExtraDeliverooCorrente = tag;
-    var m = document.getElementById('modalChiediExtraDeliveroo');
-    if (m) m.style.display = 'flex';
-}
-
-function rifiutaExtraDeliverooMese() {
-    if (_tagExtraDeliverooCorrente) {
-        db.mesiExtraDeliverooChiesti[_tagExtraDeliverooCorrente] = true;
-        localStorage.setItem('rider_db_final_v34', JSON.stringify(db));
-    }
-    var m = document.getElementById('modalChiediExtraDeliveroo');
-    if (m) m.style.display = 'none';
-}
-
-function apriModalExtraDeliveroo() {
-    var m1 = document.getElementById('modalChiediExtraDeliveroo');
-    if (m1) m1.style.display = 'none';
     document.getElementById('extraDeliverooDescInput').value = '';
     document.getElementById('extraDeliverooImportoInput').value = '';
     _renderListaExtraDeliverooMese();
-    var m2 = document.getElementById('modalExtraDeliveroo');
-    if (m2) m2.style.display = 'flex';
+    var m = document.getElementById('modalExtraDeliveroo');
+    if (m) m.style.display = 'flex';
 }
 
 function _renderListaExtraDeliverooMese() {
@@ -3470,10 +3386,6 @@ function rimuoviVoceExtraDeliveroo(id) {
 }
 
 function salvaExtraDeliverooMese() {
-    if (_tagExtraDeliverooCorrente) {
-        db.mesiExtraDeliverooChiesti[_tagExtraDeliverooCorrente] = true;
-        localStorage.setItem('rider_db_final_v34', JSON.stringify(db));
-    }
     chiudiModaleExtraDeliveroo();
     apriReport(reportMeseKey || null);
 }
@@ -8177,8 +8089,6 @@ function checkPrimoAvvio() {
                 : '👋 Benvenuto!\n\nPrima di usare l\'app:\n1. Apri ⚙️ Impostazioni e aggiungi almeno un veicolo\n2. Imposta la percentuale tasse\n3. Imposta il tuo obiettivo netto\n\nPremi OK per aprire le Impostazioni.');
             setTimeout(function(){ apriModalSettings(); }, 800);
         }, 1200);
-    } else {
-        setTimeout(function(){ _controllaPrimoGiornoMese(); }, 1200);
     }
 }
 
