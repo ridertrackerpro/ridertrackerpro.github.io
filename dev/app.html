@@ -1203,6 +1203,19 @@ body {
     </div>
 </div>
 
+<!-- ── MODAL RICHIESTA STAMPA REPORT MESE PRECEDENTE (primo turno nuovo mese) ── -->
+<div id="modalChiediStampaReportPrec" class="modal no-print" style="z-index:10006;">
+    <div class="modal-content" style="border-color:var(--primary); text-align:center;">
+        <div style="font-size:36px; margin-bottom:10px;">🖨️</div>
+        <h3 style="color:var(--primary); font-size:15px; margin-bottom:10px;">Nuovo mese iniziato</h3>
+        <p id="msgStampaReportPrec" style="font-size:12px; color:#aaa; margin-bottom:16px; line-height:1.4;">Vuoi stampare/salvare il report del mese scorso prima di continuare?</p>
+        <div style="display:flex; gap:8px;">
+            <button style="flex:1; padding:12px; border-radius:12px; border:none; font-weight:bold; font-size:12px; background:#333; color:#fff; cursor:pointer;" onclick="rifiutaStampaReportPrec()">NO, GRAZIE</button>
+            <button style="flex:1; padding:12px; border-radius:12px; border:none; font-weight:bold; font-size:12px; background:var(--primary); color:#000; cursor:pointer;" onclick="accettaStampaReportPrec()">SÌ, STAMPA</button>
+        </div>
+    </div>
+</div>
+
 <!-- ── MODAL RICHIESTA INDENNITÀ/INTEGRAZIONI DELIVEROO A FINE MESE ── -->
 <div id="modalChiediExtraDeliveroo" class="modal no-print" style="z-index:10006;">
     <div class="modal-content" style="border-color:var(--primary); text-align:center;">
@@ -3340,9 +3353,51 @@ function apriMulti(tipo) {
     document.getElementById('modalMulti').style.display = 'flex';
 }
 // ══════════════════════════════════════════
-// INDENNITÀ / INTEGRAZIONI DELIVEROO (fine mese)
+// PRIMO GIORNO DEL MESE: STAMPA REPORT + INDENNITÀ DELIVEROO
+// Trigger: apertura app il giorno 1 del mese (o comunque appena la data corrente
+// risulta in un mese diverso dall'ultimo mese già "chiuso"), una sola volta per mese.
 // ══════════════════════════════════════════
 var _tagExtraDeliverooCorrente = null;
+var _tagMesePrecedenteDaChiudere = null;
+
+function _controllaPrimoGiornoMese() {
+    var now = new Date();
+    var meseCorrente = (now.getMonth()+1).toString().padStart(2,'0') + '/' + now.getFullYear();
+
+    // Determina l'ultimo mese con turni registrati, diverso da quello corrente
+    var turniAltriMesi = db.turni.filter(function(t){ return t.data.substring(3) !== meseCorrente; });
+    if (turniAltriMesi.length === 0) return; // nessuno storico da chiudere
+    turniAltriMesi.sort(function(a,b){ return b.id - a.id; });
+    var mesePrecedente = turniAltriMesi[0].data.substring(3);
+    if (mesePrecedente === meseCorrente) return;
+
+    // Già chiesto per quel mese? Non richiedere di nuovo
+    var giaChiesto = db.mesiExtraDeliverooChiesti && db.mesiExtraDeliverooChiesti[mesePrecedente];
+    if (giaChiesto) return;
+
+    _tagMesePrecedenteDaChiudere = mesePrecedente;
+    var msgEl = document.getElementById('msgStampaReportPrec');
+    if (msgEl) msgEl.innerText = 'È iniziato un nuovo mese. Vuoi stampare/salvare il report di ' + getNomeMese(mesePrecedente) + ' prima di continuare?';
+    var m = document.getElementById('modalChiediStampaReportPrec');
+    if (m) m.style.display = 'flex';
+}
+
+function rifiutaStampaReportPrec() {
+    var m = document.getElementById('modalChiediStampaReportPrec');
+    if (m) m.style.display = 'none';
+    _chiediExtraDeliverooSeNecessario(_tagMesePrecedenteDaChiudere);
+}
+
+function accettaStampaReportPrec() {
+    var m = document.getElementById('modalChiediStampaReportPrec');
+    if (m) m.style.display = 'none';
+    var tagPrec = _tagMesePrecedenteDaChiudere;
+    apriReport(tagPrec);
+    setTimeout(function() {
+        stampaPagina();
+        _chiediExtraDeliverooSeNecessario(tagPrec);
+    }, 300);
+}
 
 function _chiediExtraDeliverooSeNecessario(tag) {
     if (!tag) return;
@@ -3432,7 +3487,6 @@ function apriReport(meseKey) {
     reportMeseKey = meseKey;
     aggiornaArchivioBar();
     const tag = meseKey || `${(new Date().getMonth()+1).toString().padStart(2,'0')}/${new Date().getFullYear()}`;
-    _chiediExtraDeliverooSeNecessario(tag);
     
     aggiornaLabelKmReport();
     document.getElementById('reportMeseLabel').innerText = getNomeMese(tag);
@@ -8123,6 +8177,8 @@ function checkPrimoAvvio() {
                 : '👋 Benvenuto!\n\nPrima di usare l\'app:\n1. Apri ⚙️ Impostazioni e aggiungi almeno un veicolo\n2. Imposta la percentuale tasse\n3. Imposta il tuo obiettivo netto\n\nPremi OK per aprire le Impostazioni.');
             setTimeout(function(){ apriModalSettings(); }, 800);
         }, 1200);
+    } else {
+        setTimeout(function(){ _controllaPrimoGiornoMese(); }, 1200);
     }
 }
 
