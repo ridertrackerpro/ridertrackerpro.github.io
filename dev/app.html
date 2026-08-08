@@ -2094,12 +2094,6 @@ function updateInterface() {
     var _kmlU = document.getElementById('labelMediaConsumi');
     if (_kmlU) _kmlU.innerText = userSettings.consumption === 'km_l' ? 'km/L' : 'L/100km';
 
-    const tLInput = document.getElementById('tL');
-    if (tLInput) {
-        const lorLabel = currentLang === 'en' ? 'Gross' : 'Lordo';
-        tLInput.placeholder = lorLabel + ' ' + currencySymbol();
-    }
-
     const extraImportoInput = document.getElementById('extraImportoInput');
     if (extraImportoInput) {
         const extraLabel = currentLang === 'en' ? 'Amount' : 'Importo spesa';
@@ -2138,13 +2132,6 @@ if (bPInput) {
 
     /* --- PLACEHOLDER DINAMICI TURNO --- */
 
-    const inputKm = document.getElementById('tK');
-    if (inputKm) {
-        inputKm.placeholder = userSettings.distance === 'miles'
-            ? t('ph_miles_driven')
-            : t('ph_km');
-        inputKm.setAttribute('data-translate-placeholder', userSettings.distance === 'miles' ? 'ph_miles_driven' : 'ph_km');
-    }
     var _lblTK = document.getElementById('lblTK');
     if (_lblTK) _lblTK.innerText = userSettings.distance === 'miles' ? 'MIGLIA PERCORSE' : 'KM PERCORSI';
 
