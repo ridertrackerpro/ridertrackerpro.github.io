@@ -1488,11 +1488,6 @@ body {
 <span id="repExtraDeliverooTot">0.00</span>
 </div>
 
-<div class="summary-row" id="rigaContantiRep" style="display:none;">
-<span>CONTANTI IN TASCA:</span>
-<span id="repContantiTot">0.00</span>
-</div>
-
 <div class="summary-row">
 <span><span data-translate="taxation">TASSE</span> (<span id="repTaxPerc">0</span>%):</span>
 <span id="repTasse">0.00</span>
@@ -1525,6 +1520,11 @@ body {
 <div class="summary-row total">
 <span data-translate="net_total">NETTO FINALE:</span>
 <span id="repNetto">0.00</span>
+</div>
+
+<div class="summary-row" id="rigaContantiRep" style="display:none; opacity:0.65; font-size:12px; font-style:italic; border-top:1px dashed #555; margin-top:8px; padding-top:8px;">
+<span>ℹ️ Contanti in tasca (informativo):</span>
+<span id="repContantiTot">0.00</span>
 </div>
 
 </div>
@@ -3418,7 +3418,7 @@ function apriReport(meseKey) {
         const nomeC = getNomeCarburante(t.tipoCarburante);
 
         const impPerTurno = t.lordo + (t.mance || 0);
-        const netto = impPerTurno - (impPerTurno * (getTaxPerc(t) / 100)) - costoB;
+        const netto = impPerTurno - (t.contanti || 0) - (impPerTurno * (getTaxPerc(t) / 100)) - costoB;
 
         if (!t.soloViaggio) {
             lordoTot += t.lordo;
@@ -3536,7 +3536,7 @@ periodi.forEach(p => {
     const spesaBTotReale = rifMese.reduce((a,b) => a+b.euro, 0);
     const extraDeliverooMese = (db.extraDeliveroo || []).filter(e => e.data.endsWith(tag));
     const extraDeliverooTot = extraDeliverooMese.reduce((a,b) => a + (b.importo || 0), 0);
-    const nettoTot = lordoTot + manceTot + extraDeliverooTot - tassazioneTot - spesaBTotReale - spesaExtraRep - riportoRep;
+    const nettoTot = lordoTot + manceTot + extraDeliverooTot - contantiTot - tassazioneTot - spesaBTotReale - spesaExtraRep - riportoRep;
 
     document.getElementById('repLordo').innerText =
     currencySymbol() + roundCurrency(safeNumber(fromEuro(lordoTot)));
@@ -3547,7 +3547,7 @@ if (repLordoReale) {
 }
 const repContantiTot = document.getElementById('repContantiTot');
 if (repContantiTot) {
-    repContantiTot.innerText = currencySymbol() + roundCurrency(safeNumber(fromEuro(contantiTot)));
+    repContantiTot.innerText = '-' + currencySymbol() + roundCurrency(safeNumber(fromEuro(contantiTot)));
 }
 const rigaContantiRep = document.getElementById('rigaContantiRep');
 if (rigaContantiRep) {
@@ -3555,7 +3555,7 @@ if (rigaContantiRep) {
 }
 const repManceTot = document.getElementById('repManceTot');
 if (repManceTot) {
-    repManceTot.innerText = currencySymbol() + roundCurrency(safeNumber(fromEuro(manceTot)));
+    repManceTot.innerText = '+' + currencySymbol() + roundCurrency(safeNumber(fromEuro(manceTot)));
 }
 const rigaManceRep = document.getElementById('rigaManceRep');
 if (rigaManceRep) {
@@ -3593,7 +3593,7 @@ if (elRepExtraTot) elRepExtraTot.innerText = '-' + currencySymbol() + roundCurre
 
 const elRowRepRiporto = document.getElementById('rowRepRiporto');
 // Subtotale = lordo + mance + indennità Deliveroo - contanti - tasse - carburante - extra (senza riporto)
-var subtotale = lordoTot + manceTot + extraDeliverooTot - tassazioneTot - spesaBTotReale - spesaExtraRep;
+var subtotale = lordoTot + manceTot + extraDeliverooTot - contantiTot - tassazioneTot - spesaBTotReale - spesaExtraRep;
 var elSubtotale = document.getElementById('repSubtotale');
 if (elSubtotale) {
     var subSign = subtotale >= 0 ? '' : '-';
@@ -8872,13 +8872,13 @@ function apriDettaglioStorico(categoria, id) {
                 rows.push(['Mance', '+ ' + sym + fromEuro(item.mance).toFixed(2)]);
             }
             if (item.contanti) {
-                rows.push(['Contanti in tasca (già inclusi nel lordo)', sym + fromEuro(item.contanti).toFixed(2)]);
+                rows.push(['Contanti già incassati', '− ' + sym + fromEuro(item.contanti).toFixed(2)]);
                 if (item.lordoLordo !== undefined && item.lordoLordo !== item.lordo) {
                     rows.push(['Lordo lordo (pre-contanti)', sym + fromEuro(item.lordoLordo).toFixed(2)]);
                 }
             }
             var _impTax = item.lordo + (item.mance||0);
-            var netto = fromEuro(_impTax - _impTax*(getTaxPerc(item)/100) - item.km*(item.cons/100)*(item.prezzo||0)).toFixed(2);
+            var netto = fromEuro(_impTax - (item.contanti||0) - _impTax*(getTaxPerc(item)/100) - item.km*(item.cons/100)*(item.prezzo||0)).toFixed(2);
             rows.push(['Netto stimato', sym + netto]);
         }
         if (item.cons && !va_noCons(item)) rows.push(['Consumo', consL100kmToDisplayValue(item.cons) + ' ' + getConsUnit(item.tipoCarburante)]);
