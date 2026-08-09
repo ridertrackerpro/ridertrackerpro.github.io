@@ -1528,7 +1528,7 @@ body {
 </div>
 
 <div class="summary-row" id="rigaBonificoRep" style="display:none; font-weight:700; font-size:14px; border-top:1px solid #999; margin-top:8px; padding-top:8px;">
-<span>💳 TOTALE BONIFICO EFFETTIVO:</span>
+<span>💳 TOTALE BONIFICO DELIVEROO:</span>
 <span id="repBonificoTot">0.00</span>
 </div>
 
@@ -3558,8 +3558,8 @@ const rigaContantiRep = document.getElementById('rigaContantiRep');
 if (rigaContantiRep) {
     rigaContantiRep.style.display = contantiTot > 0 ? '' : 'none';
 }
-// Totale bonifico effettivo = lordo + indennità - tasse - carburante - extra - riporto - contanti già in tasca
-const bonificoEffettivo = nettoTot - contantiTot;
+// Totale bonifico effettivo = LORDO + MANCE + INDENNITÀ - CONTANTI (identico al "Totale dovuto" Deliveroo)
+const bonificoEffettivo = lordoTot + manceTot + extraDeliverooTot - contantiTot;
 const repBonificoTot = document.getElementById('repBonificoTot');
 if (repBonificoTot) {
     repBonificoTot.innerText = currencySymbol() + roundCurrency(safeNumber(fromEuro(bonificoEffettivo)));
