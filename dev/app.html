@@ -1527,6 +1527,11 @@ body {
 <span id="repContantiTot">0.00</span>
 </div>
 
+<div class="summary-row" id="rigaBonificoRep" style="display:none; font-weight:700; font-size:14px; border-top:1px solid #999; margin-top:8px; padding-top:8px;">
+<span>💳 TOTALE BONIFICO EFFETTIVO:</span>
+<span id="repBonificoTot">0.00</span>
+</div>
+
 </div>
 
 </div>
@@ -3547,11 +3552,21 @@ if (repLordoReale) {
 }
 const repContantiTot = document.getElementById('repContantiTot');
 if (repContantiTot) {
-    repContantiTot.innerText = '-' + currencySymbol() + roundCurrency(safeNumber(fromEuro(contantiTot)));
+    repContantiTot.innerText = currencySymbol() + roundCurrency(safeNumber(fromEuro(contantiTot)));
 }
 const rigaContantiRep = document.getElementById('rigaContantiRep');
 if (rigaContantiRep) {
     rigaContantiRep.style.display = contantiTot > 0 ? '' : 'none';
+}
+// Totale bonifico effettivo = lordo + indennità - tasse - carburante - extra - riporto - contanti già in tasca
+const bonificoEffettivo = nettoTot - contantiTot;
+const repBonificoTot = document.getElementById('repBonificoTot');
+if (repBonificoTot) {
+    repBonificoTot.innerText = currencySymbol() + roundCurrency(safeNumber(fromEuro(bonificoEffettivo)));
+}
+const rigaBonificoRep = document.getElementById('rigaBonificoRep');
+if (rigaBonificoRep) {
+    rigaBonificoRep.style.display = contantiTot > 0 ? '' : 'none';
 }
 const repManceTot = document.getElementById('repManceTot');
 if (repManceTot) {
