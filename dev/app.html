@@ -1478,11 +1478,6 @@ body {
 <span id="repLordo">0.00</span>
 </div>
 
-<div class="summary-row" id="rigaManceRep" style="display:none;">
-<span>MANCE:</span>
-<span id="repManceTot">0.00</span>
-</div>
-
 <div class="summary-row" id="rigaExtraDeliverooRep" style="display:none;">
 <span>INDENNITÀ/INTEGRAZIONI DELIVEROO:</span>
 <span id="repExtraDeliverooTot">0.00</span>
@@ -1522,7 +1517,12 @@ body {
 <span id="repNetto">0.00</span>
 </div>
 
-<div class="summary-row" id="rigaContantiRep" style="display:none; opacity:0.65; font-size:12px; font-style:italic; border-top:1px dashed #555; margin-top:8px; padding-top:8px;">
+<div class="summary-row" id="rigaManceRep" style="display:none; opacity:0.65; font-size:12px; font-style:italic; border-top:1px dashed #555; margin-top:8px; padding-top:8px;">
+<span>ℹ️ Mance ricevute (informativo, già incluse nel lordo):</span>
+<span id="repManceTot">0.00</span>
+</div>
+
+<div class="summary-row" id="rigaContantiRep" style="display:none; opacity:0.65; font-size:12px; font-style:italic;">
 <span>ℹ️ Contanti in tasca (informativo):</span>
 <span id="repContantiTot">0.00</span>
 </div>
@@ -3417,8 +3417,8 @@ function apriReport(meseKey) {
         const iconaC = getIconaCarburante(t.tipoCarburante);
         const nomeC = getNomeCarburante(t.tipoCarburante);
 
-        const impPerTurno = t.lordo + (t.mance || 0);
-        const netto = impPerTurno - (t.contanti || 0) - (impPerTurno * (getTaxPerc(t) / 100)) - costoB;
+        const impPerTurno = t.lordo;
+        const netto = impPerTurno - (impPerTurno * (getTaxPerc(t) / 100)) - costoB;
 
         if (!t.soloViaggio) {
             lordoTot += t.lordo;
@@ -3536,7 +3536,7 @@ periodi.forEach(p => {
     const spesaBTotReale = rifMese.reduce((a,b) => a+b.euro, 0);
     const extraDeliverooMese = (db.extraDeliveroo || []).filter(e => e.data.endsWith(tag));
     const extraDeliverooTot = extraDeliverooMese.reduce((a,b) => a + (b.importo || 0), 0);
-    const nettoTot = lordoTot + manceTot + extraDeliverooTot - contantiTot - tassazioneTot - spesaBTotReale - spesaExtraRep - riportoRep;
+    const nettoTot = lordoTot + extraDeliverooTot - tassazioneTot - spesaBTotReale - spesaExtraRep - riportoRep;
 
     document.getElementById('repLordo').innerText =
     currencySymbol() + roundCurrency(safeNumber(fromEuro(lordoTot)));
@@ -3555,7 +3555,7 @@ if (rigaContantiRep) {
 }
 const repManceTot = document.getElementById('repManceTot');
 if (repManceTot) {
-    repManceTot.innerText = '+' + currencySymbol() + roundCurrency(safeNumber(fromEuro(manceTot)));
+    repManceTot.innerText = currencySymbol() + roundCurrency(safeNumber(fromEuro(manceTot)));
 }
 const rigaManceRep = document.getElementById('rigaManceRep');
 if (rigaManceRep) {
@@ -3593,7 +3593,7 @@ if (elRepExtraTot) elRepExtraTot.innerText = '-' + currencySymbol() + roundCurre
 
 const elRowRepRiporto = document.getElementById('rowRepRiporto');
 // Subtotale = lordo + mance + indennità Deliveroo - contanti - tasse - carburante - extra (senza riporto)
-var subtotale = lordoTot + manceTot + extraDeliverooTot - contantiTot - tassazioneTot - spesaBTotReale - spesaExtraRep;
+var subtotale = lordoTot + extraDeliverooTot - tassazioneTot - spesaBTotReale - spesaExtraRep;
 var elSubtotale = document.getElementById('repSubtotale');
 if (elSubtotale) {
     var subSign = subtotale >= 0 ? '' : '-';
