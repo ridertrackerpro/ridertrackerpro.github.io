@@ -3463,7 +3463,7 @@ function apriReport(meseKey) {
         } else {
             htmlTurni += `<tr>
                 <td style="text-align:center;font-size:14px;">${(function(){ var _rv=getVeicoli().find(function(v){return v.id===t.veicoloId;}); return _getMezzoIcona(_rv?_rv.tipo:t.mezzo); })()}</td>
-                <td>${t.data}${t.contanti ? '<br><span style="font-size:9px;color:#aaa;white-space:nowrap;">− '+currencySymbol()+fromEuro(t.contanti).toFixed(2)+' cont.</span>' : ''}</td>
+                <td>${t.data}${t.contanti ? '<br><span style="font-size:9px;color:#aaa;white-space:nowrap;">ℹ️ '+currencySymbol()+fromEuro(t.contanti).toFixed(2)+' cont.</span>' : ''}</td>
                 <td>${currencySymbol()}${fromEuro(t.lordo).toFixed(2)}</td>
                 <td>${t.mance ? currencySymbol()+fromEuro(t.mance).toFixed(2) : '—'}</td>
                 <td>${currencySymbol()}${fromEuro(netto).toFixed(2)}</td>
@@ -8872,13 +8872,13 @@ function apriDettaglioStorico(categoria, id) {
                 rows.push(['Mance', '+ ' + sym + fromEuro(item.mance).toFixed(2)]);
             }
             if (item.contanti) {
-                rows.push(['Contanti già incassati', '− ' + sym + fromEuro(item.contanti).toFixed(2)]);
+                rows.push(['Contanti in tasca (informativo)', sym + fromEuro(item.contanti).toFixed(2)]);
                 if (item.lordoLordo !== undefined && item.lordoLordo !== item.lordo) {
                     rows.push(['Lordo lordo (pre-contanti)', sym + fromEuro(item.lordoLordo).toFixed(2)]);
                 }
             }
             var _impTax = item.lordo + (item.mance||0);
-            var netto = fromEuro(_impTax - (item.contanti||0) - _impTax*(getTaxPerc(item)/100) - item.km*(item.cons/100)*(item.prezzo||0)).toFixed(2);
+            var netto = fromEuro(_impTax - _impTax*(getTaxPerc(item)/100) - item.km*(item.cons/100)*(item.prezzo||0)).toFixed(2);
             rows.push(['Netto stimato', sym + netto]);
         }
         if (item.cons && !va_noCons(item)) rows.push(['Consumo', consL100kmToDisplayValue(item.cons) + ' ' + getConsUnit(item.tipoCarburante)]);
