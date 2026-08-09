@@ -9292,18 +9292,22 @@ Se non trovi un dato usa null.` });
         var contantiTotali = Array.isArray(parsed.contantiPerImmagine)
             ? parsed.contantiPerImmagine.reduce(function(a,b){ return a + (parseFloat(b) || 0); }, 0)
             : 0;
+        contantiTotali = Math.round(contantiTotali * 100) / 100;
+        // Se sono presenti contanti riscossi, Deliveroo li rettifica (sottrae) dal foglio pagamenti:
+        // il lordo del turno deve riflettere l'importo realmente accreditato, non il totale lordo teorico.
+        var lordoNetto = Math.round((lordoRilevato - contantiTotali) * 100) / 100;
         var risultatoOre = calcolaOreLavorateDaEstremi(parsed.primoOrario, parsed.ultimoOrario, parsed.pause);
 
         _datiScreenshotRilevati = {
-            lordo: lordoRilevato,
-            contanti: Math.round(contantiTotali * 100) / 100,
+            lordo: lordoNetto,
+            contanti: contantiTotali,
             mance: Math.round(manceRilevate * 100) / 100,
             ore: risultatoOre.ore
         };
 
         document.getElementById('modalScreenshotLoading').style.display = 'none';
 
-        document.getElementById('riepLordoRilevato').innerText = '€' + lordoRilevato.toFixed(2);
+        document.getElementById('riepLordoRilevato').innerText = '€' + lordoNetto.toFixed(2);
         document.getElementById('riepOreRilevate').innerText = (risultatoOre.ore !== null ? risultatoOre.ore.toFixed(1) : '—') + 'h';
         document.getElementById('riepContantiRilevati').innerText = '€' + _datiScreenshotRilevati.contanti.toFixed(2);
         var _riepManceEl = document.getElementById('riepManceRilevate');
