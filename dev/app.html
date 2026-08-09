@@ -3558,8 +3558,8 @@ const rigaContantiRep = document.getElementById('rigaContantiRep');
 if (rigaContantiRep) {
     rigaContantiRep.style.display = contantiTot > 0 ? '' : 'none';
 }
-// Totale bonifico effettivo = LORDO + MANCE + INDENNITÀ - CONTANTI (identico al "Totale dovuto" Deliveroo)
-const bonificoEffettivo = lordoTot + manceTot + extraDeliverooTot - contantiTot;
+// Totale bonifico effettivo = LORDO (già comprensivo di mance) + INDENNITÀ - CONTANTI (identico al "Totale dovuto" Deliveroo)
+const bonificoEffettivo = lordoTot + extraDeliverooTot - contantiTot;
 const repBonificoTot = document.getElementById('repBonificoTot');
 if (repBonificoTot) {
     repBonificoTot.innerText = currencySymbol() + roundCurrency(safeNumber(fromEuro(bonificoEffettivo)));
@@ -8892,7 +8892,7 @@ function apriDettaglioStorico(categoria, id) {
                     rows.push(['Lordo lordo (pre-contanti)', sym + fromEuro(item.lordoLordo).toFixed(2)]);
                 }
             }
-            var _impTax = item.lordo + (item.mance||0);
+            var _impTax = item.lordo;
             var netto = fromEuro(_impTax - _impTax*(getTaxPerc(item)/100) - item.km*(item.cons/100)*(item.prezzo||0)).toFixed(2);
             rows.push(['Netto stimato', sym + netto]);
         }
