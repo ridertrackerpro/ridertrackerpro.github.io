@@ -793,8 +793,8 @@ body {
     </div>
 </div>
 <div class="grid">
-    <div class="card"><div class="label" data-translate="net_target">OBIETTIVO NETTO</div><input id="targetIn" type="number" inputmode="decimal" oninput="aggiornaTarget()" data-translate-placeholder="ph_inserisci" placeholder="INSERISCI" class="blink-placeholder" style="height:30px;font-size:14px;font-weight:bold;background:transparent;border:none;border-bottom:1px solid #444;color:#fff;text-align:center;width:80%;outline:none;line-height:1;padding:0;box-sizing:border-box;"></div>
-    <div class="card"><div class="label" data-translate="taxation">TASSAZIONE %</div><input id="taxIn" type="number" inputmode="decimal" oninput="aggiornaTax()" data-translate-placeholder="ph_inserisci" placeholder="INSERISCI" class="blink-placeholder" style="height:30px;font-size:14px;font-weight:bold;background:transparent;border:none;border-bottom:1px solid #444;color:#fff;text-align:center;width:80%;outline:none;line-height:1;padding:0;box-sizing:border-box;"></div>
+    <div class="card"><div class="label" data-translate="net_target">OBIETTIVO NETTO</div><input id="targetIn" type="text" inputmode="decimal" oninput="aggiornaTarget()" data-translate-placeholder="ph_inserisci" placeholder="INSERISCI" class="blink-placeholder" style="height:30px;font-size:14px;font-weight:bold;background:transparent;border:none;border-bottom:1px solid #444;color:#fff;text-align:center;width:80%;outline:none;line-height:1;padding:0;box-sizing:border-box;"></div>
+    <div class="card"><div class="label" data-translate="taxation">TASSAZIONE %</div><input id="taxIn" type="text" inputmode="decimal" oninput="aggiornaTax()" data-translate-placeholder="ph_inserisci" placeholder="INSERISCI" class="blink-placeholder" style="height:30px;font-size:14px;font-weight:bold;background:transparent;border:none;border-bottom:1px solid #444;color:#fff;text-align:center;width:80%;outline:none;line-height:1;padding:0;box-sizing:border-box;"></div>
     <div class="card main"><div class="label" data-translate="gross_missing">LORDO MANCANTE</div><div class="val" id="mancante">0.00</div></div>    
 </div>
 <div class="progress-container">
@@ -876,11 +876,11 @@ body {
         </div>
         <div style="display:flex; gap:8px; margin-bottom:6px;" id="rowKmOdo">
             <div style="position:relative; flex:1; min-width:0;">
-                <input type="number" id="tKStart" data-translate-placeholder="ph_km_start" style="text-align:center; padding:11px 36px 11px 14px; margin-bottom:0;" inputmode="decimal" autocomplete="off" oninput="salvaKmPartenzaTmp(); calcolaKmDaOdometro();">
+                <input type="text" id="tKStart" data-translate-placeholder="ph_km_start" style="text-align:center; padding:11px 36px 11px 14px; margin-bottom:0;" inputmode="decimal" autocomplete="off" oninput="salvaKmPartenzaTmp(); calcolaKmDaOdometro();">
                 <button onclick="azzeraKmStart()" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:transparent; border:none; color:var(--accent); font-size:15px; cursor:pointer; padding:0; line-height:1;">✕</button>
             </div>
             <div style="position:relative; flex:1; min-width:0;">
-                <input type="number" id="tKEnd" data-translate-placeholder="ph_km_end" style="text-align:center; padding:11px 36px 11px 14px; margin-bottom:0;" inputmode="decimal" autocomplete="off" oninput="calcolaKmDaOdometro();" onblur="verificaKmOdometroBlur();">
+                <input type="text" id="tKEnd" data-translate-placeholder="ph_km_end" style="text-align:center; padding:11px 36px 11px 14px; margin-bottom:0;" inputmode="decimal" autocomplete="off" oninput="calcolaKmDaOdometro();" onblur="verificaKmOdometroBlur();">
                 <button onclick="azzeraKmEnd()" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:transparent; border:none; color:var(--accent); font-size:15px; cursor:pointer; padding:0; line-height:1;">✕</button>
             </div>
         </div>
@@ -895,10 +895,10 @@ body {
         </div>
         <div style="display:flex; gap:8px; margin-bottom:6px; margin-top:0;">
             <div style="display:flex; gap:8px; flex:1; min-width:0;" id="rowKmCons">
-                <input type="number" id="tK" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" placeholder="0" inputmode="decimal" autocomplete="off">
-                <input type="number" id="tC" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" data-translate-placeholder="ph_cons_short" step="0.1" inputmode="decimal" autocomplete="off">
+                <input type="text" id="tK" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" placeholder="0" inputmode="decimal" autocomplete="off">
+                <input type="text" id="tC" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" data-translate-placeholder="ph_cons_short" step="0.1" inputmode="decimal" autocomplete="off">
             </div>
-            <input type="number" id="tO" style="text-align:center; padding:11px 8px; flex:0 0 70px; min-width:0; margin-bottom:0;" placeholder="0" step="0.1" inputmode="decimal" autocomplete="off">
+            <input type="text" id="tO" style="text-align:center; padding:11px 8px; flex:0 0 70px; min-width:0; margin-bottom:0;" placeholder="0" step="0.1" inputmode="decimal" autocomplete="off">
         </div>
         <div id="consHint" style="font-size:10px; color:var(--primary); margin:0 0 6px 2px; min-height:0; font-style:italic; line-height:1.2;"></div>
 
@@ -909,9 +909,9 @@ body {
             <div style="flex:1; min-width:0; text-align:center; font-size:9px; font-weight:900; color:#aaa; text-transform:uppercase; letter-spacing:0.8px;">MANCE (€)</div>
         </div>
         <div id="rowOre" style="display:flex; gap:8px; margin-bottom:6px; margin-top:0; padding-top:0;">
-            <input type="number" id="tL" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" placeholder="0.00" inputmode="decimal" autocomplete="off" oninput="aggiornaAnteprimaContanti()">
-            <input type="number" id="tContanti" placeholder="0.00" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" step="0.01" inputmode="decimal" autocomplete="off" oninput="aggiornaAnteprimaContanti()">
-            <input type="number" id="tMance" placeholder="0.00" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" step="0.01" inputmode="decimal" autocomplete="off" oninput="aggiornaAnteprimaContanti()">
+            <input type="text" id="tL" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" placeholder="0.00" inputmode="decimal" autocomplete="off" oninput="aggiornaAnteprimaContanti()">
+            <input type="text" id="tContanti" placeholder="0.00" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" step="0.01" inputmode="decimal" autocomplete="off" oninput="aggiornaAnteprimaContanti()">
+            <input type="text" id="tMance" placeholder="0.00" style="text-align:center; padding:11px 14px; flex:1; min-width:0; margin-bottom:0;" step="0.01" inputmode="decimal" autocomplete="off" oninput="aggiornaAnteprimaContanti()">
         </div>
         <div id="contantiHint" style="font-size:10px; color:#aaa; margin:0 0 6px 2px; min-height:12px; font-style:italic; line-height:1.2;"></div>
 
@@ -1015,16 +1015,16 @@ body {
         </div>
         <input type="hidden" id="bTipo" value="benzina">
         <div style="font-size:9px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.8px; text-align:center; margin-bottom:2px;" id="lblBenzaSpeso">EURO SPESI</div>
-        <input type="number" id="bE" style="text-align:center; margin-bottom:14px;" data-translate-placeholder="ph_spent" step="0.01" inputmode="decimal" autocomplete="off">
+        <input type="text" id="bE" style="text-align:center; margin-bottom:14px;" data-translate-placeholder="ph_spent" step="0.01" inputmode="decimal" autocomplete="off">
         <div style="font-size:9px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.8px; text-align:center; margin-bottom:2px;" id="lblBenzaPrezzo">COSTO €/L</div>
         <input type="text" id="bP" style="text-align:center; margin-bottom:14px;" data-translate-placeholder="insert_ph" inputmode="decimal" oninput="formattaPrezzo(this)" autocomplete="off">
         <div style="font-size:9px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.8px; text-align:center; margin-bottom:2px;">KM ODOMETRO <span style="color:#ff4d4d;">*</span></div>
-        <input type="number" id="bKm" style="text-align:center; margin-bottom:14px;" placeholder="es. 12500" step="1" inputmode="decimal" autocomplete="off">
+        <input type="text" id="bKm" style="text-align:center; margin-bottom:14px;" placeholder="es. 12500" step="1" inputmode="decimal" autocomplete="off">
         <div style="font-size:9px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.8px; text-align:center; margin-bottom:2px;">LITRI INSERITI <span style="color:#888; font-weight:400;">(opzionale)</span></div>
-        <input type="number" id="bLitri" style="text-align:center; margin-bottom:14px;" placeholder="es. 4.5" step="0.01" inputmode="decimal" autocomplete="off">
+        <input type="text" id="bLitri" style="text-align:center; margin-bottom:14px;" placeholder="es. 4.5" step="0.01" inputmode="decimal" autocomplete="off">
         <div id="campiMiscela" style="display:none;">
             <p style="font-size:11px; color:var(--dim); margin:0 0 10px; text-transform:uppercase; letter-spacing:0.5px;" data-translate="mix_data">DATI MISCELA</p>
-            <input type="number" id="bPercMiscela" style="text-align:center; margin-bottom:14px;" data-translate-placeholder="ph_mix_pct" step="0.1">
+            <input type="text" id="bPercMiscela" style="text-align:center; margin-bottom:14px;" data-translate-placeholder="ph_mix_pct" step="0.1">
             <input type="text" id="bPrezzoOlio" style="text-align:center; margin-bottom:14px;" data-translate-placeholder="ph_oil_price" inputmode="decimal" oninput="formattaPrezzo(this)">
         </div>
         <button class="btn-modal btn-save" onclick="salvaBenza()" data-translate="save" style="padding:14px; margin-top:4px;">SALVA</button>
@@ -1187,7 +1187,7 @@ body {
         </div>
         <input type="hidden" id="extraCategoriaKey" value="">
         <div style="font-size:9px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.8px; text-align:center; margin-bottom:2px;">IMPORTO SPESA (€)</div>
-        <input type="number" id="extraImportoInput" style="text-align:center; margin-bottom:14px;" data-translate-placeholder="ph_extra_amount" step="0.01" inputmode="decimal" autocomplete="off">
+        <input type="text" id="extraImportoInput" style="text-align:center; margin-bottom:14px;" data-translate-placeholder="ph_extra_amount" step="0.01" inputmode="decimal" autocomplete="off">
         <div id="extraAltroWrap" style="display:none;">
             <input type="text" id="extraDescInput" style="text-align:center; margin-bottom:14px;" data-translate-placeholder="ph_extra_reason" autocomplete="off">
         </div>
@@ -1213,7 +1213,7 @@ body {
 
         <div style="display:flex; gap:8px; margin-bottom:10px;">
             <input type="text" id="extraDeliverooDescInput" placeholder="Descrizione" style="flex:1.3; text-align:center; margin-bottom:0;" autocomplete="off">
-            <input type="number" id="extraDeliverooImportoInput" placeholder="0.00" step="0.01" inputmode="decimal" style="flex:0.7; text-align:center; margin-bottom:0;" autocomplete="off">
+            <input type="text" id="extraDeliverooImportoInput" placeholder="0.00" inputmode="decimal" style="flex:0.7; text-align:center; margin-bottom:0;" autocomplete="off">
         </div>
         <button class="btn-modal" style="background:#333; color:#fff; padding:12px; margin-bottom:14px;" onclick="aggiungiVoceExtraDeliveroo()">+ AGGIUNGI VOCE</button>
 
@@ -1234,7 +1234,7 @@ body {
         
         <div id="campiOlioInizio" style="display:none; margin-top:15px;">
             <p style="font-size: 11px; color: var(--dim); margin-bottom: 10px; text-transform: uppercase;" data-translate="mix_data">DATI MISCELA:</p>
-            <input type="number" id="pPercMiscelaInizio" data-translate-placeholder="ph_mix_pct" step="0.1" style="margin-bottom:10px; font-size:16px; padding:12px;">
+            <input type="text" id="pPercMiscelaInizio" data-translate-placeholder="ph_mix_pct" step="0.1" style="margin-bottom:10px; font-size:16px; padding:12px;">
             <input type="text" id="pOlioInizio" data-translate-placeholder="ph_oil_price" inputmode="decimal" oninput="formattaPrezzo(this)" style="font-size:16px; padding:12px;">
         </div>
 
@@ -1281,7 +1281,7 @@ body {
         <h3 style="color:var(--primary); font-size:15px; margin-bottom:6px;">📍 KM Arrivo Odometro</h3>
         <p id="modalKmArrivoGpsInfo" style="font-size:12px; color:var(--dim); margin-bottom:14px; line-height:1.5;"></p>
         <div style="font-size:9px; font-weight:900; color:var(--primary); text-transform:uppercase; letter-spacing:0.8px; text-align:center; margin-bottom:4px;">KM ATTUALI CONTACHILOMETRI <span style="color:#ff4d4d;">*</span></div>
-        <input type="number" id="inputKmArrivoGps" style="text-align:center; margin-bottom:16px;" placeholder="es. 12540" step="1" inputmode="decimal" autocomplete="off">
+        <input type="text" id="inputKmArrivoGps" style="text-align:center; margin-bottom:16px;" placeholder="es. 12540" step="1" inputmode="decimal" autocomplete="off">
         <div class="confirm-buttons">
             <button class="btn-confirm-cancel" onclick="confermaKmArrivoGps()">CONFERMA</button>
             <button class="btn-confirm-ok" style="background:#c0392b; color:#fff; margin-top:6px; font-size:12px;" onclick="annullaKmArrivoGps()">ANNULLA TURNO</button>
@@ -3362,7 +3362,8 @@ function _renderListaExtraDeliverooMese() {
 function aggiungiVoceExtraDeliveroo() {
     var tag = _tagExtraDeliverooCorrente;
     if (!tag) return;
-    var importo = parseFloat(document.getElementById('extraDeliverooImportoInput').value) || 0;
+    var importoRaw = (document.getElementById('extraDeliverooImportoInput').value || '').trim().replace(',', '.');
+    var importo = parseFloat(importoRaw) || 0;
     var desc = (document.getElementById('extraDeliverooDescInput').value || '').trim();
     if (importo <= 0) { mostraAlertApp('Inserisci un importo valido.'); return; }
     if (!desc) desc = 'Indennità Deliveroo';
@@ -6822,20 +6823,20 @@ setTimeout(function(){ if (typeof aggiornaTagliando === 'function') aggiornaTagl
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
           <div>
             <label id="lblVehSerbatoio" style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px;text-align:center;">Serbatoio (L) *</label>
-            <input type="number" id="vehSerbatoio" placeholder="es. 45" class="veh-req-fuel" inputmode="decimal" style="width:100%;padding:9px;text-align:center;background:#252525;border:1px solid #444;color:#fff;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
+            <input type="text" id="vehSerbatoio" placeholder="es. 45" class="veh-req-fuel" inputmode="decimal" style="width:100%;padding:9px;text-align:center;background:#252525;border:1px solid #444;color:#fff;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
           </div>
           <div>
             <label id="lblVehConsMedio" style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px;text-align:center;">Consumo medio</label>
-            <input type="number" id="vehConsMedio" placeholder="es. 18" inputmode="decimal" style="width:100%;padding:9px;text-align:center;background:#252525;border:1px solid #444;color:#fff;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
+            <input type="text" id="vehConsMedio" placeholder="es. 18" inputmode="decimal" style="width:100%;padding:9px;text-align:center;background:#252525;border:1px solid #444;color:#fff;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
           </div>
         </div>
       </div>
       <div id="vehBifuelSection" style="display:none;margin-bottom:10px;">
         <label id="lblVehSerbatoio2" style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px;">Capacità Bombole (L equiv.) *</label>
-        <input type="number" id="vehSerbatoio2" placeholder="es. 50" class="veh-req-fuel2" inputmode="decimal" style="width:100%;padding:9px;text-align:center;background:#252525;border:1px solid #444;color:#fff;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
+        <input type="text" id="vehSerbatoio2" placeholder="es. 50" class="veh-req-fuel2" inputmode="decimal" style="width:100%;padding:9px;text-align:center;background:#252525;border:1px solid #444;color:#fff;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
       </div>
       <div id="vehConsMedio2Wrap" style="display:none;margin-bottom:10px;">
-        <input type="number" id="vehConsMedio2" placeholder="Consumo 2° carb." inputmode="decimal" style="width:100%;padding:9px;text-align:center;background:#252525;border:1px solid #444;color:#fff;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
+        <input type="text" id="vehConsMedio2" placeholder="Consumo 2° carb." inputmode="decimal" style="width:100%;padding:9px;text-align:center;background:#252525;border:1px solid #444;color:#fff;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
       </div>
     </div>
 
@@ -9349,6 +9350,20 @@ function confermaImportScreenshot() {
     aggiornaAnteprimaContanti();
 }
 
+</script>
+<script>
+// Normalizza automaticamente la virgola in punto sui campi numerici decimali,
+// così l'utente può digitare indifferentemente 6,93 o 6.93 in tutta l'app.
+document.addEventListener('input', function(e) {
+    var el = e.target;
+    if (el && el.tagName === 'INPUT' && el.getAttribute('inputmode') === 'decimal' && el.type === 'text') {
+        if (el.value.indexOf(',') !== -1) {
+            var pos = el.selectionStart;
+            el.value = el.value.replace(/,/g, '.');
+            if (pos !== null) { try { el.setSelectionRange(pos, pos); } catch(e){} }
+        }
+    }
+}, true);
 </script>
 </body>
 </html>
