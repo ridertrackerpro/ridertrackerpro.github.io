@@ -155,8 +155,8 @@ html, body { touch-action: pan-x pan-y; }
         #archivioStorico { flex-shrink: 0; max-height: 45vh; display: flex; flex-direction: column; border-top: 1px solid #333; margin-top: 6px; }
         #archivioStorico.collapsed #archivioBody { display: none; }
         /* Fix tastiera virtuale gestito via JS */
-        .modal.keyboard-open { align-items: flex-start; padding-top: 8px; }
-        .modal.keyboard-open .modal-content { max-height: 85vh; overflow-y: auto; }
+        .modal.keyboard-open { align-items: flex-start; padding-top: max(8px, env(safe-area-inset-top, 8px)); }
+        .modal.keyboard-open .modal-content { max-height: 92vh; overflow-y: auto; }
         #archivioBody { overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1; }
         #archivioHeader { display:flex; align-items:center; gap:8px; padding:8px 10px; background:linear-gradient(135deg,#0d2e2b,#111); cursor:pointer; flex-shrink:0; }
         #reportView { display:none; position:fixed; inset:0; z-index:8000; background:#fff; color:#000; flex-direction:column; text-align:left; padding-top: max(15px, env(safe-area-inset-top, 15px)); box-sizing: border-box; }
@@ -8572,6 +8572,21 @@ document.addEventListener('DOMContentLoaded', function(){
                 });
             });
         } catch(e) {}
+    } else if (window.visualViewport) {
+        // Fix tastiera virtuale per browser/PWA (senza Capacitor): il modale non deve
+        // risalire più del necessario quando compare la tastiera, altrimenti l'header
+        // esce dallo schermo e i controlli in alto diventano irraggiungibili.
+        var _vv = window.visualViewport;
+        var _vvBaseHeight = _vv.height;
+        _vv.addEventListener('resize', function() {
+            var _shrunk = (_vvBaseHeight - _vv.height) > 120; // soglia: tastiera aperta
+            document.querySelectorAll('.modal').forEach(function(m) {
+                if (m.style.display === 'flex') {
+                    m.classList.toggle('keyboard-open', _shrunk);
+                }
+            });
+            if (!_shrunk) _vvBaseHeight = _vv.height;
+        });
     }
     _syncVeicoloAttivo();
     aggiornaTestiSettings();
