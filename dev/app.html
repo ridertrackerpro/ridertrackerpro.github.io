@@ -155,8 +155,8 @@ html, body { touch-action: pan-x pan-y; }
         #archivioStorico { flex-shrink: 0; max-height: 45vh; display: flex; flex-direction: column; border-top: 1px solid #333; margin-top: 6px; }
         #archivioStorico.collapsed #archivioBody { display: none; }
         /* Fix tastiera virtuale gestito via JS */
-        .modal.keyboard-open { align-items: flex-start; padding-top: max(8px, env(safe-area-inset-top, 8px)); }
-        .modal.keyboard-open .modal-content { max-height: 92vh; overflow-y: auto; }
+        .modal.keyboard-open { align-items: flex-start; justify-content: center; padding-top: max(8px, env(safe-area-inset-top, 8px)); padding-bottom: 8px; box-sizing: border-box; overflow-y: auto; }
+        .modal.keyboard-open .modal-content { max-height: none; }
         #archivioBody { overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1; }
         #archivioHeader { display:flex; align-items:center; gap:8px; padding:8px 10px; background:linear-gradient(135deg,#0d2e2b,#111); cursor:pointer; flex-shrink:0; }
         #reportView { display:none; position:fixed; inset:0; z-index:8000; background:#fff; color:#000; flex-direction:column; text-align:left; padding-top: max(15px, env(safe-area-inset-top, 15px)); box-sizing: border-box; }
@@ -8557,6 +8557,35 @@ document.addEventListener('DOMContentLoaded', function(){
         try { window.Capacitor.Plugins.LocalNotifications.requestPermissions(); } catch(e) {}
     }
 
+    // Fix tastiera virtuale: il modale deve restare ancorato all'area REALMENTE visibile
+    // dello schermo (visualViewport), non all'intero layout viewport, altrimenti la tastiera
+    // copre l'header da sotto senza che il modale si ridimensioni per davvero.
+    function _adattaModaliATastiera() {
+        var _modaliAperti = Array.prototype.filter.call(
+            document.querySelectorAll('.modal'),
+            function(m) { return m.style.display === 'flex'; }
+        );
+        if (!_modaliAperti.length) return;
+
+        if (window.visualViewport) {
+            var _vv = window.visualViewport;
+            var _tastieraAperta = (window.innerHeight - _vv.height) > 120;
+            _modaliAperti.forEach(function(m) {
+                if (_tastieraAperta) {
+                    m.classList.add('keyboard-open');
+                    m.style.top = _vv.offsetTop + 'px';
+                    m.style.height = _vv.height + 'px';
+                } else {
+                    m.classList.remove('keyboard-open');
+                    m.style.top = '';
+                    m.style.height = '';
+                }
+            });
+        } else {
+            _modaliAperti.forEach(function(m) { m.classList.add('keyboard-open'); });
+        }
+    }
+
     // Fix tastiera virtuale Android con Capacitor Keyboard plugin
     if (window.Capacitor && window.Capacitor.isNativePlatform()) {
         try {
@@ -8572,22 +8601,23 @@ document.addEventListener('DOMContentLoaded', function(){
                 });
             });
         } catch(e) {}
-    } else if (window.visualViewport) {
-        // Fix tastiera virtuale per browser/PWA (senza Capacitor): il modale non deve
-        // risalire più del necessario quando compare la tastiera, altrimenti l'header
-        // esce dallo schermo e i controlli in alto diventano irraggiungibili.
-        var _vv = window.visualViewport;
-        var _vvBaseHeight = _vv.height;
-        _vv.addEventListener('resize', function() {
-            var _shrunk = (_vvBaseHeight - _vv.height) > 120; // soglia: tastiera aperta
-            document.querySelectorAll('.modal').forEach(function(m) {
-                if (m.style.display === 'flex') {
-                    m.classList.toggle('keyboard-open', _shrunk);
-                }
-            });
-            if (!_shrunk) _vvBaseHeight = _vv.height;
-        });
     }
+    // Fallback universale (browser, PWA, e anche Capacitor come rete di sicurezza)
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', _adattaModaliATastiera);
+        window.visualViewport.addEventListener('scroll', _adattaModaliATastiera);
+    }
+    document.addEventListener('focusin', function(e) {
+        if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA')) {
+            setTimeout(_adattaModaliATastiera, 50);
+            setTimeout(_adattaModaliATastiera, 300);
+        }
+    });
+    document.addEventListener('focusout', function(e) {
+        if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA')) {
+            setTimeout(_adattaModaliATastiera, 300);
+        }
+    });
     _syncVeicoloAttivo();
     aggiornaTestiSettings();
     aggiornaTestiTurnoModal();
