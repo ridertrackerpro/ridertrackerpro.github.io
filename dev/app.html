@@ -3897,7 +3897,12 @@ function chiudiResaView(){
 
 // ==================== GARAGE ====================
 
+// Usa l'odometro reale del veicolo (km fine ultimo turno / rifornimento registrato),
+// che è il dato di riferimento vero per le scadenze km. Se il veicolo non ha ancora
+// un odometro registrato, ripiega sulla somma dei km percorsi nei turni.
 function _garageKmTotaliVeicolo(veicoloId) {
+    var odometro = (typeof getLastKmVeicolo === 'function') ? getLastKmVeicolo(veicoloId) : null;
+    if (odometro !== null && odometro > 0) return odometro;
     return (db.turni || []).reduce(function(a, t) {
         return a + ((t.veicoloId === veicoloId) ? (parseFloat(t.km) || 0) : 0);
     }, 0);
@@ -3997,7 +4002,7 @@ function garageRenderListaVeicoli() {
         return '<div class="veh-card" style="cursor:pointer; position:relative; padding:18px; margin-bottom:12px; text-align:center;" onclick="garageApriDettaglio(' + v.id + ')">' +
             badge +
             '<div class="veh-card-name" style="font-size:16px; margin-bottom:4px;">' + icona + ' ' + v.marca + ' ' + v.modello + '</div>' +
-            '<div class="veh-card-sub" style="font-size:11px;">' + interventi.length + ' interventi programmati · ' + Math.round(kmTot) + ' km percorsi</div>' +
+            '<div class="veh-card-sub" style="font-size:11px;">' + interventi.length + ' interventi programmati · ' + Math.round(kmTot) + ' km odometro</div>' +
             '</div>';
     }).join('');
 }
@@ -4018,7 +4023,7 @@ function garageRenderDettaglio() {
     document.getElementById('garageDettaglioHeader').innerHTML =
         '<div style="font-size:20px; margin-bottom:2px;">' + icona + '</div>' +
         '<div style="font-size:15px; font-weight:900; color:#fff;">' + v.marca + ' ' + v.modello + '</div>' +
-        '<div style="font-size:11px; color:#888; margin-top:2px;">' + Math.round(kmTot) + ' km percorsi (registrati)</div>';
+        '<div style="font-size:11px; color:#888; margin-top:2px;">' + Math.round(kmTot) + ' km odometro attuale</div>';
 
     var interventi = (v.interventi || []).filter(function(iv){ return !iv.completato; });
     var elList = document.getElementById('garageInterventiList');
