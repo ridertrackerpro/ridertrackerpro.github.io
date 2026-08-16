@@ -1630,7 +1630,7 @@ body {
         <div style="display:flex; gap:8px; margin-bottom:8px;">
             <div style="flex:1;">
                 <div style="font-size:10px; font-weight:700; color:#888; margin-bottom:4px;" data-translate="garage_ultima_data">ULTIMA ESECUZIONE</div>
-                <input type="text" id="intUltimaData" placeholder="GG/MM/AAAA" inputmode="numeric" oninput="garageFormattaDataInput(this)" style="width:100%; padding:9px 12px; background:#1a1a1a; border:1px solid #333; border-radius:10px; color:#fff; font-size:13px; box-sizing:border-box; text-align:center;">
+                <input type="date" id="intUltimaData" style="width:100%; padding:9px 12px; background:#1a1a1a; border:1px solid #333; border-radius:10px; color:#fff; font-size:13px; box-sizing:border-box; text-align:center; color-scheme:dark;">
             </div>
             <div style="flex:1;">
                 <div style="font-size:10px; font-weight:700; color:#888; margin-bottom:4px;" data-translate="garage_ultima_km">ULTIMO KM</div>
@@ -4063,37 +4063,6 @@ function garageRenderDettaglio() {
     }
 }
 
-// Formatta la data mentre l'utente digita solo cifre: gg/mm/aaaa.
-// Con 6 cifre totali interpreta 1 cifra per il giorno e 1 per il mese (es. "252026" -> 02/05/2026).
-// Con 7-8 cifre interpreta 2 cifre per giorno e mese (es. "12052026" -> 12/05/2026).
-function garageFormattaDataInput(el) {
-    var raw = el.value.replace(/\D/g, '');
-    if (raw.length > 8) raw = raw.slice(0, 8);
-
-    var gg = '', mm = '', aaaa = '';
-    if (raw.length <= 4) {
-        // Ancora in fase di digitazione giorno/mese: 2+2 cifre standard
-        gg = raw.slice(0, 2);
-        mm = raw.slice(2, 4);
-    } else if (raw.length <= 6) {
-        // Con 5-6 cifre totali le ultime 4 sono l'anno, il resto si divide 1+1 (o 1+2 / 2+1)
-        aaaa = raw.slice(-4);
-        var resto = raw.slice(0, raw.length - 4);
-        gg = resto.slice(0, 1).padStart(2, '0');
-        mm = resto.length > 1 ? resto.slice(1).padStart(2, '0') : mm;
-    } else {
-        // 7-8 cifre: standard gg(2) mm(2) aaaa(4)
-        gg = raw.slice(0, 2);
-        mm = raw.slice(2, 4);
-        aaaa = raw.slice(4);
-    }
-
-    var out = gg;
-    if (mm !== '') out += '/' + mm;
-    if (aaaa !== '') out += '/' + aaaa;
-    el.value = out;
-}
-
 function garageOnChangeTipo() {
     var tipo = document.getElementById('intTipo').value;
     document.getElementById('intNomeWrap').style.display = (tipo === 'personalizzato') ? 'block' : 'none';
@@ -4102,6 +4071,19 @@ function garageOnChangeTipo() {
 function garageToggleRicorrenza() {
     document.getElementById('intRicKm').disabled = !document.getElementById('intRicKmChk').checked;
     document.getElementById('intRicMesi').disabled = !document.getElementById('intRicMesiChk').checked;
+}
+
+function _garageISOtoGGMMAAAA(iso) {
+    if (!iso) return '';
+    var p = iso.split('-'); // aaaa-mm-gg
+    if (p.length !== 3) return '';
+    return p[2] + '/' + p[1] + '/' + p[0];
+}
+function _garageGGMMAAAAtoISO(ggmmaaaa) {
+    if (!ggmmaaaa) return '';
+    var p = ggmmaaaa.split('/'); // gg/mm/aaaa
+    if (p.length !== 3) return '';
+    return p[2] + '-' + p[1] + '-' + p[0];
 }
 
 function garageApriFormIntervento(interventoId) {
@@ -4116,7 +4098,7 @@ function garageApriFormIntervento(interventoId) {
         if (!iv) return;
         document.getElementById('intTipo').value = iv.tipo;
         document.getElementById('intNome').value = iv.nomePersonalizzato || '';
-        document.getElementById('intUltimaData').value = iv.ultimaData || '';
+        document.getElementById('intUltimaData').value = _garageGGMMAAAAtoISO(iv.ultimaData) || '';
         document.getElementById('intUltimoKm').value = iv.ultimoKm != null ? iv.ultimoKm : '';
         document.getElementById('intCosto').value = iv.costo != null ? iv.costo : '';
         document.getElementById('intRicKmChk').checked = !!(iv.ricorrenza && iv.ricorrenza.ogniKm);
@@ -4159,7 +4141,7 @@ function garageSalvaIntervento() {
     var interventoId = document.getElementById('intId').value;
     var tipo = document.getElementById('intTipo').value;
     var nome = document.getElementById('intNome').value.trim();
-    var ultimaData = document.getElementById('intUltimaData').value.trim();
+    var ultimaData = _garageISOtoGGMMAAAA(document.getElementById('intUltimaData').value.trim());
     var ultimoKmVal = document.getElementById('intUltimoKm').value;
     var costoVal = document.getElementById('intCosto').value;
 
