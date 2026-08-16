@@ -1590,14 +1590,17 @@ body {
         <div id="garageDettaglioView" style="display:none;">
             <div id="garageDettaglioHeader" style="text-align:center; padding:10px 0;"></div>
             <div id="garageInterventiList"></div>
-            <button class="btn-rep-uniform" style="background:var(--primary); color:#000; margin-top:6px;" onclick="garageApriFormIntervento(null)">
-                <i class="fas fa-plus-circle"></i> <span data-translate="garage_new_intervento">NUOVO INTERVENTO</span>
-            </button>
             <div id="garageStoricoWrap" style="margin-top:14px;">
                 <div style="font-size:11px; font-weight:900; color:#888; letter-spacing:1px; margin-bottom:6px;" data-translate="garage_storico">STORICO INTERVENTI</div>
                 <div id="garageStoricoList"></div>
             </div>
         </div>
+    </div>
+
+    <div id="garageBtnNuovoWrap" style="display:none; flex-shrink:0; padding:10px 15px 0 15px; box-sizing:border-box;">
+        <button class="btn-rep-uniform" style="background:var(--primary); color:#000; width:100%;" onclick="garageApriFormIntervento(null)">
+            <i class="fas fa-plus-circle"></i> <span data-translate="garage_new_intervento">NUOVO INTERVENTO</span>
+        </button>
     </div>
 
     <div style="flex-shrink:0; padding:10px 15px; padding-bottom:max(16px, env(safe-area-inset-bottom, 16px)); box-sizing:border-box; border-top:1px solid #222; display:flex; gap:8px;">
@@ -3976,6 +3979,7 @@ function garageTornaLista() {
     document.getElementById('garageDettaglioView').style.display = 'none';
     document.getElementById('garageListView').style.display = 'block';
     document.getElementById('garageBtnVeicoli').style.display = 'none';
+    document.getElementById('garageBtnNuovoWrap').style.display = 'none';
     window._garageVeicoloId = null;
     garageRenderListaVeicoli();
 }
@@ -4015,6 +4019,7 @@ function garageApriDettaglio(veicoloId) {
     document.getElementById('garageListView').style.display = 'none';
     document.getElementById('garageDettaglioView').style.display = 'block';
     document.getElementById('garageBtnVeicoli').style.display = 'block';
+    document.getElementById('garageBtnNuovoWrap').style.display = 'block';
     garageRenderDettaglio();
 }
 
