@@ -159,6 +159,8 @@ html, body { touch-action: pan-x pan-y; }
         #modalTurno .modal-content { max-height: none !important; }
         #modalBenza { position: fixed !important; top: 0 !important; bottom: 0 !important; left: 0 !important; right: 0 !important; height: 100% !important; align-items: flex-start !important; padding-top: max(8px, env(safe-area-inset-top, 8px)) !important; overflow-y: auto !important; }
         #modalBenza .modal-content { max-height: none !important; }
+        #modalIntervento { position: fixed !important; top: 0 !important; bottom: 0 !important; left: 0 !important; right: 0 !important; height: 100% !important; align-items: flex-start !important; padding-top: max(8px, env(safe-area-inset-top, 8px)) !important; overflow-y: auto !important; }
+        #modalIntervento .modal-content { max-height: none !important; }
         #archivioBody { overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1; }
         #archivioHeader { display:flex; align-items:center; gap:8px; padding:8px 10px; background:linear-gradient(135deg,#0d2e2b,#111); cursor:pointer; flex-shrink:0; }
         #reportView { display:none; position:fixed; inset:0; z-index:8000; background:#fff; color:#000; flex-direction:column; text-align:left; padding-top: max(15px, env(safe-area-inset-top, 15px)); box-sizing: border-box; }
@@ -1575,6 +1577,108 @@ body {
         </button>
     </div>
 </div>
+<div id="garageView" style="display:none; position:fixed; inset:0; z-index:9500; background:#111; color:#fff; overflow-y:auto;">
+    <div style="padding:15px; min-height:100%; display:flex; flex-direction:column; gap:12px; box-sizing:border-box;">
+        <h2 style="text-align:center; margin:0; font-size:16px; letter-spacing:1px; color:#fff;"><i class="fas fa-warehouse" style="margin-right:8px; color:var(--orange);"></i><span data-translate="garage_title">GARAGE</span></h2>
+
+        <!-- VISTA 1: lista veicoli -->
+        <div id="garageListView">
+            <div id="garageVeicoliList"></div>
+        </div>
+
+        <!-- VISTA 2: dettaglio veicolo con interventi -->
+        <div id="garageDettaglioView" style="display:none;">
+            <button class="btn-rep-uniform btn-grey-dark" style="margin-bottom:4px;" onclick="garageTornaLista()">
+                <i class="fas fa-arrow-left"></i> <span data-translate="garage_back">VEICOLI</span>
+            </button>
+            <div id="garageDettaglioHeader" style="text-align:center; padding:10px 0;"></div>
+            <div id="garageInterventiList"></div>
+            <button class="btn-rep-uniform" style="background:var(--primary); color:#000; margin-top:6px;" onclick="garageApriFormIntervento(null)">
+                <i class="fas fa-plus-circle"></i> <span data-translate="garage_new_intervento">NUOVO INTERVENTO</span>
+            </button>
+            <div id="garageStoricoWrap" style="margin-top:14px;">
+                <div style="font-size:11px; font-weight:900; color:#888; letter-spacing:1px; margin-bottom:6px;" data-translate="garage_storico">STORICO INTERVENTI</div>
+                <div id="garageStoricoList"></div>
+            </div>
+        </div>
+
+        <button class="btn-rep-uniform btn-grey-dark" style="margin-top:5px; margin-bottom:40px; flex-shrink:0;" onclick="chiudiGarageView()">
+            <i class="fas fa-times"></i> <span data-translate="close">Chiudi</span>
+        </button>
+    </div>
+</div>
+
+<!-- MODAL: form nuovo/modifica intervento -->
+<div id="modalIntervento" class="modal no-print">
+    <div class="modal-content" style="max-width:420px;">
+        <h3 style="text-align:center; color:var(--primary); margin-top:0;" data-translate="garage_intervento_title">INTERVENTO</h3>
+
+        <div style="font-size:11px; font-weight:700; color:#888; margin-bottom:6px;" data-translate="garage_tipo">TIPO INTERVENTO</div>
+        <select id="intTipo" onchange="garageOnChangeTipo()" style="width:100%; padding:11px 14px; margin-bottom:12px; background:#1a1a1a; border:1px solid #333; border-radius:10px; color:#fff; font-size:14px;">
+            <option value="tagliando" data-translate="cat_tagliando">Tagliando</option>
+            <option value="bollo" data-translate="cat_bollo">Bollo</option>
+            <option value="assicurazione" data-translate="cat_assicurazione">Assicurazione</option>
+            <option value="revisione" data-translate="cat_revisione">Revisione</option>
+            <option value="personalizzato" data-translate="garage_personalizzato">Personalizzato</option>
+        </select>
+
+        <div id="intNomeWrap" style="display:none;">
+            <div style="font-size:11px; font-weight:700; color:#888; margin-bottom:6px;" data-translate="garage_nome_voce">NOME VOCE</div>
+            <input type="text" id="intNome" placeholder="es. Cambio olio forcella" style="width:100%; padding:11px 14px; margin-bottom:12px; background:#1a1a1a; border:1px solid #333; border-radius:10px; color:#fff; font-size:14px; box-sizing:border-box;">
+        </div>
+
+        <div style="display:flex; gap:8px; margin-bottom:12px;">
+            <div style="flex:1;">
+                <div style="font-size:11px; font-weight:700; color:#888; margin-bottom:6px;" data-translate="garage_ultima_data">ULTIMA ESECUZIONE (data)</div>
+                <input type="text" id="intUltimaData" placeholder="GG/MM/AAAA" inputmode="numeric" style="width:100%; padding:11px 14px; background:#1a1a1a; border:1px solid #333; border-radius:10px; color:#fff; font-size:14px; box-sizing:border-box; text-align:center;">
+            </div>
+            <div style="flex:1;">
+                <div style="font-size:11px; font-weight:700; color:#888; margin-bottom:6px;" data-translate="garage_ultima_km">ULTIMO KM</div>
+                <input type="number" id="intUltimoKm" placeholder="es. 10500" inputmode="numeric" style="width:100%; padding:11px 14px; background:#1a1a1a; border:1px solid #333; border-radius:10px; color:#fff; font-size:14px; box-sizing:border-box; text-align:center;">
+            </div>
+        </div>
+
+        <div style="font-size:11px; font-weight:700; color:#888; margin-bottom:6px;" data-translate="garage_costo">COSTO (€)</div>
+        <input type="number" id="intCosto" placeholder="0.00" step="0.01" inputmode="decimal" style="width:100%; padding:11px 14px; margin-bottom:14px; background:#1a1a1a; border:1px solid #333; border-radius:10px; color:#fff; font-size:14px; box-sizing:border-box; text-align:center;">
+
+        <div style="font-size:11px; font-weight:900; color:var(--primary); letter-spacing:0.5px; margin:14px 0 8px;" data-translate="garage_ricorrenza">RIPETI OGNI</div>
+        <div style="display:flex; gap:8px; margin-bottom:12px;">
+            <label style="display:flex; align-items:center; gap:5px; font-size:12px; color:#ccc;"><input type="checkbox" id="intRicKmChk" onchange="garageToggleRicorrenza()"> <span data-translate="garage_per_km">Km</span></label>
+            <input type="number" id="intRicKm" placeholder="es. 3000" inputmode="numeric" disabled style="flex:1; padding:9px 10px; background:#1a1a1a; border:1px solid #333; border-radius:8px; color:#fff; font-size:13px; box-sizing:border-box; text-align:center;">
+        </div>
+        <div style="display:flex; gap:8px; margin-bottom:14px;">
+            <label style="display:flex; align-items:center; gap:5px; font-size:12px; color:#ccc;"><input type="checkbox" id="intRicMesiChk" onchange="garageToggleRicorrenza()"> <span data-translate="garage_per_mesi">Mesi</span></label>
+            <input type="number" id="intRicMesi" placeholder="es. 12" inputmode="numeric" disabled style="flex:1; padding:9px 10px; background:#1a1a1a; border:1px solid #333; border-radius:8px; color:#fff; font-size:13px; box-sizing:border-box; text-align:center;">
+        </div>
+
+        <div style="font-size:11px; font-weight:900; color:var(--orange); letter-spacing:0.5px; margin:14px 0 8px;" data-translate="garage_avviso">AVVISAMI IN ANTICIPO DI</div>
+        <div style="display:flex; gap:8px; margin-bottom:6px;">
+            <label style="display:flex; align-items:center; gap:5px; font-size:12px; color:#ccc;"><input type="checkbox" id="intAvvKmChk"> <span data-translate="garage_per_km">Km</span></label>
+            <input type="number" id="intAvvKm" placeholder="es. 200" inputmode="numeric" style="flex:1; padding:9px 10px; background:#1a1a1a; border:1px solid #333; border-radius:8px; color:#fff; font-size:13px; box-sizing:border-box; text-align:center;">
+        </div>
+        <div style="display:flex; gap:8px; margin-bottom:16px;">
+            <label style="display:flex; align-items:center; gap:5px; font-size:12px; color:#ccc;"><input type="checkbox" id="intAvvGiorniChk"> <span data-translate="garage_giorni">Giorni</span></label>
+            <input type="number" id="intAvvGiorni" placeholder="es. 15" inputmode="numeric" style="flex:1; padding:9px 10px; background:#1a1a1a; border:1px solid #333; border-radius:8px; color:#fff; font-size:13px; box-sizing:border-box; text-align:center;">
+        </div>
+
+        <div style="font-size:11px; font-weight:700; color:#888; margin-bottom:6px;" data-translate="garage_note">NOTE (opzionale)</div>
+        <textarea id="intNote" rows="2" placeholder="" style="width:100%; padding:11px 14px; margin-bottom:16px; background:#1a1a1a; border:1px solid #333; border-radius:10px; color:#fff; font-size:13px; box-sizing:border-box; resize:vertical;"></textarea>
+
+        <input type="hidden" id="intId">
+        <input type="hidden" id="intVeicoloId">
+
+        <button class="btn-rep-uniform" style="background:var(--primary); color:#000; margin-bottom:8px;" onclick="garageSalvaIntervento()">
+            <i class="fas fa-check"></i> <span data-translate="save">SALVA</span>
+        </button>
+        <button id="intBtnElimina" class="btn-rep-uniform" style="background:#3a1414; color:#e74c3c; margin-bottom:8px; display:none;" onclick="garageEliminaIntervento(document.getElementById('intId').value); chiudiM('modalIntervento');">
+            <i class="fas fa-trash"></i> <span data-translate="delete">ELIMINA</span>
+        </button>
+        <button class="btn-rep-uniform btn-grey-dark" onclick="chiudiM('modalIntervento')">
+            <i class="fas fa-times"></i> <span data-translate="close">CHIUDI</span>
+        </button>
+    </div>
+</div>
+
 <div id="stickyFooterGrid" class="sticky-footer no-print">
     <div id="footBtnTurno" class="foot-btn" style="color:var(--primary)" onclick="apriM('modalTurno')">
         <i class="fas fa-plus-circle" style="color:var(--primary)"></i><span data-translate="btn_shift">TURNO</span>
@@ -1591,7 +1695,7 @@ body {
     </div>
    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; grid-column:1 / -1; margin-top:2px;">
         <button style="height:44px; font-size:11px; font-weight:900; padding:0; background:var(--primary); color:#000; border:none; border-radius:15px; cursor:pointer;" onclick="apriReport(reportMeseKey || null)"><i class="fas fa-file-alt" style="margin-right:5px;"></i><span data-translate="btn_monthly_summary">RIEPILOGO MESE</span></button>
-        <button style="height:44px; font-size:11px; font-weight:900; padding:0; background:var(--orange); color:#000; border:none; border-radius:15px; cursor:pointer;" onclick="apriResaView()"><i class="fas fa-chart-line" style="margin-right:5px;"></i><span data-translate="btn_yield_chart">RESA €/ORA</span></button>
+        <button style="height:44px; font-size:11px; font-weight:900; padding:0; background:var(--orange); color:#000; border:none; border-radius:15px; cursor:pointer;" onclick="apriGarage()"><i class="fas fa-warehouse" style="margin-right:5px;"></i><span data-translate="btn_garage">GARAGE</span></button>
     </div>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; grid-column:1 / -1; margin-top:2px;">
         <button style="height:36px; font-size:10px; font-weight:700; padding:0; background:#222; border:1px solid #444; color:var(--primary); border-radius:15px; cursor:pointer;" onclick="salvaBackup()"><i class="fas fa-download" style="margin-right:4px;"></i><span data-translate="export_backup">ESPORTA</span></button>
@@ -1701,6 +1805,30 @@ vehicle_scooter: 'Scooter',
         taxation_applied: 'Tassazione applicata:',
         net_total: 'NETTO TOTALE:',
         yield_analysis: 'ANALISI RESA',
+        btn_garage: 'GARAGE',
+        garage_title: 'GARAGE',
+        garage_back: 'VEICOLI',
+        garage_new_intervento: 'NUOVO INTERVENTO',
+        garage_storico: 'STORICO INTERVENTI',
+        garage_intervento_title: 'INTERVENTO',
+        garage_tipo: 'TIPO INTERVENTO',
+        garage_personalizzato: 'Personalizzato',
+        garage_nome_voce: 'NOME VOCE',
+        garage_ultima_data: 'ULTIMA ESECUZIONE (data)',
+        garage_ultima_km: 'ULTIMO KM',
+        garage_costo: 'COSTO (€)',
+        garage_ricorrenza: 'RIPETI OGNI',
+        garage_per_km: 'Km',
+        garage_per_mesi: 'Mesi',
+        garage_avviso: 'AVVISAMI IN ANTICIPO DI',
+        garage_giorni: 'Giorni',
+        garage_note: 'NOTE (opzionale)',
+        garage_nessun_veicolo: 'Nessun veicolo salvato. Vai in Impostazioni per aggiungerne uno.',
+        garage_nessun_intervento: 'Nessun intervento programmato per questo veicolo.',
+        garage_nessuno_storico: 'Nessun intervento in storico.',
+        garage_scaduto: 'SCADUTO',
+        garage_prossimo: 'Prossimo',
+        garage_conferma_elimina: 'Eliminare questo intervento?',
         reset_zoom: 'RESET ZOOM',
         detail: 'CLICCA',
         multi: 'MULTI',
@@ -2770,6 +2898,11 @@ function isDataFutura(d, m, y) {
     return new Date(y, m - 1, d) > oggi;
 }
 
+function chiudiM(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+}
+
 function apriM(id) { 
     const n = new Date(); 
     let d='', m='', y=''; 
@@ -3764,6 +3897,331 @@ function chiudiResaView(){
         document.getElementById('reportView').style.display = 'flex';
     }
 }
+
+// ==================== GARAGE ====================
+
+function _garageKmTotaliVeicolo(veicoloId) {
+    return (db.turni || []).reduce(function(a, t) {
+        return a + ((t.veicoloId === veicoloId) ? (parseFloat(t.km) || 0) : 0);
+    }, 0);
+}
+
+function _garageParseData(str) {
+    if (!str) return null;
+    var p = str.split('/');
+    if (p.length !== 3) return null;
+    var d = new Date(parseInt(p[2]), parseInt(p[1]) - 1, parseInt(p[0]));
+    return isNaN(d.getTime()) ? null : d;
+}
+
+function _garageFormattaData(d) {
+    return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
+}
+
+function _garageLabelTipo(tipo, nomePersonalizzato) {
+    if (tipo === 'personalizzato') return nomePersonalizzato || t('garage_personalizzato');
+    return t('cat_' + tipo);
+}
+
+function _garageIconaTipo(tipo) {
+    var mappa = { tagliando: '🔧', bollo: '📋', assicurazione: '🛡️', revisione: '🚦', personalizzato: '⚙️' };
+    return mappa[tipo] || '⚙️';
+}
+
+// Calcola lo stato di un intervento: prossima scadenza (km e/o data) e percentuale consumata
+function _garageStatoIntervento(interv, kmTotaliVeicolo) {
+    var stato = { prossimoKm: null, prossimaData: null, percKm: null, percTempo: null, urgenza: 'ok' };
+
+    if (interv.ricorrenza && interv.ricorrenza.ogniKm > 0 && interv.ultimoKm != null) {
+        stato.prossimoKm = interv.ultimoKm + interv.ricorrenza.ogniKm;
+        var fattoKm = kmTotaliVeicolo - interv.ultimoKm;
+        stato.percKm = Math.min(100, Math.max(0, (fattoKm / interv.ricorrenza.ogniKm) * 100));
+    }
+    if (interv.ricorrenza && interv.ricorrenza.ogniMesi > 0 && interv.ultimaData) {
+        var dUlt = _garageParseData(interv.ultimaData);
+        if (dUlt) {
+            var dProssima = new Date(dUlt);
+            dProssima.setMonth(dProssima.getMonth() + interv.ricorrenza.ogniMesi);
+            stato.prossimaData = _garageFormattaData(dProssima);
+            var oggi = new Date(); oggi.setHours(0,0,0,0);
+            var totMs = dProssima - dUlt;
+            var fattoMs = oggi - dUlt;
+            stato.percTempo = totMs > 0 ? Math.min(100, Math.max(0, (fattoMs / totMs) * 100)) : 0;
+        }
+    }
+
+    var percMax = Math.max(stato.percKm || 0, stato.percTempo || 0);
+    if (percMax >= 100) stato.urgenza = 'scaduto';
+    else if (percMax >= 85) stato.urgenza = 'urgente';
+    else if (percMax >= 60) stato.urgenza = 'attenzione';
+    else stato.urgenza = 'ok';
+
+    return stato;
+}
+
+function apriGarage() {
+    document.getElementById('garageView').style.display = 'block';
+    garageTornaLista();
+}
+
+function chiudiGarageView() {
+    document.getElementById('garageView').style.display = 'none';
+}
+
+function garageTornaLista() {
+    document.getElementById('garageDettaglioView').style.display = 'none';
+    document.getElementById('garageListView').style.display = 'block';
+    window._garageVeicoloId = null;
+    garageRenderListaVeicoli();
+}
+
+function garageRenderListaVeicoli() {
+    var vv = getVeicoli();
+    var el = document.getElementById('garageVeicoliList');
+    if (!vv.length) {
+        el.innerHTML = '<div style="font-size:12px; color:#666; text-align:center; padding:30px 10px;">' + t('garage_nessun_veicolo') + '</div>';
+        return;
+    }
+    el.innerHTML = vv.map(function(v) {
+        var icona = typeof _getMezzoIcona === 'function' ? _getMezzoIcona(v.tipo || 'auto') : '🚗';
+        var interventi = v.interventi || [];
+        var kmTot = _garageKmTotaliVeicolo(v.id);
+        var maxUrgenza = 'ok';
+        interventi.forEach(function(iv) {
+            var s = _garageStatoIntervento(iv, kmTot);
+            if (s.urgenza === 'scaduto') maxUrgenza = 'scaduto';
+            else if (s.urgenza === 'urgente' && maxUrgenza !== 'scaduto') maxUrgenza = 'urgente';
+            else if (s.urgenza === 'attenzione' && maxUrgenza === 'ok') maxUrgenza = 'attenzione';
+        });
+        var colori = { ok: '#00CCBC', attenzione: '#f1c40f', urgente: '#e67e22', scaduto: '#e74c3c' };
+        var badge = maxUrgenza !== 'ok'
+            ? '<span style="position:absolute; top:8px; right:8px; background:' + colori[maxUrgenza] + '; color:#000; font-size:8px; font-weight:900; padding:2px 7px; border-radius:20px; text-transform:uppercase;">' + (maxUrgenza === 'scaduto' ? t('garage_scaduto') : maxUrgenza.toUpperCase()) + '</span>'
+            : '';
+        return '<div class="veh-card" style="cursor:pointer; position:relative;" onclick="garageApriDettaglio(\'' + v.id + '\')">' +
+            badge +
+            '<div class="veh-card-name">' + icona + ' ' + v.marca + ' ' + v.modello + '</div>' +
+            '<div class="veh-card-sub">' + interventi.length + ' interventi programmati · ' + Math.round(kmTot) + ' km percorsi</div>' +
+            '</div>';
+    }).join('');
+}
+
+function garageApriDettaglio(veicoloId) {
+    window._garageVeicoloId = veicoloId;
+    document.getElementById('garageListView').style.display = 'none';
+    document.getElementById('garageDettaglioView').style.display = 'block';
+    garageRenderDettaglio();
+}
+
+function garageRenderDettaglio() {
+    var v = getVeicoli().find(function(x){ return x.id === window._garageVeicoloId; });
+    if (!v) { garageTornaLista(); return; }
+    var icona = typeof _getMezzoIcona === 'function' ? _getMezzoIcona(v.tipo || 'auto') : '🚗';
+    var kmTot = _garageKmTotaliVeicolo(v.id);
+
+    document.getElementById('garageDettaglioHeader').innerHTML =
+        '<div style="font-size:20px; margin-bottom:2px;">' + icona + '</div>' +
+        '<div style="font-size:15px; font-weight:900; color:#fff;">' + v.marca + ' ' + v.modello + '</div>' +
+        '<div style="font-size:11px; color:#888; margin-top:2px;">' + Math.round(kmTot) + ' km percorsi (registrati)</div>';
+
+    var interventi = (v.interventi || []).filter(function(iv){ return !iv.completato; });
+    var elList = document.getElementById('garageInterventiList');
+    if (!interventi.length) {
+        elList.innerHTML = '<div style="font-size:12px; color:#666; text-align:center; padding:16px 10px;">' + t('garage_nessun_intervento') + '</div>';
+    } else {
+        elList.innerHTML = interventi.map(function(iv) {
+            var s = _garageStatoIntervento(iv, kmTot);
+            var colori = { ok: '#00CCBC', attenzione: '#f1c40f', urgente: '#e67e22', scaduto: '#e74c3c' };
+            var col = colori[s.urgenza];
+            var percBarra = Math.max(s.percKm || 0, s.percTempo || 0);
+            var righeInfo = [];
+            if (s.prossimoKm != null) righeInfo.push(t('garage_prossimo') + ': ' + Math.round(s.prossimoKm) + ' km');
+            if (s.prossimaData) righeInfo.push(t('garage_prossimo') + ': ' + s.prossimaData);
+            return '<div class="veh-card" style="cursor:pointer;" onclick="garageApriFormIntervento(\'' + iv.id + '\')">' +
+                '<div style="display:flex; justify-content:space-between; align-items:center;">' +
+                '<div class="veh-card-name">' + _garageIconaTipo(iv.tipo) + ' ' + _garageLabelTipo(iv.tipo, iv.nomePersonalizzato) + '</div>' +
+                '<span style="font-size:8px; font-weight:900; padding:2px 7px; border-radius:20px; background:' + col + '; color:#000;">' + (s.urgenza === 'scaduto' ? t('garage_scaduto') : s.urgenza.toUpperCase()) + '</span>' +
+                '</div>' +
+                '<div class="veh-card-sub">' + (righeInfo.join(' · ') || '—') + '</div>' +
+                '<div class="progress-bar" style="margin-top:8px; height:8px;"><div style="width:' + percBarra + '%; background:' + col + ';"></div></div>' +
+                '</div>';
+        }).join('');
+    }
+
+    var storico = (v.interventi || []).filter(function(iv){ return iv.completato; }).sort(function(a,b){
+        return (_garageParseData(b.ultimaData) || 0) - (_garageParseData(a.ultimaData) || 0);
+    });
+    var elStorico = document.getElementById('garageStoricoList');
+    if (!storico.length) {
+        elStorico.innerHTML = '<div style="font-size:11px; color:#555; text-align:center; padding:10px;">' + t('garage_nessuno_storico') + '</div>';
+    } else {
+        elStorico.innerHTML = '<table style="width:100%; border-collapse:collapse; font-size:11px;">' +
+            storico.map(function(iv) {
+                return '<tr style="border-bottom:1px solid #222;">' +
+                    '<td style="padding:6px 4px; text-align:left; color:#ccc;">' + _garageIconaTipo(iv.tipo) + ' ' + _garageLabelTipo(iv.tipo, iv.nomePersonalizzato) + '</td>' +
+                    '<td style="padding:6px 4px; text-align:center; color:#888;">' + (iv.ultimaData || '—') + '</td>' +
+                    '<td style="padding:6px 4px; text-align:center; color:#888;">' + (iv.ultimoKm != null ? Math.round(iv.ultimoKm)+' km' : '—') + '</td>' +
+                    '<td style="padding:6px 4px; text-align:right; color:var(--primary); font-weight:700;">' + (iv.costo != null ? '€'+parseFloat(iv.costo).toFixed(2) : '—') + '</td>' +
+                    '</tr>';
+            }).join('') + '</table>';
+    }
+}
+
+function garageOnChangeTipo() {
+    var tipo = document.getElementById('intTipo').value;
+    document.getElementById('intNomeWrap').style.display = (tipo === 'personalizzato') ? 'block' : 'none';
+}
+
+function garageToggleRicorrenza() {
+    document.getElementById('intRicKm').disabled = !document.getElementById('intRicKmChk').checked;
+    document.getElementById('intRicMesi').disabled = !document.getElementById('intRicMesiChk').checked;
+}
+
+function garageApriFormIntervento(interventoId) {
+    var v = getVeicoli().find(function(x){ return x.id === window._garageVeicoloId; });
+    if (!v) return;
+    document.getElementById('intVeicoloId').value = v.id;
+    document.getElementById('intId').value = interventoId || '';
+    document.getElementById('intBtnElimina').style.display = interventoId ? 'block' : 'none';
+
+    if (interventoId) {
+        var iv = (v.interventi || []).find(function(x){ return x.id === interventoId; });
+        if (!iv) return;
+        document.getElementById('intTipo').value = iv.tipo;
+        document.getElementById('intNome').value = iv.nomePersonalizzato || '';
+        document.getElementById('intUltimaData').value = iv.ultimaData || '';
+        document.getElementById('intUltimoKm').value = iv.ultimoKm != null ? iv.ultimoKm : '';
+        document.getElementById('intCosto').value = iv.costo != null ? iv.costo : '';
+        document.getElementById('intRicKmChk').checked = !!(iv.ricorrenza && iv.ricorrenza.ogniKm);
+        document.getElementById('intRicKm').value = (iv.ricorrenza && iv.ricorrenza.ogniKm) || '';
+        document.getElementById('intRicMesiChk').checked = !!(iv.ricorrenza && iv.ricorrenza.ogniMesi);
+        document.getElementById('intRicMesi').value = (iv.ricorrenza && iv.ricorrenza.ogniMesi) || '';
+        document.getElementById('intAvvKmChk').checked = !!(iv.avviso && iv.avviso.anticipoKm);
+        document.getElementById('intAvvKm').value = (iv.avviso && iv.avviso.anticipoKm) || '';
+        document.getElementById('intAvvGiorniChk').checked = !!(iv.avviso && iv.avviso.anticipoGiorni);
+        document.getElementById('intAvvGiorni').value = (iv.avviso && iv.avviso.anticipoGiorni) || '';
+        document.getElementById('intNote').value = iv.note || '';
+    } else {
+        document.getElementById('intTipo').value = 'tagliando';
+        document.getElementById('intNome').value = '';
+        document.getElementById('intUltimaData').value = '';
+        document.getElementById('intUltimoKm').value = '';
+        document.getElementById('intCosto').value = '';
+        document.getElementById('intRicKmChk').checked = false;
+        document.getElementById('intRicKm').value = '';
+        document.getElementById('intRicMesiChk').checked = false;
+        document.getElementById('intRicMesi').value = '';
+        document.getElementById('intAvvKmChk').checked = false;
+        document.getElementById('intAvvKm').value = '';
+        document.getElementById('intAvvGiorniChk').checked = false;
+        document.getElementById('intAvvGiorni').value = '';
+        document.getElementById('intNote').value = '';
+    }
+    garageOnChangeTipo();
+    garageToggleRicorrenza();
+    document.getElementById('modalIntervento').style.display = 'flex';
+}
+
+function garageSalvaIntervento() {
+    var veicoloId = document.getElementById('intVeicoloId').value;
+    var vv = getVeicoli();
+    var v = vv.find(function(x){ return x.id === veicoloId; });
+    if (!v) return;
+    if (!v.interventi) v.interventi = [];
+
+    var interventoId = document.getElementById('intId').value;
+    var tipo = document.getElementById('intTipo').value;
+    var nome = document.getElementById('intNome').value.trim();
+    var ultimaData = document.getElementById('intUltimaData').value.trim();
+    var ultimoKmVal = document.getElementById('intUltimoKm').value;
+    var costoVal = document.getElementById('intCosto').value;
+
+    var obj = {
+        id: interventoId || ('int_' + Date.now()),
+        tipo: tipo,
+        nomePersonalizzato: tipo === 'personalizzato' ? nome : null,
+        ultimaData: ultimaData || null,
+        ultimoKm: ultimoKmVal !== '' ? parseFloat(ultimoKmVal) : null,
+        costo: costoVal !== '' ? parseFloat(costoVal) : null,
+        ricorrenza: {
+            ogniKm: document.getElementById('intRicKmChk').checked ? (parseFloat(document.getElementById('intRicKm').value) || 0) : 0,
+            ogniMesi: document.getElementById('intRicMesiChk').checked ? (parseFloat(document.getElementById('intRicMesi').value) || 0) : 0
+        },
+        avviso: {
+            anticipoKm: document.getElementById('intAvvKmChk').checked ? (parseFloat(document.getElementById('intAvvKm').value) || 0) : 0,
+            anticipoGiorni: document.getElementById('intAvvGiorniChk').checked ? (parseFloat(document.getElementById('intAvvGiorni').value) || 0) : 0
+        },
+        note: document.getElementById('intNote').value.trim(),
+        completato: false
+    };
+
+    if (interventoId) {
+        var idx = v.interventi.findIndex(function(x){ return x.id === interventoId; });
+        if (idx >= 0) v.interventi[idx] = Object.assign({}, v.interventi[idx], obj);
+    } else {
+        v.interventi.push(obj);
+    }
+
+    salvaVeicoli(vv);
+    chiudiM('modalIntervento');
+    garageRenderDettaglio();
+}
+
+function garageEliminaIntervento(interventoId) {
+    if (!confirm(t('garage_conferma_elimina'))) return;
+    var vv = getVeicoli();
+    var v = vv.find(function(x){ return x.id === window._garageVeicoloId; });
+    if (!v || !v.interventi) return;
+    v.interventi = v.interventi.filter(function(x){ return x.id !== interventoId; });
+    salvaVeicoli(vv);
+    garageRenderDettaglio();
+}
+
+// Controlla gli avvisi di scadenza per tutti gli interventi di tutti i veicoli
+function checkScadenzeGarage() {
+    var vv = getVeicoli();
+    var avvisi = [];
+    var oggi = new Date(); oggi.setHours(0,0,0,0);
+
+    vv.forEach(function(v) {
+        var kmTot = _garageKmTotaliVeicolo(v.id);
+        (v.interventi || []).forEach(function(iv) {
+            if (iv.completato) return;
+            var s = _garageStatoIntervento(iv, kmTot);
+            var label = v.marca + ' ' + v.modello + ' — ' + _garageIconaTipo(iv.tipo) + ' ' + _garageLabelTipo(iv.tipo, iv.nomePersonalizzato);
+            var alertKey = 'garage_notif_' + iv.id;
+
+            var daAvvisareKm = false, daAvvisareTempo = false;
+            if (iv.avviso && iv.avviso.anticipoKm > 0 && s.prossimoKm != null) {
+                var mancantiKm = s.prossimoKm - kmTot;
+                if (mancantiKm <= iv.avviso.anticipoKm) daAvvisareKm = true;
+            }
+            if (iv.avviso && iv.avviso.anticipoGiorni > 0 && s.prossimaData) {
+                var dProssima = _garageParseData(s.prossimaData);
+                if (dProssima) {
+                    var giorniMancanti = Math.round((dProssima - oggi) / 86400000);
+                    if (giorniMancanti <= iv.avviso.anticipoGiorni) daAvvisareTempo = true;
+                }
+            }
+
+            if ((daAvvisareKm || daAvvisareTempo) && !localStorage.getItem(alertKey)) {
+                localStorage.setItem(alertKey, '1');
+                var dettagli = [];
+                if (daAvvisareKm) dettagli.push('mancano ' + Math.round(s.prossimoKm - kmTot) + ' km');
+                if (daAvvisareTempo) dettagli.push('scade il ' + s.prossimaData);
+                avvisi.push('🔧 ' + label + ': ' + dettagli.join(' / ') + '.');
+            }
+        });
+    });
+
+    if (avvisi.length > 0) {
+        var titolo = document.getElementById('multiTitle');
+        var corpo = document.getElementById('multiBody');
+        if (titolo) titolo.innerText = '⏰ SCADENZE GARAGE';
+        if (corpo) corpo.innerHTML = avvisi.join('<br><br>');
+        document.getElementById('modalMulti').style.display = 'flex';
+    }
+}
+
 
 function tornaAlMeseCorrente() {
     reportMeseKey = null;
@@ -8566,6 +9024,7 @@ document.addEventListener('DOMContentLoaded', function(){
     _meterBuild();
     checkAggiornamento();
     checkScadenze();
+    checkScadenzeGarage();
 });
 
 
