@@ -737,7 +737,7 @@ body {
                 text-transform: uppercase;
                 font-size: 9px;
                 letter-spacing: 1px;">
-        <span style="color: var(--dim);">VERSION 3.0.1</span>
+        <span style="color: var(--dim);">VERSION 3.0.2</span>
         <span style="color: #444;">|</span>
         <span style="color: var(--dim);">
             © 2026 by
@@ -2434,7 +2434,7 @@ function setCurrency(val){
     salvaUserSettings();
 }
 
-const APP_VERSION = '3.0.1';
+const APP_VERSION = '3.0.2';
 const KM_PER_MILE = 1.609344;
 const L_PER_GALLON_US = 3.785411784;
 const L_PER_GALLON_UK = 4.54609;
@@ -9630,7 +9630,7 @@ Se non trovi un dato usa null.` });
         if (!_rawText && _geminiKey) {
             try {
                 _setLoadingText('Selezione modello Gemini...');
-                var _gModel = 'gemini-3.5-flash';
+                var _gModel = 'gemini-3.7-flash';
                 try {
                     var _gList = await _fetchConTimeout('https://generativelanguage.googleapis.com/v1beta/models?key=' + _geminiKey, {}, 8000);
                     if (_gList && _gList.ok) {
@@ -9658,8 +9658,14 @@ Se non trovi un dato usa null.` });
                     var _gJson = await _gRes.json();
                     _rawText = _gJson?.candidates?.[0]?.content?.parts?.[0]?.text || '';
                     _finishReason = _gJson?.candidates?.[0]?.finishReason || '';
+                    if (!_rawText) window._ultimoErroreProviderAI = 'Gemini: 200 OK ma nessun testo. finishReason=' + _finishReason;
+                } else if (_gRes) {
+                    var _gErrTxt = await _gRes.text().catch(function(){ return '(no body)'; });
+                    window._ultimoErroreProviderAI = 'Gemini HTTP ' + _gRes.status + ': ' + _gErrTxt.slice(0,300);
+                } else {
+                    window._ultimoErroreProviderAI = 'Gemini: nessuna risposta dopo 3 tentativi (timeout/rete)';
                 }
-            } catch(e) {}
+            } catch(e) { window._ultimoErroreProviderAI = 'Gemini exception: ' + e.message; }
         }
 
         // ══════════════════════════════════════════
@@ -9696,8 +9702,14 @@ Se non trovi un dato usa null.` });
                 if (_qRes && _qRes.ok) {
                     var _qJson = await _qRes.json();
                     _rawText = _qJson?.choices?.[0]?.message?.content || '';
+                    if (!_rawText) window._ultimoErroreProviderAI = 'Groq: 200 OK ma nessun testo.';
+                } else if (_qRes) {
+                    var _qErrTxt = await _qRes.text().catch(function(){ return '(no body)'; });
+                    window._ultimoErroreProviderAI = 'Groq HTTP ' + _qRes.status + ': ' + _qErrTxt.slice(0,300);
+                } else {
+                    window._ultimoErroreProviderAI = 'Groq: nessuna risposta dopo 3 tentativi (timeout/rete)';
                 }
-            } catch(e) {}
+            } catch(e) { window._ultimoErroreProviderAI = 'Groq exception: ' + e.message; }
         }
 
         // ══════════════════════════════════════════
@@ -9732,12 +9744,19 @@ Se non trovi un dato usa null.` });
                 if (_orRes && _orRes.ok) {
                     var _orJson = await _orRes.json();
                     _rawText = _orJson?.choices?.[0]?.message?.content || '';
+                    if (!_rawText) window._ultimoErroreProviderAI = 'OpenRouter: 200 OK ma nessun testo.';
+                } else if (_orRes) {
+                    var _orErrTxt = await _orRes.text().catch(function(){ return '(no body)'; });
+                    window._ultimoErroreProviderAI = 'OpenRouter HTTP ' + _orRes.status + ': ' + _orErrTxt.slice(0,300);
+                } else {
+                    window._ultimoErroreProviderAI = 'OpenRouter: nessuna risposta dopo 3 tentativi (timeout/rete)';
                 }
-            } catch(e) {}
+            } catch(e) { window._ultimoErroreProviderAI = 'OpenRouter exception: ' + e.message; }
         }
 
         if (!_rawText) {
-            throw new Error('Tutti i provider AI non disponibili. Controlla le chiavi API o riprova più tardi.');
+            var _dettaglio = window._ultimoErroreProviderAI ? ('\n\nUltimo errore: ' + window._ultimoErroreProviderAI) : '';
+            throw new Error('Tutti i provider AI non disponibili. Controlla le chiavi API o riprova più tardi.' + _dettaglio);
         }
 
         const raw = _rawText;
