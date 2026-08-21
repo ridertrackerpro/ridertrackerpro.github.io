@@ -737,7 +737,7 @@ body {
                 text-transform: uppercase;
                 font-size: 9px;
                 letter-spacing: 1px;">
-        <span style="color: var(--dim);">VERSION 3.0.2</span>
+        <span style="color: var(--dim);">VERSION 3.0.3</span>
         <span style="color: #444;">|</span>
         <span style="color: var(--dim);">
             © 2026 by
@@ -2434,7 +2434,7 @@ function setCurrency(val){
     salvaUserSettings();
 }
 
-const APP_VERSION = '3.0.2';
+const APP_VERSION = '3.0.3';
 const KM_PER_MILE = 1.609344;
 const L_PER_GALLON_US = 3.785411784;
 const L_PER_GALLON_UK = 4.54609;
@@ -9604,7 +9604,7 @@ Se non trovi un dato usa null.` });
                 _setLoadingText(label + ': tentativo ' + att + '/3 (timeout 20s)...');
                 var r = await _fetchConTimeout(url, opts, 20000);
                 if (r === null) continue; // timeout o errore rete: passa al tentativo successivo
-                if (r.status !== 503 && r.status !== 529) return r;
+                if (r.status !== 503 && r.status !== 529 && r.status !== 429) return r;
             }
             return null;
         }
@@ -9720,13 +9720,15 @@ Se non trovi un dato usa null.` });
             try {
                 _setLoadingText('Selezione modello OpenRouter...');
                 var _orModel = 'meta-llama/llama-4-scout:free';
+                var _orCands = [];
                 try {
                     var _orList = await _fetchConTimeout('https://openrouter.ai/api/v1/models',
                         { headers: { 'Authorization': 'Bearer ' + _orKey } }, 8000);
                     if (_orList && _orList.ok) {
                         var _orData = await _orList.json();
-                        var _orCands = (_orData.data||[]).filter(function(m){
+                        _orCands = (_orData.data||[]).filter(function(m){
                             var id=(m.id||'').toLowerCase();
+                            if (id.includes('gemma')) return false; // instabile/rate-limited su modelli free
                             return id.includes(':free') && (m.architecture?.modality||'').includes('image');
                         }).map(function(m){ return m.id; });
                         _sortByVersion(_orCands);
@@ -9734,22 +9736,27 @@ Se non trovi un dato usa null.` });
                     }
                 } catch(e) {}
                 var _orSystemPrompt = 'Sei un estrattore di dati JSON da screenshot. Rispondi SOLO con un oggetto JSON valido, senza markdown, senza backtick, senza testo aggiuntivo. Schema richiesto: {"primoOrario":"HH:MM","ultimoOrario":"HH:MM","pause":[{"da":"HH:MM","a":"HH:MM"}],"lordo":0.00,"mance":0.00,"contantiPerImmagine":[]}';
-                _setLoadingText('Analisi con OpenRouter (' + _orModel + ')...');
-                var _orRes = await _fetchWithRetry(
-                    'https://openrouter.ai/api/v1/chat/completions',
-                    { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _orKey, 'HTTP-Referer': 'https://ridertrackerpro.github.io' },
-                      body: JSON.stringify({ model: _orModel, messages: [{ role: 'system', content: _orSystemPrompt }, { role: 'user', content: _partsToOpenAI(parts) }], temperature: 0, max_tokens: 2000, response_format: { type: 'json_object' } }) },
-                    'OpenRouter'
-                );
-                if (_orRes && _orRes.ok) {
-                    var _orJson = await _orRes.json();
-                    _rawText = _orJson?.choices?.[0]?.message?.content || '';
-                    if (!_rawText) window._ultimoErroreProviderAI = 'OpenRouter: 200 OK ma nessun testo.';
-                } else if (_orRes) {
-                    var _orErrTxt = await _orRes.text().catch(function(){ return '(no body)'; });
-                    window._ultimoErroreProviderAI = 'OpenRouter HTTP ' + _orRes.status + ': ' + _orErrTxt.slice(0,300);
-                } else {
-                    window._ultimoErroreProviderAI = 'OpenRouter: nessuna risposta dopo 3 tentativi (timeout/rete)';
+
+                var _orModelsToTry = [_orModel].concat(_orCands.filter(function(m){ return m !== _orModel; })).slice(0, 3);
+                for (var _omi = 0; _omi < _orModelsToTry.length && !_rawText; _omi++) {
+                    var _tryModel = _orModelsToTry[_omi];
+                    _setLoadingText('Analisi con OpenRouter (' + _tryModel + ')...');
+                    var _orRes = await _fetchWithRetry(
+                        'https://openrouter.ai/api/v1/chat/completions',
+                        { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _orKey, 'HTTP-Referer': 'https://ridertrackerpro.github.io' },
+                          body: JSON.stringify({ model: _tryModel, messages: [{ role: 'system', content: _orSystemPrompt }, { role: 'user', content: _partsToOpenAI(parts) }], temperature: 0, max_tokens: 2000, response_format: { type: 'json_object' } }) },
+                        'OpenRouter'
+                    );
+                    if (_orRes && _orRes.ok) {
+                        var _orJson = await _orRes.json();
+                        _rawText = _orJson?.choices?.[0]?.message?.content || '';
+                        if (!_rawText) window._ultimoErroreProviderAI = 'OpenRouter (' + _tryModel + '): 200 OK ma nessun testo.';
+                    } else if (_orRes) {
+                        var _orErrTxt = await _orRes.text().catch(function(){ return '(no body)'; });
+                        window._ultimoErroreProviderAI = 'OpenRouter (' + _tryModel + ') HTTP ' + _orRes.status + ': ' + _orErrTxt.slice(0,300);
+                    } else {
+                        window._ultimoErroreProviderAI = 'OpenRouter (' + _tryModel + '): nessuna risposta dopo 3 tentativi (timeout/rete)';
+                    }
                 }
             } catch(e) { window._ultimoErroreProviderAI = 'OpenRouter exception: ' + e.message; }
         }
