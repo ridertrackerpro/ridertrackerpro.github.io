@@ -737,7 +737,7 @@ body {
                 text-transform: uppercase;
                 font-size: 9px;
                 letter-spacing: 1px;">
-        <span style="color: var(--dim);">VERSION 3.0.3</span>
+        <span style="color: var(--dim);">VERSION 3.0.5-diag</span>
         <span style="color: #444;">|</span>
         <span style="color: var(--dim);">
             © 2026 by
@@ -2434,7 +2434,7 @@ function setCurrency(val){
     salvaUserSettings();
 }
 
-const APP_VERSION = '3.0.3';
+const APP_VERSION = '3.0.5-diag';
 const KM_PER_MILE = 1.609344;
 const L_PER_GALLON_US = 3.785411784;
 const L_PER_GALLON_UK = 4.54609;
@@ -9628,9 +9628,9 @@ Se non trovi un dato usa null.` });
         // ══════════════════════════════════════════
         var _geminiKey = getGeminiKey();
         if (!_rawText && _geminiKey) {
+            var _gModelsToTry = ['gemini-3.7-flash', 'gemini-2.5-flash'];
             try {
                 _setLoadingText('Selezione modello Gemini...');
-                var _gModel = 'gemini-3.7-flash';
                 try {
                     var _gList = await _fetchConTimeout('https://generativelanguage.googleapis.com/v1beta/models?key=' + _geminiKey, {}, 8000);
                     if (_gList && _gList.ok) {
@@ -9644,28 +9644,35 @@ Se non trovi un dato usa null.` });
                             return (m.supportedGenerationMethods||[]).includes('generateContent');
                         }).map(function(m){ return m.name.replace('models/',''); });
                         _sortByVersion(_gCands);
-                        if (_gCands.length > 0) _gModel = _gCands[0];
+                        if (_gCands.length > 0) _gModelsToTry = _gCands.slice(0,2).concat(['gemini-2.5-flash']);
                     }
                 } catch(e) {}
-                _setLoadingText('Analisi con Gemini (' + _gModel + ')...');
-                var _gRes = await _fetchWithRetry(
-                    'https://generativelanguage.googleapis.com/v1beta/models/' + _gModel + ':generateContent?key=' + _geminiKey,
-                    { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ contents: [{ parts: parts }], generationConfig: { temperature: 0, maxOutputTokens: 2000 } }) },
-                    'Gemini'
-                );
-                if (_gRes && _gRes.ok) {
-                    var _gJson = await _gRes.json();
-                    _rawText = _gJson?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-                    _finishReason = _gJson?.candidates?.[0]?.finishReason || '';
-                    if (!_rawText) window._ultimoErroreProviderAI = 'Gemini: 200 OK ma nessun testo. finishReason=' + _finishReason;
-                } else if (_gRes) {
-                    var _gErrTxt = await _gRes.text().catch(function(){ return '(no body)'; });
-                    window._ultimoErroreProviderAI = 'Gemini HTTP ' + _gRes.status + ': ' + _gErrTxt.slice(0,300);
-                } else {
-                    window._ultimoErroreProviderAI = 'Gemini: nessuna risposta dopo 3 tentativi (timeout/rete)';
+                for (var _gmi = 0; _gmi < _gModelsToTry.length && !_rawText; _gmi++) {
+                    var _gModel = _gModelsToTry[_gmi];
+                    _setLoadingText('Analisi con Gemini (' + _gModel + ')...');
+                    var _gRes = await _fetchWithRetry(
+                        'https://generativelanguage.googleapis.com/v1beta/models/' + _gModel + ':generateContent?key=' + _geminiKey,
+                        { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ contents: [{ parts: parts }], generationConfig: { temperature: 0, maxOutputTokens: 2000 } }) },
+                        'Gemini (' + _gModel + ')'
+                    );
+                    if (_gRes && _gRes.ok) {
+                        var _gJson = await _gRes.json();
+                        _rawText = _gJson?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                        _finishReason = _gJson?.candidates?.[0]?.finishReason || '';
+                        if (!_rawText) window._ultimoErroreProviderAI = 'Gemini (' + _gModel + '): 200 OK ma nessun testo. finishReason=' + _finishReason;
+                    } else if (_gRes) {
+                        var _gErrTxt = await _gRes.text().catch(function(){ return '(no body)'; });
+                        window._ultimoErroreProviderAI = 'Gemini (' + _gModel + ') HTTP ' + _gRes.status + ': ' + _gErrTxt.slice(0,300);
+                    } else {
+                        window._ultimoErroreProviderAI = 'Gemini (' + _gModel + '): nessuna risposta dopo 3 tentativi (timeout/rete)';
+                    }
                 }
             } catch(e) { window._ultimoErroreProviderAI = 'Gemini exception: ' + e.message; }
+            if (!_rawText) {
+                _setLoadingText('Gemini fallito: ' + (window._ultimoErroreProviderAI||'motivo sconosciuto'));
+                await new Promise(function(r){ setTimeout(r, 1500); });
+            }
         }
 
         // ══════════════════════════════════════════
@@ -9710,6 +9717,10 @@ Se non trovi un dato usa null.` });
                     window._ultimoErroreProviderAI = 'Groq: nessuna risposta dopo 3 tentativi (timeout/rete)';
                 }
             } catch(e) { window._ultimoErroreProviderAI = 'Groq exception: ' + e.message; }
+            if (!_rawText) {
+                _setLoadingText('Groq fallito: ' + (window._ultimoErroreProviderAI||'motivo sconosciuto'));
+                await new Promise(function(r){ setTimeout(r, 5000); });
+            }
         }
 
         // ══════════════════════════════════════════
