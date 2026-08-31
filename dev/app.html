@@ -712,7 +712,7 @@ body {
               line-height: 1.03;">
 
     <!-- Riga titolo centrato -->
-    <div onclick="document.getElementById('modalFineMese').style.display = 'flex';"
+    <div onclick="document.getElementById('modalFatturaDeliveroo').style.display = 'flex';"
          style="display: flex;
                 align-items: center;
                 font-family: sans-serif;
@@ -1258,13 +1258,12 @@ body {
     </div>
 </div>
 
-<div id="modalFineMese" class="modal no-print">
+<div id="modalFatturaDeliveroo" class="modal no-print">
     <div class="modal-content" style="border-color: var(--primary);">
-        <h3 style="font-size: 16px;" data-translate="end_month">🔔 FINE MESE</h3>
-        <p style="font-size: 13px; color: var(--text); margin: 15px 0;" data-translate="end_month_msg">Il mese è terminato. Vuoi stampare il Report PDF delle tue attività?</p>
+        <h3 style="font-size: 16px;" data-translate="end_month">🧾 FATTURA DELIVEROO</h3>
+        <p style="font-size: 13px; color: var(--text); margin: 15px 0;" data-translate="end_month_msg">La fattura Deliveroo è arrivata. Ricordati di inserire le voci extra e stampare il report del mese scorso.</p>
         <div class="confirm-buttons">
-            <button class="btn-confirm-cancel" onclick="chiudiModali()" data-translate="close">CHIUDI</button>
-            <button class="btn-confirm-ok" style="background: var(--primary); color: #000;" onclick="stampaDirettaDaAlert()" data-translate="print_now">STAMPA ORA</button>
+            <button class="btn-confirm-ok" style="background: var(--primary); color: #000;" onclick="chiudiModali()">OK</button>
         </div>
     </div>
 </div>
@@ -1767,8 +1766,8 @@ vehicle_scooter: 'Scooter',
         save_continue: 'SALVA E CONTINUA',
         confirm_reset: 'Conferma Reset',
         reset_msg: 'Vuoi azzerare tutto il database?',
-        end_month: '🔔 FINE MESE',
-        end_month_msg: 'Il mese è terminato. Vuoi stampare il Report PDF delle tue attività?',
+        end_month: '🧾 FATTURA DELIVEROO',
+        end_month_msg: 'La fattura Deliveroo è arrivata. Ricordati di inserire le voci extra e stampare il report del mese scorso.',
         close: 'CHIUDI',
         print_now: 'STAMPA ORA',
         confirm_delete: 'Conferma Eliminazione',
@@ -1982,8 +1981,8 @@ vehicle_scooter: 'Scooter',
         save_continue: 'SAVE & CONTINUE',
         confirm_reset: 'Confirm Reset',
         reset_msg: 'Do you want to reset the entire database?',
-        end_month: '🔔 END OF MONTH',
-        end_month_msg: 'The month has ended. Do you want to print the PDF report of your activities?',
+        end_month: '🧾 DELIVEROO INVOICE',
+        end_month_msg: 'The Deliveroo invoice has arrived. Remember to add any extra items and print last month\'s report.',
         close: 'CLOSE',
         print_now: 'PRINT NOW',
         confirm_delete: 'Confirm Deletion',
@@ -6042,15 +6041,11 @@ function confermaRiporto() {
     if (!db.riportoNegativo) db.riportoNegativo = {};
     db.riportoNegativo[tagCorrente] = Math.abs(debitoResiduo);
     salvaDBSilent();
-    const modal = document.getElementById('modalFineMese');
-    if (modal) modal.style.display = 'flex';
 }
 
 function rifiutaRiporto() {
     document.getElementById('modalRiportoNegativo').style.display = 'none';
     salvaDBSilent();
-    const modal = document.getElementById('modalFineMese');
-    if (modal) modal.style.display = 'flex';
 }
 
 function controllaRiportoDopoInserimento(dataSalvata) {
@@ -6607,10 +6602,17 @@ window.onload = function() {
                 document.getElementById('modalRiportoImporto').innerText = currSym + Math.abs(fromEuro(nettoP)).toFixed(2);
                 document.getElementById('modalRiportoNegativo').style.display = 'flex';
                 window._riportoNetto = nettoP;
-            } else if (turniPrec.length > 0 || rifPrec.length > 0 || extraPrec.length > 0) {
-                const modal = document.getElementById('modalFineMese');
-                if (modal) modal.style.display = 'flex';
             }
+        }, 2000);
+    }
+
+    const ultimoAvvisoFattura = localStorage.getItem('ultimo_avviso_fattura_deliveroo');
+    const oggiGiorno = new Date().getDate();
+    if (oggiGiorno >= 10 && ultimoAvvisoFattura !== meseCorrente) {
+        setTimeout(() => {
+            localStorage.setItem('ultimo_avviso_fattura_deliveroo', meseCorrente);
+            const modal = document.getElementById('modalFatturaDeliveroo');
+            if (modal) modal.style.display = 'flex';
         }, 2000);
     }
 
