@@ -3683,7 +3683,7 @@ periodi.forEach(p => {
     const nettoTot = lordoTot + extraDeliverooTot - tassazioneTot - spesaBTotReale - spesaExtraRep - riportoRep;
 
     document.getElementById('repLordo').innerText =
-    currencySymbol() + roundCurrency(safeNumber(fromEuro(lordoTot)));
+    currencySymbol() + roundCurrency(safeNumber(fromEuro(lordoTot + extraDeliverooTot)));
 
 const repLordoReale = document.getElementById('repLordoReale');
 if (repLordoReale) {
