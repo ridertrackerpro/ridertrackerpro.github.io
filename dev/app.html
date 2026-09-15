@@ -9630,7 +9630,7 @@ Se non trovi un dato usa null.` });
         // ══════════════════════════════════════════
         var _geminiKey = getGeminiKey();
         if (!_rawText && _geminiKey) {
-            var _gModelsToTry = ['gemini-3.7-flash', 'gemini-2.5-flash'];
+            var _gModelsToTry = ['gemini-2.5-flash'];
             try {
                 _setLoadingText('Selezione modello Gemini...');
                 try {
@@ -9642,7 +9642,7 @@ Se non trovi un dato usa null.` });
                             if (!n.includes('gemini') || !n.includes('flash')) return false;
                             if (n.includes('preview')||n.includes('exp')||n.includes('-lite')||
                                 n.includes('image')||n.includes('live')||n.includes('audio')||
-                                n.includes('video')||n.includes('tts')) return false;
+                                n.includes('video')||n.includes('tts')||n.includes('gemini-3')) return false;
                             return (m.supportedGenerationMethods||[]).includes('generateContent');
                         }).map(function(m){ return m.name.replace('models/',''); });
                         _sortByVersion(_gCands);
@@ -9655,7 +9655,7 @@ Se non trovi un dato usa null.` });
                     var _gRes = await _fetchWithRetry(
                         'https://generativelanguage.googleapis.com/v1beta/models/' + _gModel + ':generateContent?key=' + _geminiKey,
                         { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ contents: [{ parts: parts }], generationConfig: { temperature: 0, maxOutputTokens: 2000 } }) },
+                          body: JSON.stringify({ contents: [{ parts: parts }], generationConfig: { temperature: 0, maxOutputTokens: 4000 } }) },
                         'Gemini (' + _gModel + ')'
                     );
                     if (_gRes && _gRes.ok) {
@@ -9705,7 +9705,7 @@ Se non trovi un dato usa null.` });
                 var _qRes = await _fetchWithRetry(
                     'https://api.groq.com/openai/v1/chat/completions',
                     { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _groqKey },
-                      body: JSON.stringify({ model: _qModel, messages: [{ role: 'system', content: _qSystemPrompt }, { role: 'user', content: _partsToOpenAI(parts) }], temperature: 0, max_tokens: 2000, response_format: { type: 'json_object' } }) },
+                      body: JSON.stringify({ model: _qModel, messages: [{ role: 'system', content: _qSystemPrompt }, { role: 'user', content: _partsToOpenAI(parts) }], temperature: 0, max_tokens: 4000, response_format: { type: 'json_object' } }) },
                     'Groq'
                 );
                 if (_qRes && _qRes.ok) {
@@ -9757,7 +9757,7 @@ Se non trovi un dato usa null.` });
                     var _orRes = await _fetchWithRetry(
                         'https://openrouter.ai/api/v1/chat/completions',
                         { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _orKey, 'HTTP-Referer': 'https://ridertrackerpro.github.io' },
-                          body: JSON.stringify({ model: _tryModel, messages: [{ role: 'system', content: _orSystemPrompt }, { role: 'user', content: _partsToOpenAI(parts) }], temperature: 0, max_tokens: 2000, response_format: { type: 'json_object' } }) },
+                          body: JSON.stringify({ model: _tryModel, messages: [{ role: 'system', content: _orSystemPrompt }, { role: 'user', content: _partsToOpenAI(parts) }], temperature: 0, max_tokens: 4000, response_format: { type: 'json_object' } }) },
                         'OpenRouter'
                     );
                     if (_orRes && _orRes.ok) {
