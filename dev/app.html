@@ -3016,12 +3016,18 @@ function apriM(id) {
     if (typeof aggiornaTagliando === 'function') aggiornaTagliando();
 }
 
+function _cmpDataIT(a, b) {
+    var pa = a.split('/'), pb = b.split('/');
+    var da = new Date(parseInt(pa[2]), parseInt(pa[1]) - 1, parseInt(pa[0]));
+    var db_ = new Date(parseInt(pb[2]), parseInt(pb[1]) - 1, parseInt(pb[0]));
+    return da - db_;
+}
 function apriStorico() {
     const tutti = [
         ...db.turni.map(t => ({...t, tipo: 'T'})),
         ...db.rifornimenti.map(r => ({...r, tipo: 'B', tipo_fuel: r.tipo || 'benzina'})),
         ...db.extraKm.map(e => ({...e, tipo: 'E'}))
-    ].sort((a, b) => b.id - a.id);
+    ].sort((a, b) => _cmpDataIT(b.data, a.data) || (b.id - a.id));
 
     const now = new Date();
     const meseCorrenteKey = `${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()}`;
@@ -3537,8 +3543,8 @@ function apriReport(meseKey) {
     aggiornaLabelKmReport();
     document.getElementById('reportMeseLabel').innerText = getNomeMese(tag);
 
-    const turniMese = db.turni.filter(t => t.data.endsWith(tag)).sort((a, b) => a.id - b.id);
-    const rifMese = db.rifornimenti.filter(r => r.data.endsWith(tag)).sort((a, b) => a.id - b.id);
+    const turniMese = db.turni.filter(t => t.data.endsWith(tag)).sort((a, b) => _cmpDataIT(a.data, b.data) || (a.id - b.id));
+    const rifMese = db.rifornimenti.filter(r => r.data.endsWith(tag)).sort((a, b) => _cmpDataIT(a.data, b.data) || (a.id - b.id));
 
     let htmlTurni = '';
     let lordoTot = 0;
@@ -3662,7 +3668,7 @@ periodi.forEach(p => {
 
     document.getElementById('repEfficienzaBody').innerHTML = htmlEff || '<tr><td colspan="7">—</td></tr>';
 
-    const extraMeseRep = (db.extraKm || []).filter(e => e.data.endsWith(tag)).sort((a,b) => a.id - b.id);
+    const extraMeseRep = (db.extraKm || []).filter(e => e.data.endsWith(tag)).sort((a,b) => _cmpDataIT(a.data, b.data) || (a.id - b.id));
     let spesaExtraRep = extraMeseRep.reduce((a,b)=>a+(b.importo||0), 0);
 
     let htmlExtra = '';
