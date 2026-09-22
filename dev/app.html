@@ -7639,7 +7639,8 @@ function salvaVeicolo() {
         attivo:      editId ? (vv.find(function(x){return x.id===parseInt(editId);})||{}).attivo || false : vv.length === 0,
         tagliandoKm:  _tagKm,
         tagliandoData: _tagData,
-        tagliandoIntervallo: _tagInt
+        tagliandoIntervallo: _tagInt,
+        interventi:  _vExist ? (_vExist.interventi || []) : []
     };
     if (editId) {
         var idx = vv.findIndex(function(x){ return x.id === parseInt(editId); });
