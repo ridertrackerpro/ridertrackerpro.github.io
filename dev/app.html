@@ -8729,7 +8729,8 @@ salvaVeicolo = function() {
         attivo:      editId ? ((vv.find(function(x){return x.id===parseInt(editId);})||{}).attivo || false) : isFirst,
         tagliandoKm: (function(){ var el=document.getElementById('vehTagliandoKm'); if(!el||el.value==='') { var _ex=editId?vv.find(function(x){return x.id===parseInt(editId);}):null; return _ex?(_ex.tagliandoKm||null):null; } return parseFloat(el.value)||null; })(),
         tagliandoData: (function(){ var el=document.getElementById('vehTagliandoData'); if(!el||el.value==='') { var _ex=editId?vv.find(function(x){return x.id===parseInt(editId);}):null; return _ex?(_ex.tagliandoData||null):null; } return el.value||null; })(),
-        tagliandoIntervallo: (function(){ var el=document.getElementById('vehTagliandoIntervallo'); if(!el||el.value==='') { var _ex=editId?vv.find(function(x){return x.id===parseInt(editId);}):null; return _ex?(_ex.tagliandoIntervallo||null):null; } return parseFloat(el.value)||null; })()
+        tagliandoIntervallo: (function(){ var el=document.getElementById('vehTagliandoIntervallo'); if(!el||el.value==='') { var _ex=editId?vv.find(function(x){return x.id===parseInt(editId);}):null; return _ex?(_ex.tagliandoIntervallo||null):null; } return parseFloat(el.value)||null; })(),
+        interventi: (function(){ var _ex=editId?vv.find(function(x){return x.id===parseInt(editId);}):null; return _ex?(_ex.interventi||[]):[]; })()
     };
     if (editId) {
         var idx = vv.findIndex(function(x){ return x.id === parseInt(editId); });
