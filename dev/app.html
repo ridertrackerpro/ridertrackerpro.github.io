@@ -2690,10 +2690,12 @@ function confermaReset() {
     const tag = (typeof reportMeseKey !== 'undefined' && reportMeseKey) ? reportMeseKey : _meseCorrente;
     const turniMese = db.turni.filter(t => t.data.endsWith(tag));
 
-    let lordoA = turniMese.reduce((a,b)=>a+(b.soloViaggio?0:b.lordo), 0);
+    const extraDeliverooMeseHome = (db.extraDeliveroo || []).filter(e => e.data.endsWith(tag));
+    const extraDeliverooTotHome = extraDeliverooMeseHome.reduce((a,b) => a + (b.importo || 0), 0);
+    let lordoA = turniMese.reduce((a,b)=>a+(b.soloViaggio?0:b.lordo), 0) + extraDeliverooTotHome;
     let ore = turniMese.reduce((a,b)=>a+(b.soloViaggio?0:b.ore), 0);
     let km = turniMese.reduce((a,b)=>a+(b.soloViaggio?0:b.km), 0);
-    let tassazioneTotale = turniMese.reduce((a,t)=>a+(t.soloViaggio?0:(t.lordo*(getTaxPerc(t)/100))),0);
+    let tassazioneTotale = turniMese.reduce((a,t)=>a+(t.soloViaggio?0:(t.lordo*(getTaxPerc(t)/100))),0) + (extraDeliverooTotHome * (getTaxPerc() / 100));
 
     let costoB_Turni = 0;
     turniMese.forEach(t => {
@@ -3016,12 +3018,6 @@ function apriM(id) {
     if (typeof aggiornaTagliando === 'function') aggiornaTagliando();
 }
 
-function _cmpDataIT(a, b) {
-    var pa = a.split('/'), pb = b.split('/');
-    var da = new Date(parseInt(pa[2]), parseInt(pa[1]) - 1, parseInt(pa[0]));
-    var db_ = new Date(parseInt(pb[2]), parseInt(pb[1]) - 1, parseInt(pb[0]));
-    return da - db_;
-}
 function apriStorico() {
     const tutti = [
         ...db.turni.map(t => ({...t, tipo: 'T'})),
@@ -3105,6 +3101,17 @@ function apriStorico() {
                 gruppiPassati[key].ore += i.ore;
             }
         }
+    });
+
+    (db.extraDeliveroo || []).forEach(e => {
+        let key = e.data.substring(3);
+        if (key === meseCorrenteKey) return;
+        if (!gruppiPassati[key]) {
+            gruppiPassati[key] = { items: [], lordo: 0, netto: 0, ore: 0 };
+            ordineMesi.push(key);
+        }
+        gruppiPassati[key].lordo += (e.importo || 0);
+        gruppiPassati[key].netto += (e.importo || 0) - ((e.importo || 0) * (getTaxPerc() / 100));
     });
 
     let htmlFinale = "";
@@ -3543,8 +3550,8 @@ function apriReport(meseKey) {
     aggiornaLabelKmReport();
     document.getElementById('reportMeseLabel').innerText = getNomeMese(tag);
 
-    const turniMese = db.turni.filter(t => t.data.endsWith(tag)).sort((a, b) => _cmpDataIT(a.data, b.data) || (a.id - b.id));
-    const rifMese = db.rifornimenti.filter(r => r.data.endsWith(tag)).sort((a, b) => _cmpDataIT(a.data, b.data) || (a.id - b.id));
+    const turniMese = db.turni.filter(t => t.data.endsWith(tag)).sort((a, b) => a.id - b.id);
+    const rifMese = db.rifornimenti.filter(r => r.data.endsWith(tag)).sort((a, b) => a.id - b.id);
 
     let htmlTurni = '';
     let lordoTot = 0;
@@ -3668,7 +3675,7 @@ periodi.forEach(p => {
 
     document.getElementById('repEfficienzaBody').innerHTML = htmlEff || '<tr><td colspan="7">—</td></tr>';
 
-    const extraMeseRep = (db.extraKm || []).filter(e => e.data.endsWith(tag)).sort((a,b) => _cmpDataIT(a.data, b.data) || (a.id - b.id));
+    const extraMeseRep = (db.extraKm || []).filter(e => e.data.endsWith(tag)).sort((a,b) => a.id - b.id);
     let spesaExtraRep = extraMeseRep.reduce((a,b)=>a+(b.importo||0), 0);
 
     let htmlExtra = '';
@@ -3686,6 +3693,7 @@ periodi.forEach(p => {
     const spesaBTotReale = rifMese.reduce((a,b) => a+b.euro, 0);
     const extraDeliverooMese = (db.extraDeliveroo || []).filter(e => e.data.endsWith(tag));
     const extraDeliverooTot = extraDeliverooMese.reduce((a,b) => a + (b.importo || 0), 0);
+    tassazioneTot += extraDeliverooTot * (getTaxPerc() / 100);
     const nettoTot = lordoTot + extraDeliverooTot - tassazioneTot - spesaBTotReale - spesaExtraRep - riportoRep;
 
     document.getElementById('repLordo').innerText =
@@ -7639,8 +7647,7 @@ function salvaVeicolo() {
         attivo:      editId ? (vv.find(function(x){return x.id===parseInt(editId);})||{}).attivo || false : vv.length === 0,
         tagliandoKm:  _tagKm,
         tagliandoData: _tagData,
-        tagliandoIntervallo: _tagInt,
-        interventi:  _vExist ? (_vExist.interventi || []) : []
+        tagliandoIntervallo: _tagInt
     };
     if (editId) {
         var idx = vv.findIndex(function(x){ return x.id === parseInt(editId); });
@@ -8729,8 +8736,7 @@ salvaVeicolo = function() {
         attivo:      editId ? ((vv.find(function(x){return x.id===parseInt(editId);})||{}).attivo || false) : isFirst,
         tagliandoKm: (function(){ var el=document.getElementById('vehTagliandoKm'); if(!el||el.value==='') { var _ex=editId?vv.find(function(x){return x.id===parseInt(editId);}):null; return _ex?(_ex.tagliandoKm||null):null; } return parseFloat(el.value)||null; })(),
         tagliandoData: (function(){ var el=document.getElementById('vehTagliandoData'); if(!el||el.value==='') { var _ex=editId?vv.find(function(x){return x.id===parseInt(editId);}):null; return _ex?(_ex.tagliandoData||null):null; } return el.value||null; })(),
-        tagliandoIntervallo: (function(){ var el=document.getElementById('vehTagliandoIntervallo'); if(!el||el.value==='') { var _ex=editId?vv.find(function(x){return x.id===parseInt(editId);}):null; return _ex?(_ex.tagliandoIntervallo||null):null; } return parseFloat(el.value)||null; })(),
-        interventi: (function(){ var _ex=editId?vv.find(function(x){return x.id===parseInt(editId);}):null; return _ex?(_ex.interventi||[]):[]; })()
+        tagliandoIntervallo: (function(){ var el=document.getElementById('vehTagliandoIntervallo'); if(!el||el.value==='') { var _ex=editId?vv.find(function(x){return x.id===parseInt(editId);}):null; return _ex?(_ex.tagliandoIntervallo||null):null; } return parseFloat(el.value)||null; })()
     };
     if (editId) {
         var idx = vv.findIndex(function(x){ return x.id === parseInt(editId); });
@@ -9638,7 +9644,7 @@ Se non trovi un dato usa null.` });
         // ══════════════════════════════════════════
         var _geminiKey = getGeminiKey();
         if (!_rawText && _geminiKey) {
-            var _gModelsToTry = ['gemini-2.5-flash'];
+            var _gModelsToTry = ['gemini-3.7-flash', 'gemini-2.5-flash'];
             try {
                 _setLoadingText('Selezione modello Gemini...');
                 try {
@@ -9650,7 +9656,7 @@ Se non trovi un dato usa null.` });
                             if (!n.includes('gemini') || !n.includes('flash')) return false;
                             if (n.includes('preview')||n.includes('exp')||n.includes('-lite')||
                                 n.includes('image')||n.includes('live')||n.includes('audio')||
-                                n.includes('video')||n.includes('tts')||n.includes('gemini-3')) return false;
+                                n.includes('video')||n.includes('tts')) return false;
                             return (m.supportedGenerationMethods||[]).includes('generateContent');
                         }).map(function(m){ return m.name.replace('models/',''); });
                         _sortByVersion(_gCands);
@@ -9663,7 +9669,7 @@ Se non trovi un dato usa null.` });
                     var _gRes = await _fetchWithRetry(
                         'https://generativelanguage.googleapis.com/v1beta/models/' + _gModel + ':generateContent?key=' + _geminiKey,
                         { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ contents: [{ parts: parts }], generationConfig: { temperature: 0, maxOutputTokens: 4000 } }) },
+                          body: JSON.stringify({ contents: [{ parts: parts }], generationConfig: { temperature: 0, maxOutputTokens: 2000 } }) },
                         'Gemini (' + _gModel + ')'
                     );
                     if (_gRes && _gRes.ok) {
@@ -9713,7 +9719,7 @@ Se non trovi un dato usa null.` });
                 var _qRes = await _fetchWithRetry(
                     'https://api.groq.com/openai/v1/chat/completions',
                     { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _groqKey },
-                      body: JSON.stringify({ model: _qModel, messages: [{ role: 'system', content: _qSystemPrompt }, { role: 'user', content: _partsToOpenAI(parts) }], temperature: 0, max_tokens: 4000, response_format: { type: 'json_object' } }) },
+                      body: JSON.stringify({ model: _qModel, messages: [{ role: 'system', content: _qSystemPrompt }, { role: 'user', content: _partsToOpenAI(parts) }], temperature: 0, max_tokens: 2000, response_format: { type: 'json_object' } }) },
                     'Groq'
                 );
                 if (_qRes && _qRes.ok) {
@@ -9765,7 +9771,7 @@ Se non trovi un dato usa null.` });
                     var _orRes = await _fetchWithRetry(
                         'https://openrouter.ai/api/v1/chat/completions',
                         { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _orKey, 'HTTP-Referer': 'https://ridertrackerpro.github.io' },
-                          body: JSON.stringify({ model: _tryModel, messages: [{ role: 'system', content: _orSystemPrompt }, { role: 'user', content: _partsToOpenAI(parts) }], temperature: 0, max_tokens: 4000, response_format: { type: 'json_object' } }) },
+                          body: JSON.stringify({ model: _tryModel, messages: [{ role: 'system', content: _orSystemPrompt }, { role: 'user', content: _partsToOpenAI(parts) }], temperature: 0, max_tokens: 2000, response_format: { type: 'json_object' } }) },
                         'OpenRouter'
                     );
                     if (_orRes && _orRes.ok) {
