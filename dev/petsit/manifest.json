@@ -1,0 +1,24 @@
+{
+  "name": "Pet Sitter Profit",
+  "short_name": "PetSitter",
+  "description": "Lavori, clienti, animali, spese e guadagni per la tua attività di pet sitter.",
+  "lang": "it",
+  "dir": "ltr",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f6f7f4",
+  "theme_color": "#16794f",
+  "categories": ["business", "finance", "productivity"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Nuovo lavoro", "short_name": "Lavoro", "url": "./#/new", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "Soldi", "short_name": "Soldi", "url": "./#/money", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] }
+  ]
+}
