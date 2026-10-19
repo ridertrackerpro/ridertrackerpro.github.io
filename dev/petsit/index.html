@@ -318,7 +318,7 @@ noscript{display:block;padding:24px;text-align:center}
 <script>
 'use strict';
 /* Pet Sitter Profit — dati, utilità, calcoli, ricorrenze, import/export */
-const APP_VERSION = '1.5.0';
+const APP_VERSION = '1.7.0';
 const STORE_KEY = 'psp_db_v1';
 
 const PET_TYPES = ['Cane','Gatto','Coniglio','Roditore','Uccello','Rettile','Pesce','Altro'];
@@ -409,7 +409,20 @@ function loadDB() {
 }
 let db = loadDB();
 let saveFailed = false;
+/* Un lavoro programmato la cui data è passata (da mezzanotte in poi) diventa «svolto» da solo.
+   Il pagamento non viene toccato: resta com'è (non pagato, salvo che l'abbia segnato tu). */
+function autoCompleteJobs() {
+  const today = todayStr(); let n = 0;
+  db.jobs.forEach(j => {
+    if (j.status === 'scheduled' && j.date < today && !j.keep) {
+      j.status = 'completed'; j.finalPrice = j.price || 0; j.tip = j.tip || 0; j.auto = true;
+      j.completedOn = j.date; if (!j.paid) j.paidOn = null; n++;
+    }
+  });
+  return n;
+}
 function save() {
+  autoCompleteJobs();
   _led = null;
   try { localStorage.setItem(STORE_KEY, JSON.stringify(db)); saveFailed = false; return true; }
   catch (e) { saveFailed = true; if (typeof toast === 'function') toast('Memoria piena: fai un backup e rimuovi qualche foto', {type:'err'}); return false; }
@@ -969,7 +982,7 @@ views.jobs = (p, q) => {
 views.job = ({ id }) => {
   const j = db.jobs.find(x => x.id === id); if (!j) return missing('Lavoro non trovato', '#/jobs');
   const c = client(j.clientId), p = pet(j.petId), done = j.status === 'completed', L = jl(j), r = db.recurring.find(x => x.id === j.recurringId);
-  const stBar = done ? ['Completato', 'checkCircle', 'done'] : ['Programmato', 'calendar', 'scheduled'];
+  const stBar = done ? [j.auto ? 'Svolto (automatico)' : 'Completato', 'checkCircle', 'done'] : ['Programmato', 'calendar', 'scheduled'];
   const contacts = c ? `<div class="chips">${c.phone ? `<a class="chip" href="tel:${esc(c.phone)}">${ico('phone', 18)} Chiama</a><a class="chip" href="${waLink(c.phone)}" target="_blank" rel="noopener">${ico('chat', 18)} WhatsApp</a>` : ''}${c.address ? `<a class="chip" href="${mapLink(c.address)}" target="_blank" rel="noopener">${ico('pin', 18)} Mappa</a>` : ''}</div>` : '';
   const payNote = L.state === 'paid' ? (j.paid ? `Segnato come pagato${j.paidOn ? ' il ' + fmtShort(j.paidOn) : ''}${j.method ? ' · ' + esc(j.method) : ''}.` : 'Nessun importo da pagare.')
     : L.state === 'credit' ? `Coperto dal credito del cliente (${money(L.covered)}). Dopo questo lavoro al cliente restano ${money(L.left)} di credito.`
@@ -1050,6 +1063,7 @@ views.clients = () => {
   return `${rootHead('Clienti e animali', 'Gestisci i tuoi clienti e i loro animali', `<button class="btn btn-primary btn-sm" data-act="newClient">${ico('plus', 20)} Nuovo</button>`)}
   <div class="two stats2"><div class="card stat-h"><div class="tico g">${ico('users', 22)}</div><div><b>${act.length}</b><span>Clienti</span></div></div>
   <div class="card stat-h"><div class="tico g">${ico('paw', 22)}</div><div><b>${db.pets.filter(p => act.some(c => c.id === p.clientId)).length}</b><span>Animali</span></div></div></div>
+  ${act.length ? `<button class="btn btn-primary btn-block mb" data-act="payQuick">${ico('coin', 20)} Registra un pagamento ricevuto</button>` : ''}
   ${act.length > 4 ? `<label class="searchbox">${ico('search', 20)}<input type="search" id="cq" data-input="clientQuery" placeholder="Cerca cliente o animale" value="${esc(ui.clientQuery)}" autocomplete="off"></label>` : ''}
   ${secHead('I tuoi clienti', archived ? `<a class="link" href="#/archived">Archiviati (${archived})</a>` : '')}
   <div id="clist">${clientListHTML()}</div>`;
@@ -1548,18 +1562,38 @@ function payForm(id) {
 /* ===== PAGAMENTO RICEVUTO DAL CLIENTE (acconti / credito) ===== */
 function paymentForm(cid, id) {
   const edit = id ? db.payments.find(p => p.id === id) : null; if (id && !edit) return;
-  cid = edit ? edit.clientId : cid; const c = client(cid); if (!c) return;
-  const CL = clLedger(cid);
+  cid = edit ? edit.clientId : cid;
+  const pick = !edit && !cid;
+  if (pick && !db.clients.some(x => !x.archived)) { toast('Aggiungi prima un cliente', { type: 'err' }); return; }
+  let c = client(cid); if (!pick && !c) return;
+  const CL = cid ? clLedger(cid) : { debt: 0, credit: 0, coveredSched: 0 };
   const p = edit || { amount: CL.debt > 0 ? CL.debt : '', date: todayStr(), method: '', notes: '' };
   const state = CL.debt > 0 ? `Ora deve ${money(CL.debt)}` : CL.credit > 0 ? `Credito libero ${money(CL.credit)}` : CL.coveredSched > 0 ? 'Anticipo già assegnato ai lavori' : 'In pari';
   openSheet({
-    title: edit ? 'Modifica pagamento' : 'Pagamento ricevuto', subtitle: `${c.name} · ${state}`, submit: edit ? 'Salva modifiche' : 'Registra pagamento',
+    title: edit ? 'Modifica pagamento' : 'Pagamento ricevuto', subtitle: pick ? 'Scegli il cliente e quanto ti ha dato' : `${c.name} · ${state}`, submit: edit ? 'Salva modifiche' : 'Registra pagamento',
     extraFoot: edit ? `<button type="button" class="btn btn-ghost btn-danger btn-block" data-del>${ico('trash', 20)} Elimina pagamento</button>` : '',
-    body: `<p class="hint mb">Anche se è più di quanto deve: la differenza resta come <b>credito</b> e viene scalata in automatico dai lavori, dal più vecchio al più recente.</p>
+    body: `${pick ? field('Cliente *', fSelect('clientId', [{ v: '', l: 'Seleziona cliente…' }, ...db.clients.filter(x => !x.archived).sort((a, b) => a.name.localeCompare(b.name, 'it')).map(x => ({ v: x.id, l: x.name }))], '')) : ''}<p class="hint mb">Anche se è più di quanto deve: la differenza resta come <b>credito</b> e viene scalata in automatico dai lavori, dal più vecchio al più recente.</p>
       <div class="grid2">${field('Importo ricevuto *', fMoney('amount', p.amount))}${field('Data *', fInput('date', p.date, { type: 'date' }))}</div>
+      ${pick ? '<div class="hint mb" id="payPrev" hidden></div>' : ''}
       ${field('Metodo', fSelect('method', payOpts, p.method))}${field('Note', fArea('notes', p.notes, 'es. anticipo per le vacanze', 2))}`,
-    onOpen: el => { const del = $('[data-del]', el); if (del) del.onclick = () => closeTop(() => destructive('Pagamento eliminato', () => { db.payments = db.payments.filter(x => x.id !== edit.id); })); },
+    onOpen: (el, form) => {
+      if (pick) {
+        const prev = $('#payPrev', el), f = form.elements;
+        const upd = () => {
+          const id = f.clientId.value, a = num(f.amount.value), cl = client(id);
+          if (!cl) { prev.hidden = true; return; }
+          const now = clLedger(id); let txt = now.debt > 0 ? `Ora ${cl.name.split(' ')[0]} deve ${money(now.debt)}.` : now.credit > 0 ? `Ora ha un credito libero di ${money(now.credit)}.` : 'Ora è in pari.';
+          if (isNum(f.amount.value) && a > 0) {
+            db.payments.push({ id: '__tmp', clientId: id, amount: r2(a), date: f.date.value || todayStr(), created: Date.now() }); _led = null;
+            try { txt += ` Dopo questo pagamento: ${cl.name.split(' ')[0]} ${acctText(id)}.`; } finally { db.payments = db.payments.filter(x => x.id !== '__tmp'); _led = null; }
+          }
+          prev.textContent = txt; prev.hidden = false;
+        };
+        ['change', 'input'].forEach(ev => form.addEventListener(ev, e => { if (['clientId', 'amount', 'date'].includes(e.target.name)) upd(); }));
+        f.clientId.addEventListener('change', () => { const cl = client(f.clientId.value), L = cl ? clLedger(cl.id) : null; if (L && L.debt > 0 && !f.amount.value) f.amount.value = String(L.debt).replace('.', ','); upd(); });
+      } const del = $('[data-del]', el); if (del) del.onclick = () => closeTop(() => destructive('Pagamento eliminato', () => { db.payments = db.payments.filter(x => x.id !== edit.id); })); },
     onSubmit: (d, form) => {
+      if (pick) { if (!d.clientId) return setErr(form, 'clientId', 'Seleziona un cliente'); cid = d.clientId; c = client(cid); }
       if (!isNum(d.amount) || num(d.amount) <= 0) return setErr(form, 'amount', 'Inserisci un importo maggiore di zero');
       if (!d.date) return setErr(form, 'date', 'Inserisci la data');
       const data = { amount: r2(num(d.amount)), date: d.date, method: d.method || '', notes: d.notes.trim() };
@@ -1647,6 +1681,7 @@ function expenseForm(id) {
     onOpen: (el) => { const del = $('[data-del]', el); if (del) del.onclick = () => closeTop(() => destructive('Spesa eliminata', () => { db.expenses = db.expenses.filter(x => x.id !== edit.id); })); },
     onSubmit: (d, form) => {
       if (!d.desc.trim()) return setErr(form, 'desc', 'Inserisci una descrizione');
+      if (pick) { if (!d.clientId) return setErr(form, 'clientId', 'Seleziona un cliente'); cid = d.clientId; c = client(cid); }
       if (!isNum(d.amount) || num(d.amount) <= 0) return setErr(form, 'amount', 'Inserisci un importo maggiore di zero');
       if (!d.date) return setErr(form, 'date', 'Inserisci la data');
       const data = { desc: d.desc.trim(), amount: num(d.amount), date: d.date, cat: d.cat, notes: d.notes.trim() };
@@ -1735,6 +1770,7 @@ A.jobComplete = d => completeForm(d.id);
 A.jobPay = d => payForm(d.id);
 A.cjToggle = () => { ui.cjAll = !ui.cjAll; render(); };
 A.payAdd = d => paymentForm(d.client);
+A.payQuick = () => paymentForm(null);
 A.payEdit = d => paymentForm(null, d.id);
 A.togglePaid = d => {
   const j = db.jobs.find(x => x.id === d.id); if (!j) return;
@@ -1750,7 +1786,7 @@ A.togglePaid = d => {
   destructive(was === 'credit' || was === 'partial' ? 'Pagato a parte · il credito resta per i prossimi lavori' : 'Segnato come pagato ✓', () => { j.paid = true; j.paidOn = todayStr(); });
 };
 A.jobUnpay = d => { const j = db.jobs.find(x => x.id === d.id); if (!j) return; j.paid = false; j.paidOn = null; save(); render(); toast('Segnato come non pagato'); };
-A.jobReopen = d => confirmBox({ title: 'Riportare a "programmato"?', text: 'Prezzo finale, mancia e pagamento verranno azzerati.', ok: 'Riporta', onOk: () => { const j = db.jobs.find(x => x.id === d.id); if (!j) return; destructive('Lavoro riaperto', () => { Object.assign(j, { status: 'scheduled', paid: false, finalPrice: null, tip: 0, method: '', paidOn: null, completedOn: null }); }); } });
+A.jobReopen = d => confirmBox({ title: 'Riportare a "programmato"?', text: 'Prezzo finale, mancia e pagamento verranno azzerati.', ok: 'Riporta', onOk: () => { const j = db.jobs.find(x => x.id === d.id); if (!j) return; destructive('Lavoro riaperto', () => { Object.assign(j, { status: 'scheduled', paid: false, finalPrice: null, tip: 0, method: '', paidOn: null, completedOn: null, auto: false, keep: true }); }); } });
 A.jobEdit = d => jobForm({ id: d.id });
 A.jobDup = d => jobForm({ from: d.id });
 A.jobIcs = d => { const j = db.jobs.find(x => x.id === d.id); if (!j) return; download(`lavoro-${j.date}.ics`, icsFor(j), 'text/calendar'); toast('File calendario scaricato: aprilo per aggiungerlo'); };
@@ -1867,11 +1903,13 @@ function applyTheme() {
 window.addEventListener('hashchange', route);
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstall = e; if (current.path === '/' || current.path === '/more') render(); });
 window.addEventListener('appinstalled', () => { deferredInstall = null; toast('App installata ✓'); render(); });
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { const ch = generateRecurring(); if (!overlays.length) render(); } });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { const ch = generateRecurring(); if (autoCompleteJobs()) save(); if (!overlays.length) render(); } });
 if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener && matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
 
 applyTheme();
 generateRecurring();
+if (autoCompleteJobs()) save();
+(function midnight() { const n = new Date(), t = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1, 0, 0, 5); setTimeout(() => { generateRecurring(); if (autoCompleteJobs()) save(); if (!overlays.length) render(); midnight(); }, t - n); })();
 route();
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
