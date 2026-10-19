@@ -284,6 +284,29 @@ noscript{display:block;padding:24px;text-align:center}
 .hint.mb{margin:0 2px 14px}
 .sheet .notice{margin:0 0 14px}
 
+/* calendario multi-selezione */
+.cal{background:var(--surface);border:1.5px solid var(--line);border-radius:18px;padding:8px 8px 6px}
+.cal-head{display:flex;align-items:center;justify-content:space-between}.cal-title{font-weight:800;font-size:17px}
+.cal-wd,.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cal-wd span{text-align:center;font-size:12px;font-weight:700;color:var(--faint);padding:4px 0}
+.cal-grid span{display:block}
+.cal-d{position:relative;aspect-ratio:1;min-height:42px;border-radius:50%;display:grid;place-items:center;font-size:16px;font-weight:600;color:var(--text);text-align:center;margin:1px auto;width:100%;max-width:46px}
+.cal-d.past{color:var(--faint)}
+.cal-d.today{box-shadow:inset 0 0 0 2px var(--brand)}
+.cal-d.on{background:var(--brand);color:#fff;font-weight:800;box-shadow:0 4px 10px -4px var(--brand);transform:scale(1.02)}
+.cal-d.on.past{color:#fff}
+.cal-d i{position:absolute;bottom:5px;left:50%;width:5px;height:5px;margin-left:-2.5px;border-radius:50%;background:var(--amber)}.cal-d.on i{background:#fff}
+.cal-d:active{background:var(--brand-l)}.cal-d.on:active{background:var(--brand-d)}
+.cal-leg{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--faint);margin:6px 6px 4px}.cal-leg i{width:6px;height:6px;border-radius:50%;background:var(--amber);display:inline-block}
+.sel-box{margin-top:10px}.sel-top{display:flex;align-items:center;justify-content:space-between;margin:0 2px 8px}.sel-top b{color:var(--brand)}.sel-top button{color:var(--red);font-weight:700;font-size:14px;padding:6px 4px}
+.sel-list{display:flex;flex-wrap:wrap;gap:6px}.sel-chip{display:inline-flex;align-items:center;gap:6px;padding:7px 8px 7px 12px;border-radius:99px;background:var(--brand-l);color:var(--brand);font-weight:700;font-size:13.5px}
+
+.day-h.today{color:var(--brand)}
+.past-div{display:flex;align-items:center;gap:10px;margin:26px 4px 2px;color:var(--faint);font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.past-div::before,.past-div::after{content:"";flex:1;height:1px;background:var(--line)}
+
+.t-credit{color:var(--violet);font-size:12.5px;font-weight:700;margin-top:2px}
+
 </style>
 </head>
 <body>
@@ -295,7 +318,7 @@ noscript{display:block;padding:24px;text-align:center}
 <script>
 'use strict';
 /* Pet Sitter Profit — dati, utilità, calcoli, ricorrenze, import/export */
-const APP_VERSION = '1.1.1';
+const APP_VERSION = '1.4.0';
 const STORE_KEY = 'psp_db_v1';
 
 const PET_TYPES = ['Cane','Gatto','Coniglio','Roditore','Uccello','Rettile','Pesce','Altro'];
@@ -369,6 +392,10 @@ function migrate(d) {
   o.settings = Object.assign(freshDB().settings, (d && d.settings) || {});
   o.meta = Object.assign(freshDB().meta, (d && d.meta) || {});
   o.recurring.forEach(r => { if (!Array.isArray(r.skipped)) r.skipped = []; if (!Array.isArray(r.days)) r.days = []; });
+  const nd = v => { const m = String(v || '').match(/^(\d{4})-(\d{1,2})-(\d{1,2})/); return m ? `${m[1]}-${pad(+m[2])}-${pad(+m[3])}` : v; };
+  const nt = v => { const m = String(v || '').match(/^(\d{1,2}):(\d{2})/); return m ? `${pad(+m[1])}:${m[2]}` : (v || '09:00'); };
+  o.jobs.forEach(j => { j.date = nd(j.date); j.time = nt(j.time); });
+  o.expenses.forEach(e => { e.date = nd(e.date); }); o.payments.forEach(p => { p.date = nd(p.date); });
   return o;
 }
 function loadDB() {
@@ -414,32 +441,45 @@ function buildLedger() {
   const ids = new Set(db.jobs.map(j => j.clientId).concat(db.payments.map(p => p.clientId)));
   ids.forEach(cid => {
     const pool = r2(sum(db.payments.filter(p => p.clientId === cid), p => p.amount));
-    let rem = pool, coveredDone = 0, coveredSched = 0, debt = 0, due = 0, first = null, manual = 0;
+    let rem = pool, coveredDone = 0, coveredSched = 0, schedCount = 0, debt = 0, due = 0, first = null, manual = 0, lastCov = null;
     db.jobs.filter(j => j.clientId === cid).sort(cmpJob).forEach(j => {
       const need = needOf(j);
-      if (j.paid || need <= 0) { L.job[j.id] = { need, covered: need, short: 0, state: 'paid', manual: true, debtStart: false }; if (j.status === 'completed') manual += need; return; }
+      if (j.paid || need <= 0) { L.job[j.id] = { need, covered: need, short: 0, state: 'paid', manual: true, debtStart: false, left: rem }; if (j.status === 'completed') manual += need; return; }
       const cov = r2(Math.min(rem, need)); rem = r2(rem - cov);
       const short = r2(need - cov);
       const state = short <= 0.004 ? 'credit' : (cov > 0 ? 'partial' : 'unpaid');
-      const rec = { need, covered: cov, short, state, manual: false, debtStart: false };
+      const rec = { need, covered: cov, short, state, manual: false, debtStart: false, left: rem };
+      if (cov > 0) lastCov = j.id;
       if (short > 0.004 && pool > 0 && first === null) { first = j.id; rec.debtStart = true; }
       L.job[j.id] = rec;
-      if (j.status === 'completed') { coveredDone += cov; debt += short; due += need; } else coveredSched += cov;
+      if (j.status === 'completed') { coveredDone += cov; debt += short; due += need; } else { coveredSched += cov; if (cov > 0) schedCount++; }
     });
     debt = r2(debt);
-    const credit = r2(pool - coveredDone);          // credito disponibile (anche se già assegnato ai lavori futuri)
-    L.client[cid] = { pool, debt, due: r2(due), coveredDone: r2(coveredDone), coveredSched: r2(coveredSched), free: r2(rem),
-      credit: debt > 0 ? 0 : Math.max(0, credit), balance: debt > 0 ? -debt : Math.max(0, credit), manualPaid: r2(manual), firstShort: first };
+    /* credit = credito LIBERO: soldi ricevuti non ancora assegnati a nessun lavoro (nemmeno programmato)
+       held   = credito totale in mano (libero + già assegnato ai lavori programmati) */
+    const free = r2(rem);
+    L.client[cid] = { pool, debt, due: r2(due), coveredDone: r2(coveredDone), coveredSched: r2(coveredSched), schedCount, free,
+      credit: debt > 0 ? 0 : free, held: debt > 0 ? 0 : Math.max(0, r2(pool - coveredDone)), balance: debt > 0 ? -debt : free,
+      manualPaid: r2(manual), firstShort: first, lastCov };
   });
   return L;
 }
 const led = () => _led || (_led = buildLedger());
-const EMPTY_CL = { pool: 0, debt: 0, due: 0, coveredDone: 0, coveredSched: 0, free: 0, credit: 0, balance: 0, manualPaid: 0, firstShort: null };
+const EMPTY_CL = { pool: 0, debt: 0, due: 0, coveredDone: 0, coveredSched: 0, schedCount: 0, free: 0, credit: 0, held: 0, balance: 0, manualPaid: 0, firstShort: null, lastCov: null };
 const clLedger = cid => led().client[cid] || EMPTY_CL;
-const jl = j => led().job[j.id] || { need: needOf(j), covered: 0, short: needOf(j), state: 'unpaid', manual: false, debtStart: false };
+const jl = j => led().job[j.id] || { need: needOf(j), covered: 0, short: needOf(j), state: 'unpaid', manual: false, debtStart: false, left: 0 };
 const payState = j => jl(j).state;
 const owedTotal = () => r2(sum(db.jobs.filter(j => j.status === 'completed'), j => jl(j).short));
 const creditTotal = () => r2(sum(db.clients, c => clLedger(c.id).credit));
+const assignedTotal = () => r2(sum(db.clients, c => clLedger(c.id).coveredSched));
+/* frase breve sul conto del cliente (per i messaggi) */
+function acctText(cid) {
+  const L = clLedger(cid);
+  if (L.debt > 0) return `deve ancora ${money(L.debt)}`;
+  if (L.credit > 0) return `ha un credito libero di ${money(L.credit)}` + (L.coveredSched > 0 ? ` (più ${money(L.coveredSched)} già assegnati a lavori programmati)` : '');
+  if (L.coveredSched > 0) return `ha tutto l'anticipo assegnato ai lavori programmati (${money(L.coveredSched)})`;
+  return 'è in pari';
+}
 
 function periodStats(from, to) {
   const inR = d => d >= from && d <= to;
@@ -452,12 +492,13 @@ function periodStats(from, to) {
   const revenue = r2(sum(done, eff)), unpaid = r2(sum(done, j => jl(j).short)), paid = r2(revenue - unpaid);
   const tips = sum(done, j => j.tip);
   const expenses = sum(exps, e => e.amount);
-  const net = paid + tips - expenses - kmCost;
-  const gross = paid + tips;
+  const cash = r2(sum(db.payments.filter(p => inR(p.date)), p => p.amount) + sum(js.filter(j => j.paid), needOf));
+  const net = cash + tips - expenses - kmCost;
+  const gross = cash + tips;
   const sched = js.filter(j => j.status === 'scheduled');
   return {
     jobs: js, done, paidJobs, unpaidJobs, scheduled: sched, exps,
-    revenue, paid, unpaid, tips, expenses, km, kmCost, net, gross,
+    revenue, paid, cash, unpaid, tips, expenses, km, kmCost, net, gross,
     minutes: sum(done, j => j.minutes),
     clientsServed: new Set(done.map(j => j.clientId)).size,
     margin: gross > 0 ? net / gross * 100 : 0,
@@ -807,7 +848,7 @@ function destructive(msg, fn, o = {}) {
 'use strict';
 /* Pet Sitter Profit — schermate e router */
 const ui = {
-  jobsMonth: monthKey(new Date()), moneyMonth: monthKey(new Date()), expMonth: monthKey(new Date()),
+  cjAll: false, jobsMonth: monthKey(new Date()), moneyMonth: monthKey(new Date()), expMonth: monthKey(new Date()),
   jobsFilter: 'all', clientQuery: '',
   repMode: 'month', repMonth: monthKey(new Date()), repYear: new Date().getFullYear(),
   exportRange: 'all'
@@ -825,7 +866,7 @@ const payCls = j => { const st = payState(j); return st === 'unpaid' && j.status
 const payBadge = (j, btn = true) => btn
   ? `<button type="button" class="badge paybtn b-${payCls(j)}" data-act="togglePaid" data-id="${j.id}" aria-label="Cambia stato pagamento: ora ${PAY_LABEL[payState(j)]}">${PAY_LABEL[payState(j)]}</button>`
   : `<span class="badge b-${payCls(j)}">${PAY_LABEL[payState(j)]}</span>`;
-const balancePill = cid => { const L = clLedger(cid); return L.debt > 0 ? `<span class="pill-bal debt">Da pagare ${money(L.debt)}</span>` : L.credit > 0 ? `<span class="pill-bal credit">Credito ${money(L.credit)}</span>` : ''; };
+const balancePill = cid => { const L = clLedger(cid); return L.debt > 0 ? `<span class="pill-bal debt">Da pagare ${money(L.debt)}</span>` : L.credit > 0 ? `<span class="pill-bal credit">Credito libero ${money(L.credit)}</span>` : L.coveredSched > 0 ? `<span class="pill-bal even">Anticipo assegnato</span>` : ''; };
 const AVC = ['#B7791F', '#2B6CB0', '#6B46C1', '#1B7F55', '#C53030', '#0E7490'];
 const avColor = s => AVC[[...String(s)].reduce((a, c) => a + c.charCodeAt(0), 0) % AVC.length];
 const clientAvatar = (c, size = 48) => { const col = avColor(c ? c.name : '?'); return `<div class="avatar" style="width:${size}px;height:${size}px;background:${col}1f;color:${col};font-size:${Math.round(size * .42)}px">${esc((c ? c.name : '?').trim().charAt(0).toUpperCase())}</div>`; };
@@ -841,11 +882,21 @@ function jobRow(j, { quick = false } = {}) {
   const sub = [j.time, petNameOf(j), j.title].filter(Boolean).join(' · ');
   const warn = L.debtStart ? `<div class="t-warn">${ico('alert', 14)} ${done ? 'Da qui è in debito' : 'Credito finito'} · mancano ${money(L.short)}</div>`
     : L.state === 'partial' ? `<div class="t-warn">Mancano ${money(L.short)}</div>` : '';
+  const cr = L.state === 'credit' ? `<div class="t-credit">Credito residuo dopo: ${money(L.left)}</div>` : '';
   return `<div class="jobrow ${done ? 'st-done' : 'st-sched'} ps-${L.state}"><a class="jobmain" href="#/job/${j.id}">${petAvatar(pet(j.petId), 46)}
-    <div class="grow"><div class="t1">${esc(c ? c.name : 'Cliente eliminato')}</div><div class="t2">${esc(sub)}</div>${warn}</div></a>
+    <div class="grow"><div class="t1">${esc(c ? c.name : 'Cliente eliminato')}</div><div class="t2">${esc(sub)}</div>${warn}${cr}</div></a>
     <div class="right"><div class="amt">${money(eff(j))}</div>${payBadge(j)}</div>
     ${quick && !done ? `<button type="button" class="quick" data-act="jobComplete" data-id="${j.id}" aria-label="Completa lavoro">${ico('check', 20)}</button>` : `<a class="chev-link" href="#/job/${j.id}" aria-label="Apri">${ico('chevR', 18)}</a>`}</div>`;
 }
+/* Ordine: prima i giorni di oggi e futuri dal più vicino al più lontano, poi i giorni passati dal più recente. */
+const normD = j => String(j.date || '').slice(0, 10);
+function orderJobs(list) {
+  const t = todayStr();
+  const up = list.filter(j => normD(j) >= t).sort(cmpJob);
+  const past = list.filter(j => normD(j) < t).sort((a, b) => normD(a) !== normD(b) ? (normD(a) < normD(b) ? 1 : -1) : cmpJob(a, b));
+  return { up, past, all: up.concat(past) };
+}
+const dayLabel = d => { const t = todayStr(); return d === t ? `Oggi · ${fmtDay(d)}` : d === ymd(addDays(parseD(t), 1)) ? `Domani · ${fmtDay(d)}` : fmtDay(d); };
 const jobList = (list, o) => `<div class="list">${list.map(j => jobRow(j, o)).join('')}</div>`;
 
 /* ---------- HOME ---------- */
@@ -867,7 +918,7 @@ views.home = () => {
   const installCard = deferredInstall && !db.meta.dismissedInstall ? `<div class="card notice">${ico('smartphone', 22)}<div class="grow"><b>Installa l'app</b><span>Aprila dalla schermata Home, anche offline.</span></div><button class="btn btn-sm btn-primary" data-act="install">Installa</button><button class="icon-btn" data-act="dismissInstall" aria-label="Nascondi">${ico('x', 18)}</button></div>` : '';
   return `${rootHead('Pet Sitter Profit', greet, `<a class="icon-btn" href="#/settings" aria-label="Impostazioni">${ico('settings')}</a>`)}
   <section class="hero"><div class="eyebrow">Utile netto di ${monthName(ym)}</div><div class="big">${money(s.net)}</div>${trend}${goalBar}
-    <div class="kpis"><div class="kpi"><div class="kico g">${ico('coin', 20)}</div><span>Incassato</span><b>${money(s.paid + s.tips)}</b></div>
+    <div class="kpis"><div class="kpi"><div class="kico g">${ico('coin', 20)}</div><span>Incassato</span><b>${money(s.cash + s.tips)}</b></div>
     <div class="kpi"><div class="kico r">${ico('minus', 20)}</div><span>Spese</span><b>${money(s.expenses + s.kmCost)}</b></div>
     <a class="kpi" href="#/jobs?f=unpaid"><div class="kico a">${ico('alert', 20)}</div><span>Da incassare</span><b>${money(owedSum)}</b></a></div></section>
   ${welcome}${backupCard}${installCard}
@@ -894,8 +945,10 @@ views.jobs = (p, q) => {
     if (f === 'scheduled') list = list.filter(j => j.status === 'scheduled');
     if (f === 'paid') list = list.filter(j => j.status === 'completed' && jl(j).short <= 0.004);
   }
-  list = list.slice().sort(f === 'scheduled' ? cmpJob : (a, b) => -cmpJob(a, b));
-  const groups = []; list.forEach(j => { const g = groups[groups.length - 1]; if (g && g.d === j.date) g.items.push(j); else groups.push({ d: j.date, items: [j] }); });
+  const ord = orderJobs(list);
+  list = f === 'scheduled' ? list.slice().sort(cmpJob) : ord.all;
+  const groups = []; list.forEach(j => { const d = normD(j), g = groups[groups.length - 1]; if (g && g.d === d) g.items.push(j); else groups.push({ d, items: [j] }); });
+  const splitAt = f === 'scheduled' || !ord.up.length || !ord.past.length ? -1 : groups.findIndex(g => g.d < todayStr());
   const tabs = [['all', 'Tutti'], ['scheduled', 'Programmati'], ['unpaid', 'Da pagare'], ['paid', 'Pagati']];
   const owedSum = owedTotal();
   const head = f === 'unpaid'
@@ -908,7 +961,7 @@ views.jobs = (p, q) => {
   <div class="subrow"><a class="link-ico" href="#/recurring">${ico('repeat', 18)} Ricorrenti</a></div>
   ${head}
   <div class="seg" role="tablist">${tabs.map(([k, l]) => `<button role="tab" aria-selected="${f === k}" class="${f === k ? 'on' : ''}" data-act="filter" data-f="${k}">${l}</button>`).join('')}</div>
-  ${groups.length ? groups.map(g => `<div class="day-h">${fmtDay(g.d)}</div>${jobList(g.items, { quick: true })}`).join('')
+  ${groups.length ? groups.map((g, i) => `${i === splitAt ? '<div class="past-div"><span>Giorni già passati</span></div>' : ''}<div class="day-h ${g.d === todayStr() ? 'today' : ''}">${dayLabel(g.d)}</div>${jobList(g.items, { quick: true })}`).join('')
     : empty('briefcase', 'Nessun lavoro', f === 'all' ? 'In questo mese non ci sono lavori.' : 'Nessun lavoro corrisponde a questo filtro.', `<button class="btn btn-primary" data-act="newJob">${ico('plus', 20)} Aggiungi lavoro</button>`)}`;
 };
 
@@ -919,7 +972,7 @@ views.job = ({ id }) => {
   const stBar = done ? ['Completato', 'checkCircle', 'done'] : ['Programmato', 'calendar', 'scheduled'];
   const contacts = c ? `<div class="chips">${c.phone ? `<a class="chip" href="tel:${esc(c.phone)}">${ico('phone', 18)} Chiama</a><a class="chip" href="${waLink(c.phone)}" target="_blank" rel="noopener">${ico('chat', 18)} WhatsApp</a>` : ''}${c.address ? `<a class="chip" href="${mapLink(c.address)}" target="_blank" rel="noopener">${ico('pin', 18)} Mappa</a>` : ''}</div>` : '';
   const payNote = L.state === 'paid' ? (j.paid ? `Segnato come pagato${j.paidOn ? ' il ' + fmtShort(j.paidOn) : ''}${j.method ? ' · ' + esc(j.method) : ''}.` : 'Nessun importo da pagare.')
-    : L.state === 'credit' ? `Coperto dal credito del cliente (${money(L.covered)}).`
+    : L.state === 'credit' ? `Coperto dal credito del cliente (${money(L.covered)}). Dopo questo lavoro al cliente restano ${money(L.left)} di credito.`
     : L.state === 'partial' ? `Coperti ${money(L.covered)} dal credito del cliente. Mancano ${money(L.short)}.`
     : done ? `Da incassare: ${money(L.short)}.` : `Non ancora pagato (${money(L.short)}).`;
   const payCard = `<div class="card paycard ps-${L.state}"><div class="pay-top"><b>Pagamento</b>${payBadge(j, false)}</div><p>${payNote}</p>
@@ -951,7 +1004,7 @@ views.job = ({ id }) => {
 /* ---------- SOLDI ---------- */
 views.money = () => {
   const ym = ui.moneyMonth, s = monthStats(ym), owed = owedTotal();
-  const max = Math.max(s.paid + s.tips, s.expenses + s.kmCost, 1);
+  const max = Math.max(s.cash + s.tips, s.expenses + s.kmCost, 1);
   const bars = [];
   for (let i = 5; i >= 0; i--) { const k = shiftMonth(ym, -i); bars.push({ k, v: monthStats(k).net }); }
   const bmax = Math.max(...bars.map(b => Math.abs(b.v)), 1);
@@ -959,13 +1012,13 @@ views.money = () => {
   const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
   return `${rootHead('Soldi')}${monthNav(ym, 'money')}
   <section class="hero"><div class="eyebrow">Utile netto <button class="info-btn" data-act="netInfo" aria-label="Come si calcola">${ico('info', 18)}</button></div>
-    <div class="big">${money(s.net)}</div><p class="hero-sub">Incassato più mance, meno tutte le spese registrate.</p>
-    <div class="kpis k4"><div class="kpi"><div class="kico g">${ico('chart', 18)}</div><span>Lavori</span><b>${money(s.paid)}</b></div>
+    <div class="big">${money(s.net)}</div><p class="hero-sub">Soldi incassati più mance, meno tutte le spese registrate.</p>
+    <div class="kpis k4"><div class="kpi"><div class="kico g">${ico('chart', 18)}</div><span>Incassato</span><b>${money(s.cash)}</b></div>
     <div class="kpi"><div class="kico o">${ico('gift', 18)}</div><span>Mance</span><b>${money(s.tips)}</b></div>
     <div class="kpi"><div class="kico r">${ico('minus', 18)}</div><span>Spese</span><b>${money(s.expenses + s.kmCost)}</b></div>
     <div class="kpi"><div class="kico a">${ico('alert', 18)}</div><span>Da pagare</span><b>${money(s.unpaid)}</b></div></div></section>
   ${secHead('Entrate e spese')}
-  <div class="card"><div class="mrow"><span>Entrate</span><b>${money(s.paid + s.tips)}</b></div><div class="meter lg"><i style="width:${(s.paid + s.tips) / max * 100}%"></i></div>
+  <div class="card"><div class="mrow"><span>Entrate</span><b>${money(s.cash + s.tips)}</b></div><div class="meter lg"><i style="width:${(s.cash + s.tips) / max * 100}%"></i></div>
     <div class="mrow mt-s"><span>Spese</span><b>${money(s.expenses + s.kmCost)}</b></div><div class="meter lg red"><i style="width:${(s.expenses + s.kmCost) / max * 100}%"></i></div>
     <div class="mtotal"><div class="tico g">${ico('wallet', 22)}</div><b>Utile netto</b><b class="${s.net < 0 ? 'c-r' : 'c-g'}">${money(s.net)}</b></div></div>
   ${secHead('Analisi del profitto')}
@@ -974,7 +1027,7 @@ views.money = () => {
   <div class="card"><div class="bars6">${bars.map(b => `<div class="bcol"><div class="bpair one"><i class="${b.v < 0 ? 'x' : ''}" style="height:${Math.max(3, Math.abs(b.v) / bmax * 100)}%"></i></div><span>${monthName(b.k).slice(0, 3)}</span></div>`).join('')}</div></div>
   ${cats.length ? `${secHead('Spese per categoria', `<a class="link" href="#/expenses">Dettagli</a>`)}<div class="card kvs">${cats.map(([id, v]) => kv(esc((EXP_CATS.find(c => c.id === id) || EXP_CATS[8]).label), money(v))).join('')}</div>` : ''}
   ${secHead('Attività')}
-  <div class="card kvs">${kv('Lavori completati', s.done.length)}${kv('Lavori programmati', s.scheduled.length)}${kv('Ore lavorate', fmtDur(s.minutes))}${kv('Chilometri', String(Math.round(s.km * 10) / 10).replace('.', ',') + ' km')}${s.kmCost ? kv('Costo chilometrico', money(s.kmCost)) : ''}${kv('Clienti serviti', s.clientsServed)}${kv('Da incassare (tutti i mesi)', money(owed))}${kv('Credito dei clienti (anticipi)', money(creditTotal()))}</div>
+  <div class="card kvs">${kv('Lavori completati', s.done.length)}${kv('Lavori programmati', s.scheduled.length)}${kv('Ore lavorate', fmtDur(s.minutes))}${kv('Chilometri', String(Math.round(s.km * 10) / 10).replace('.', ',') + ' km')}${s.kmCost ? kv('Costo chilometrico', money(s.kmCost)) : ''}${kv('Clienti serviti', s.clientsServed)}${kv('Da incassare (tutti i mesi)', money(owed))}${kv('Credito libero dei clienti', money(creditTotal()))}${kv('Anticipi già assegnati a lavori programmati', money(assignedTotal()))}</div>
   <a class="btn btn-block mt" href="#/reports">${ico('bars', 20)} Vedi report completi</a>`;
 };
 
@@ -1009,16 +1062,22 @@ views.archived = () => {
 
 views.client = ({ id }) => {
   const c = client(id); if (!c) return missing('Cliente non trovato', '#/clients');
-  const st = clientStats(id), pets = petsOf(id), jobs = db.jobs.filter(j => j.clientId === id).sort((a, b) => -cmpJob(a, b));
+  const st = clientStats(id), pets = petsOf(id), jobs = orderJobs(db.jobs.filter(j => j.clientId === id)).all;
   const contacts = `<div class="chips">${c.phone ? `<a class="chip" href="tel:${esc(c.phone)}">${ico('phone', 18)} Chiama</a><a class="chip" href="${waLink(c.phone)}" target="_blank" rel="noopener">${ico('chat', 18)} WhatsApp</a>` : ''}${c.email ? `<a class="chip" href="mailto:${esc(c.email)}">${ico('mail', 18)} Email</a>` : ''}${c.address ? `<a class="chip" href="${mapLink(c.address)}" target="_blank" rel="noopener">${ico('pin', 18)} Mappa</a>` : ''}</div>`;
   const CL = clLedger(id), pays = paymentsOf(id), j0 = CL.firstShort && db.jobs.find(x => x.id === CL.firstShort);
-  const acct = `<div class="card acct ${CL.debt > 0 ? 'debt' : CL.credit > 0 ? 'credit' : 'even'}">
-    <div class="acct-top"><div class="grow"><span>Conto cliente</span><b class="acct-big">${CL.debt > 0 ? 'Da pagare ' + money(CL.debt) : CL.credit > 0 ? 'In credito ' + money(CL.credit) : 'In pari'}</b></div>
+  const jLast = CL.lastCov && db.jobs.find(x => x.id === CL.lastCov);
+  const head = CL.debt > 0 ? ['debt', 'Da pagare ' + money(CL.debt)] : CL.credit > 0 ? ['credit', 'Credito libero ' + money(CL.credit)] : CL.pool > 0 ? ['even', 'Nessun credito libero'] : ['even', 'In pari'];
+  const hint = CL.pool > 0 ? ' Se elimini o sposti un lavoro pagato col credito, la cifra torna subito disponibile.' : '';
+  const note = CL.debt > 0 && j0 ? `Il debito parte dal lavoro del ${fmtShort(j0.date)}${j0.title ? ' («' + esc(j0.title) + '»)' : ''}: su quel lavoro mancano ${money(jl(j0).short)}.`
+    : CL.pool > 0 && j0 ? (jLast ? `Il credito copre i lavori fino al ${fmtShort(jLast.date)}. ` : 'Il credito non copre ancora nessun lavoro. ') + `Dal lavoro del ${fmtShort(j0.date)} in poi i lavori risultano da pagare (su quello mancano ${money(jl(j0).short)}).` + hint
+    : CL.pool > 0 && CL.credit > 0 ? `Tutti i lavori inseriti sono coperti e restano ${money(CL.credit)} per i prossimi.` + hint
+    : CL.pool > 0 ? `Tutto l'anticipo è già assegnato ai lavori inseriti.` + hint
+    : !pays.length ? 'Se il cliente ti anticipa dei soldi, registrali con «Pagamento»: verranno scalati dai lavori, dal più vecchio al più recente.' : '';
+  const acct = `<div class="card acct ${head[0]}">
+    <div class="acct-top"><div class="grow"><span>Conto cliente</span><b class="acct-big">${head[1]}</b></div>
       <button class="btn btn-sm btn-primary" data-act="payAdd" data-client="${c.id}">${ico('plus', 18)} Pagamento</button></div>
-    <div class="kvs flat">${kv('Pagamenti ricevuti', money(CL.pool))}${kv('Lavori svolti da coprire', money(CL.due))}${CL.coveredSched ? kv('Già assegnato a lavori programmati', money(CL.coveredSched)) : ''}${CL.credit > 0 ? kv('Credito ancora libero', money(CL.free)) : ''}${CL.debt > 0 ? kv('Ancora da pagare', money(CL.debt)) : ''}</div>
-    ${CL.debt > 0 && j0 ? `<p class="acct-note">Il debito parte dal lavoro del ${fmtShort(j0.date)}${j0.title ? ' («' + esc(j0.title) + '»)' : ''}: su quel lavoro mancano ${money(jl(j0).short)}.</p>`
-      : CL.credit > 0 ? `<p class="acct-note">Il credito viene scalato in automatico dai lavori, dal più vecchio al più recente.</p>`
-      : CL.pool === 0 && !pays.length ? `<p class="acct-note">Se il cliente ti anticipa dei soldi, registrali con «Pagamento»: verranno scalati dai lavori.</p>` : ''}</div>`;
+    <div class="kvs flat">${kv('Pagamenti ricevuti', money(CL.pool))}${CL.coveredDone ? kv('Usati per lavori già svolti', money(CL.coveredDone)) : ''}${CL.coveredSched ? kv(`Assegnati a ${plural(CL.schedCount, 'lavoro programmato', 'lavori programmati')}`, money(CL.coveredSched)) : ''}${CL.pool > 0 && CL.debt === 0 ? kv('Credito libero', money(CL.credit)) : ''}${CL.debt > 0 ? kv('Lavori svolti ancora da pagare', money(CL.debt)) : ''}</div>
+    ${note ? `<p class="acct-note">${note}</p>` : ''}</div>`;
   const paysHTML = pays.length ? `${secHead('Pagamenti ricevuti', `<span class="muted small">${plural(pays.length, 'pagamento', 'pagamenti')}</span>`)}<div class="list">${pays.slice(0, 8).map(p => `<button class="row" data-act="payEdit" data-id="${p.id}"><div class="tico g">${ico('coin', 20)}</div><div class="grow"><div class="t1">${money(p.amount)}</div><div class="t2">${fmtShort(p.date)}${p.method ? ' · ' + esc(p.method) : ''}${p.notes ? ' · ' + esc(p.notes) : ''}</div></div>${ico('chevR', 18, 'chev')}</button>`).join('')}</div>${pays.length > 8 ? `<p class="muted center mt-s">Ultimi 8 di ${pays.length}</p>` : ''}` : '';
   return `${subHead('Dettaglio cliente', '#/clients', `<button class="icon-btn" data-act="clientMenu" data-id="${c.id}" aria-label="Altre azioni">${ico('dots')}</button>`)}
   <div class="card chead"><div class="chead-top">${clientAvatar(c, 64)}<div class="grow"><h2>${esc(c.name)}</h2>${c.archived ? '<span class="badge b-scheduled">Archiviato</span>' : ''}
@@ -1032,8 +1091,8 @@ views.client = ({ id }) => {
   ${secHead(`Animali (${pets.length})`)}
   ${pets.length ? `<div class="stack">${pets.map(p => { const sv = service(p.serviceId); return `<button class="card petcard" data-act="petEdit" data-id="${p.id}">${petAvatar(p, 56, 'blue')}<div class="grow"><div class="t1">${esc(p.name)}</div><div class="t2">${esc(p.type)}${p.breed ? ' · ' + esc(p.breed) : ''}</div>${sv ? `<div class="t3">${esc(sv.name)} · ${fmtDur(sv.minutes)} · ${money(sv.price)}</div>` : ''}${p.notes ? `<div class="t3 clamp">${esc(p.notes)}</div>` : ''}</div>${ico('chevR', 18, 'chev')}</button>`; }).join('')}</div>` : `<div class="card empty-row">${petAvatar(null, 46)}<div class="grow"><b>Nessun animale</b><span>Aggiungi il primo animale di ${esc(c.name.split(' ')[0])}.</span></div></div>`}
   ${paysHTML}
-  ${secHead('Lavori recenti')}
-  ${jobs.length ? jobList(jobs.slice(0, 10), { quick: true }) + (jobs.length > 10 ? `<p class="muted center mt-s">Mostrati gli ultimi 10 di ${jobs.length}</p>` : '') : `<div class="card empty-row"><div class="grow"><b>Nessun lavoro</b><span>Registra il primo lavoro per questo cliente.</span></div></div>`}`;
+  ${secHead('Lavori')}
+  ${jobs.length ? jobList(ui.cjAll ? jobs : jobs.slice(0, 10), { quick: true }) + (jobs.length > 10 ? `<button class="btn btn-block mt-s" data-act="cjToggle">${ui.cjAll ? 'Mostra meno' : `Mostra tutti i ${jobs.length} lavori`}</button>` : '') : `<div class="card empty-row"><div class="grow"><b>Nessun lavoro</b><span>Registra il primo lavoro per questo cliente.</span></div></div>`}`;
 };
 
 /* ---------- ALTRO ---------- */
@@ -1120,9 +1179,9 @@ views.reports = () => {
   const R = reportRange(), s = periodStats(R.from, R.to);
   const nav = ui.repMode === 'all' ? '' : `<div class="monthnav"><button class="icon-btn" data-act="repNav" data-d="-1" aria-label="Precedente">${ico('chevL')}</button><div class="mlabel">${R.label}</div><button class="icon-btn" data-act="repNav" data-d="1" aria-label="Successivo">${ico('chevR')}</button></div>`;
   let buckets = [];
-  if (ui.repMode === 'year') for (let m = 1; m <= 12; m++) { const k = `${ui.repYear}-${pad(m)}`; const x = monthStats(k); buckets.push({ l: monthName(k).slice(0, 1).toUpperCase(), a: x.paid + x.tips, b: x.expenses + x.kmCost }); }
-  else if (ui.repMode === 'month') { const [y, m] = ui.repMonth.split('-').map(Number), n = new Date(y, m, 0).getDate(); for (let d = 1; d <= n; d++) { const ds = `${ui.repMonth}-${pad(d)}`; const x = periodStats(ds, ds); buckets.push({ l: (d === 1 || d % 5 === 0) ? d : '', a: x.paid + x.tips, b: x.expenses }); } }
-  else { const ys = [...new Set(db.jobs.map(j => j.date.slice(0, 4)).concat(db.expenses.map(e => e.date.slice(0, 4))))].sort(); buckets = ys.map(y => { const x = periodStats(y + '-01-01', y + '-12-31'); return { l: y, a: x.paid + x.tips, b: x.expenses + x.kmCost }; }); }
+  if (ui.repMode === 'year') for (let m = 1; m <= 12; m++) { const k = `${ui.repYear}-${pad(m)}`; const x = monthStats(k); buckets.push({ l: monthName(k).slice(0, 1).toUpperCase(), a: x.cash + x.tips, b: x.expenses + x.kmCost }); }
+  else if (ui.repMode === 'month') { const [y, m] = ui.repMonth.split('-').map(Number), n = new Date(y, m, 0).getDate(); for (let d = 1; d <= n; d++) { const ds = `${ui.repMonth}-${pad(d)}`; const x = periodStats(ds, ds); buckets.push({ l: (d === 1 || d % 5 === 0) ? d : '', a: x.cash + x.tips, b: x.expenses }); } }
+  else { const ys = [...new Set(db.jobs.map(j => j.date.slice(0, 4)).concat(db.expenses.map(e => e.date.slice(0, 4))))].sort(); buckets = ys.map(y => { const x = periodStats(y + '-01-01', y + '-12-31'); return { l: y, a: x.cash + x.tips, b: x.expenses + x.kmCost }; }); }
   const bm = Math.max(1, ...buckets.map(b => Math.max(b.a, b.b)));
   const byClient = {}, bySvc = {}, byCat = {};
   s.done.forEach(j => { const c = client(j.clientId); const k = c ? c.name : 'Cliente eliminato'; byClient[k] = (byClient[k] || 0) + eff(j) + (j.tip || 0); const sv = (service(j.serviceId) || {}).name || j.title || 'Altro'; bySvc[sv] = (bySvc[sv] || { n: 0, v: 0 }); bySvc[sv].n++; bySvc[sv].v += eff(j) + (j.tip || 0); });
@@ -1131,7 +1190,7 @@ views.reports = () => {
   return `${subHead('Report', '#/more', `<button class="icon-btn no-print" data-act="print" aria-label="Stampa o salva PDF">${ico('print')}</button>`)}
   <div class="seg no-print three">${[['month', 'Mese'], ['year', 'Anno'], ['all', 'Sempre']].map(([k, l]) => `<button class="${ui.repMode === k ? 'on' : ''}" data-act="repMode" data-m="${k}">${l}</button>`).join('')}</div>${nav}
   <section class="hero"><div class="eyebrow">Utile netto · ${R.label}</div><div class="big">${money(s.net)}</div>
-    <div class="kpis"><div class="kpi"><span>Incassato</span><b>${money(s.paid)}</b></div><div class="kpi"><span>Mance</span><b>${money(s.tips)}</b></div><div class="kpi"><span>Spese</span><b>${money(s.expenses + s.kmCost)}</b></div></div></section>
+    <div class="kpis"><div class="kpi"><span>Incassato</span><b>${money(s.cash)}</b></div><div class="kpi"><span>Mance</span><b>${money(s.tips)}</b></div><div class="kpi"><span>Spese</span><b>${money(s.expenses + s.kmCost)}</b></div></div></section>
   ${secHead('Andamento')}<div class="card"><div class="legend"><i class="g"></i>Entrate <i class="r"></i>Spese</div><div class="bars ${ui.repMode}">${buckets.map(b => `<div class="bcol"><div class="bpair"><i style="height:${b.a / bm * 100}%"></i><i class="x" style="height:${b.b / bm * 100}%"></i></div><span>${b.l}</span></div>`).join('') || '<div class="muted center">Nessun dato.</div>'}</div></div>
   ${secHead('Riepilogo')}<div class="card kvs">${kv('Lavori completati', s.done.length)}${kv('Fatturato (compresi non pagati)', money(s.revenue))}${kv('Da incassare', money(s.unpaid))}${kv('Ore lavorate', fmtDur(s.minutes))}${kv('Chilometri', String(Math.round(s.km * 10) / 10).replace('.', ',') + ' km')}${kv('Incasso medio per lavoro', money(s.avgJob))}${kv('Guadagno orario medio', s.minutes ? money((s.net) / (s.minutes / 60)) : '—')}${kv('Margine', s.gross > 0 ? Math.round(s.margin) + '%' : '—')}</div>
   ${secHead('Per cliente')}${tbl(Object.entries(byClient).sort((a, b) => b[1] - a[1]).slice(0, 10), ([k, v]) => kv(esc(k), money(v)))}
@@ -1259,6 +1318,40 @@ const money0 = v => (v === '' || v == null) ? '' : String(v);
 const payOpts = [{ v: '', l: '—' }, ...PAY_METHODS.map(m => ({ v: m, l: m }))];
 const leave = fb => { if (routeCount > 1) history.back(); else go(fb, true); };
 
+/* ===== CALENDARIO A SELEZIONE MULTIPLA ===== */
+function mountCalendar(el, form, { multi, initial, onChange }) {
+  const input = form.elements.dates, box = $('#cal', el), list = $('#calSel', el);
+  const sel = new Set(initial), busy = new Set(db.jobs.map(j => j.date));
+  let view = (initial[0] || todayStr()).slice(0, 7);
+  const arr = () => [...sel].sort();
+  const sync = () => { input.value = arr().join(','); const f = input.closest('.field'); if (f) { f.classList.remove('bad'); const er = $('.err', f); if (er) er.hidden = true; } onChange && onChange(arr()); };
+  const draw = () => {
+    const [y, m] = view.split('-').map(Number), lead = (new Date(y, m - 1, 1).getDay() + 6) % 7, n = new Date(y, m, 0).getDate(), t = todayStr();
+    let cells = '<span></span>'.repeat(lead);
+    for (let d = 1; d <= n; d++) {
+      const ds = `${view}-${pad(d)}`;
+      cells += `<button type="button" class="cal-d ${sel.has(ds) ? 'on' : ''} ${ds === t ? 'today' : ''} ${ds < t ? 'past' : ''}" data-d="${ds}" aria-pressed="${sel.has(ds)}" aria-label="${fmtFull(ds)}">${d}${busy.has(ds) ? '<i></i>' : ''}</button>`;
+    }
+    box.innerHTML = `<div class="cal-head"><button type="button" class="icon-btn" data-m="-1" aria-label="Mese precedente">${ico('chevL')}</button><div class="cal-title">${monthLabel(view)}</div><button type="button" class="icon-btn" data-m="1" aria-label="Mese successivo">${ico('chevR')}</button></div>
+      <div class="cal-wd">${['L', 'M', 'M', 'G', 'V', 'S', 'D'].map(x => `<span>${x}</span>`).join('')}</div><div class="cal-grid">${cells}</div>
+      <p class="cal-leg"><i></i> Hai già un lavoro in quel giorno</p>`;
+    const a = arr();
+    list.innerHTML = a.length
+      ? `<div class="sel-top"><b>${multi ? plural(a.length, 'giorno selezionato', 'giorni selezionati') : 'Giorno scelto'}</b>${multi && a.length > 1 ? '<button type="button" data-clear>Svuota</button>' : ''}</div><div class="sel-list">${a.map(ds => `<button type="button" class="sel-chip" data-rm="${ds}" aria-label="Rimuovi ${fmtFull(ds)}">${fmtDay(ds)} ${ico('x', 14)}</button>`).join('')}</div>`
+      : `<p class="hint">Nessun giorno selezionato: tocca i giorni sul calendario.</p>`;
+  };
+  box.addEventListener('click', e => {
+    const mb = e.target.closest('[data-m]'), dd = e.target.closest('[data-d]');
+    if (mb) { view = shiftMonth(view, +mb.dataset.m); draw(); return; }
+    if (dd) { const ds = dd.dataset.d; if (multi) { sel.has(ds) ? sel.delete(ds) : sel.add(ds); } else { sel.clear(); sel.add(ds); } sync(); draw(); try { navigator.vibrate && navigator.vibrate(8); } catch (_) {} }
+  });
+  list.addEventListener('click', e => {
+    const rm = e.target.closest('[data-rm]'), cl = e.target.closest('[data-clear]');
+    if (rm) { sel.delete(rm.dataset.rm); sync(); draw(); } else if (cl) { sel.clear(); sync(); draw(); }
+  });
+  sync(); draw();
+}
+
 /* ===== LAVORO ===== */
 function jobForm(o = {}) {
   const edit = o.id ? db.jobs.find(x => x.id === o.id) : null;
@@ -1289,15 +1382,16 @@ function jobForm(o = {}) {
       ${field('Animale', fSelect('petId', petOpts(j.clientId), j.petId))}
       <div class="field"><span>Servizio</span><input type="hidden" name="serviceId" value="${esc(j.serviceId)}"><div class="svc-chips" id="svcChips"></div><div class="err" hidden></div></div>
       ${field('Titolo del lavoro', fInput('title', j.title, { ph: 'es. Passeggiata mattutina', attrs: 'maxlength="80"' }))}
-      <div class="grid2">${field('Data *', fInput('date', j.date, { type: 'date' }))}${field('Ora', fInput('time', j.time, { type: 'time' }))}</div>
+      <div class="field"><span>${edit ? 'Giorno *' : 'Giorni * · tocca quelli in cui farai il servizio'}</span><input type="hidden" name="dates" value="${edit ? edit.date : (o.date || '')}"><div class="cal" id="cal"></div><div class="sel-box" id="calSel"></div><div class="err" hidden></div></div>
+      ${field('Ora (uguale per tutti i giorni)', fInput('time', j.time, { type: 'time' }))}
       <div class="grid2">${field('Prezzo *', fMoney('price', j.price))}${field('Durata (min)', fInput('minutes', j.minutes, { attrs: 'inputmode="numeric"' }))}</div>
       ${field('Km percorsi (andata e ritorno)', fInput('km', j.km || '', { ph: '0', attrs: 'inputmode="decimal"' }))}
       <div class="subsec">Pagamento</div>
       ${comp ? `<div class="grid2">${field('Prezzo finale', fMoney('finalPrice', eff(edit)))}${field('Mancia', fMoney('tip', edit.tip || ''))}</div>` : ''}
       ${switchRow('paid', 'Pagato', edit ? edit.paid : false, edit && !edit.paid && payState(edit) === 'credit' ? 'Ora è coperto dal credito del cliente. Attiva se l\'hai incassato a parte.' : 'Attiva se hai già incassato questo lavoro (contanti, Satispay…). Altrimenti verrà coperto dal credito del cliente, se c\'è.')}
       ${comp ? field('Metodo di pagamento', fSelect('method', payOpts, edit.method)) : ''}
-      ${!edit ? `<div class="subsec">Ripetizione</div>${field('Ripeti', fSelect('repeat', [{ v: '', l: 'Non ripetere' }, ...Object.entries(FREQS).map(([v, l]) => ({ v, l }))], ''))}
-        <div id="untilWrap" hidden>${field('Ripeti fino al (facoltativo)', fInput('until', '', { type: 'date' }), 'Senza data la serie continua finché non la elimini.')}</div>` : ''}
+      ${!edit ? `<div id="repeatWrap" hidden><div class="subsec">Ripetizione</div>${field('Ripeti', fSelect('repeat', [{ v: '', l: 'Non ripetere' }, ...Object.entries(FREQS).map(([v, l]) => ({ v, l }))], ''))}
+        <div id="untilWrap" hidden>${field('Ripeti fino al (facoltativo)', fInput('until', '', { type: 'date' }), 'Senza data la serie continua finché non la elimini.')}</div></div>` : ''}
       ${edit && rule ? switchRow('applySeries', 'Applica ai prossimi lavori della serie', false, esc(describeRecurring(rule))) : ''}
       ${field('Note', fArea('notes', j.notes, 'es. chiavi dal portinaio, codice cancello…'))}`,
     onOpen: (el, form) => {
@@ -1329,20 +1423,22 @@ function jobForm(o = {}) {
       });
       drawChips();
       if (f.repeat) f.repeat.addEventListener('change', () => { $('#untilWrap', el).hidden = !f.repeat.value; });
+      mountCalendar(el, form, { multi: !edit, initial: edit ? [edit.date] : (o.date ? [o.date] : []), onChange: a => { const w = $('#repeatWrap', el); if (w) { w.hidden = a.length !== 1; if (a.length !== 1 && f.repeat) { f.repeat.value = ''; $('#untilWrap', el).hidden = true; } } } });
     },
     onSubmit: (d, form) => {
       if (!d.clientId || d.clientId === '__new') return setErr(form, 'clientId', 'Seleziona un cliente');
-      if (!d.date) return setErr(form, 'date', 'Inserisci la data');
+      const dates = (d.dates || '').split(',').filter(Boolean).sort(), dt = dates[0];
+      if (!dt) return setErr(form, 'dates', 'Tocca almeno un giorno sul calendario');
       if (!isNum(d.price) || num(d.price) < 0) return setErr(form, 'price', 'Inserisci il prezzo (anche 0)');
-      if (d.until && d.until < d.date) return setErr(form, 'until', 'La data finale è prima dell\'inizio');
+      if (d.until && d.until < dt) return setErr(form, 'until', 'La data finale è prima dell\'inizio');
       const p = pet(d.petId), sv = service(d.serviceId);
       const base = { clientId: d.clientId, petId: p ? p.id : null, petName: p ? p.name : '', serviceId: sv ? sv.id : null,
-        title: (d.title || '').trim() || (sv ? sv.name : 'Lavoro'), date: d.date, time: d.time || db.settings.defaultTime || '09:00',
+        title: (d.title || '').trim() || (sv ? sv.name : 'Lavoro'), date: dt, time: d.time || db.settings.defaultTime || '09:00',
         minutes: Math.max(1, Math.round(num(d.minutes)) || 30), price: num(d.price), km: num(d.km), notes: (d.notes || '').trim(),
         paid: !!d.paid, paidOn: d.paid ? ((edit && edit.paidOn) || todayStr()) : null };
       if (edit) {
         const r = db.recurring.find(x => x.id === edit.recurringId);
-        if (r && edit.date !== d.date && !r.skipped.includes(edit.date)) r.skipped.push(edit.date);
+        if (r && edit.date !== dt && !r.skipped.includes(edit.date)) r.skipped.push(edit.date);
         Object.assign(edit, base);
         if (comp) { edit.finalPrice = isNum(d.finalPrice) ? num(d.finalPrice) : base.price; edit.tip = num(d.tip); edit.method = d.method || ''; }
         if (d.applySeries && r) {
@@ -1351,10 +1447,14 @@ function jobForm(o = {}) {
         }
         save(); render(); toast('Lavoro aggiornato');
       } else {
+        if (dates.length > 1) {
+          dates.forEach(x => addJob(Object.assign({}, base, { date: x })));
+          save(); ui.jobsMonth = dt.slice(0, 7); render(); toast(`${dates.length} lavori aggiunti al calendario ✓`); return;
+        }
         const job = addJob(base);
         if (d.repeat) {
           const r = { id: uid(), clientId: base.clientId, petId: base.petId, serviceId: base.serviceId, title: base.title, time: base.time, minutes: base.minutes, price: base.price,
-            freq: d.repeat, days: d.repeat === 'monthly' ? [] : [parseD(d.date).getDay()], start: d.date, end: d.until || null, active: true, skipped: [] };
+            freq: d.repeat, days: d.repeat === 'monthly' ? [] : [parseD(dt).getDay()], start: dt, end: d.until || null, active: true, skipped: [] };
           db.recurring.push(r); job.recurringId = r.id; generateRecurring();
         }
         save(); render(); toast(d.repeat ? 'Lavoro e serie creati' : 'Lavoro aggiunto');
@@ -1406,7 +1506,7 @@ function completeForm(id) {
         const box = $('#cpPreview', el), d = formData(form);
         if (!d.received || !isNum(d.received)) { box.hidden = true; return; }
         const P = previewCompletion(j, d, covered);
-        const msg = P.debt > 0 ? `${first} resterà in debito di ${money(P.debt)}` : P.credit > 0 ? `${first} sarà in credito di ${money(P.credit)}: verrà scalato dai prossimi lavori` : `${first} sarà in pari ✓`;
+        const msg = P.debt > 0 ? `${first} resterà in debito di ${money(P.debt)}` : P.credit > 0 ? `${first} avrà ${money(P.credit)} di credito libero per i prossimi lavori` : `${first} sarà in pari ✓`;
         box.hidden = false; box.className = 'card notice ' + (P.debt > 0 ? 'warn' : '');
         box.innerHTML = `${ico(P.debt > 0 ? 'alert' : 'checkCircle', 22)}<div class="grow"><b>${msg}</b>${P.settled ? `<span>Salda anche ${plural(P.settled, 'lavoro precedente', 'lavori precedenti')}.</span>` : ''}</div>`;
       };
@@ -1419,8 +1519,7 @@ function completeForm(id) {
       const R = runCompletion(j, d, covered);
       save(); render(); try { navigator.vibrate && navigator.vibrate(15); } catch (_) {}
       const N = clLedger(j.clientId);
-      toast(d.received ? (N.debt > 0 ? `Registrato · ${first} deve ancora ${money(N.debt)}` : N.credit > 0 ? `Registrato · ${first} è in credito di ${money(N.credit)}` : `Registrato · ${first} è in pari ✓`)
-        : payState(j) === 'credit' ? 'Completato · coperto dal credito ✓' : payState(j) === 'paid' ? 'Lavoro completato e pagato ✓' : 'Lavoro completato · da incassare');
+      toast(d.received ? `Registrato · ${first} ${acctText(j.clientId)}` : payState(j) === 'credit' ? 'Completato · coperto dal credito ✓' : payState(j) === 'paid' ? 'Lavoro completato e pagato ✓' : 'Lavoro completato · da incassare');
     }
   });
 }
@@ -1437,7 +1536,7 @@ function paymentForm(cid, id) {
   cid = edit ? edit.clientId : cid; const c = client(cid); if (!c) return;
   const CL = clLedger(cid);
   const p = edit || { amount: CL.debt > 0 ? CL.debt : '', date: todayStr(), method: '', notes: '' };
-  const state = CL.debt > 0 ? `Ora è in debito di ${money(CL.debt)}` : CL.credit > 0 ? `Ora ha un credito di ${money(CL.credit)}` : 'Ora è in pari';
+  const state = CL.debt > 0 ? `Ora deve ${money(CL.debt)}` : CL.credit > 0 ? `Credito libero ${money(CL.credit)}` : CL.coveredSched > 0 ? 'Anticipo già assegnato ai lavori' : 'In pari';
   openSheet({
     title: edit ? 'Modifica pagamento' : 'Pagamento ricevuto', subtitle: `${c.name} · ${state}`, submit: edit ? 'Salva modifiche' : 'Registra pagamento',
     extraFoot: edit ? `<button type="button" class="btn btn-ghost btn-danger btn-block" data-del>${ico('trash', 20)} Elimina pagamento</button>` : '',
@@ -1452,7 +1551,7 @@ function paymentForm(cid, id) {
       if (edit) Object.assign(edit, data); else db.payments.push({ id: uid(), clientId: cid, created: Date.now(), ...data });
       save(); render();
       const N = clLedger(cid), first = c.name.split(' ')[0];
-      toast(N.debt > 0 ? `Registrato · ${first} deve ancora ${money(N.debt)}` : N.credit > 0 ? `Registrato · ${first} è in credito di ${money(N.credit)}` : `Registrato · ${first} è in pari ✓`);
+      toast(`Registrato · ${first} ${acctText(cid)}`);
     }
   });
 }
@@ -1619,6 +1718,7 @@ A.newJob = d => jobForm({ clientId: d.client || '' });
 A.newClient = () => clientForm(null);
 A.jobComplete = d => completeForm(d.id);
 A.jobPay = d => payForm(d.id);
+A.cjToggle = () => { ui.cjAll = !ui.cjAll; render(); };
 A.payAdd = d => paymentForm(d.client);
 A.payEdit = d => paymentForm(null, d.id);
 A.togglePaid = d => {
@@ -1675,7 +1775,7 @@ A.svcAdd = () => serviceForm(); A.svcEdit = d => serviceForm(d.id);
 A.recAdd = () => recurringForm(); A.recEdit = d => recurringForm(d.id);
 A.recToggle = d => { const r = db.recurring.find(x => x.id === d.id); if (!r) return; r.active = !r.active; if (r.active) generateRecurring(); save(); render(); toast(r.active ? 'Serie riattivata' : 'Serie in pausa: non verranno creati nuovi lavori'); };
 A.recDel = d => { const r = db.recurring.find(x => x.id === d.id); if (!r) return; confirmBox({ title: 'Eliminare la serie?', text: 'I lavori futuri ancora programmati verranno eliminati. Quelli passati restano.', ok: 'Elimina serie', danger: true, onOk: () => destructive('Serie eliminata', () => { removeFutureSeriesJobs(r.id, todayStr()); db.recurring = db.recurring.filter(x => x.id !== r.id); }) }); };
-A.netInfo = () => infoSheet('Come si calcola l\'utile netto', '<p><b>Utile netto = incassato + mance − spese.</b></p><ul><li><b>Incassato</b>: i lavori completati e segnati come pagati nel mese.</li><li><b>Mance</b>: quelle registrate sui lavori completati.</li><li><b>Spese</b>: tutte le spese inserite, più il costo chilometrico se hai impostato un costo per km.</li><li>I lavori completati ma <b>non ancora pagati</b> non entrano nell\'utile: compaiono in «Da incassare».</li></ul>');
+A.netInfo = () => infoSheet('Come si calcola l\'utile netto', '<p><b>Utile netto = incassato + mance − spese.</b></p><ul><li><b>Incassato</b>: i soldi realmente ricevuti nel mese, contati nella data in cui li hai registrati (anche anticipi per lavori futuri), più i lavori segnati come pagati a parte.</li><li><b>Mance</b>: quelle registrate sui lavori completati.</li><li><b>Spese</b>: tutte le spese inserite, più il costo chilometrico se hai impostato un costo per km.</li><li>I lavori svolti ma <b>non ancora pagati</b> non entrano nell\'utile: compaiono in «Da incassare».</li></ul>');
 A.install = async () => { if (!deferredInstall) return; deferredInstall.prompt(); try { await deferredInstall.userChoice; } catch (_) {} deferredInstall = null; render(); };
 A.dismissInstall = () => { db.meta.dismissedInstall = true; save(); render(); };
 A.installHelp = () => infoSheet('Installare su Android', '<ol><li>Apri l\'app da <b>Chrome</b> (o Samsung Internet).</li><li>Tocca il menu <b>⋮</b> in alto a destra.</li><li>Scegli <b>«Installa app»</b> oppure <b>«Aggiungi a schermata Home»</b>.</li><li>Conferma: l\'icona apparirà tra le tue app e funzionerà anche offline.</li></ol><p class="muted">Dopo l\'installazione apri sempre l\'app dall\'icona, così i dati restano gli stessi.</p>');
