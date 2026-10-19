@@ -318,7 +318,7 @@ noscript{display:block;padding:24px;text-align:center}
 <script>
 'use strict';
 /* Pet Sitter Profit — dati, utilità, calcoli, ricorrenze, import/export */
-const APP_VERSION = '1.7.1';
+const APP_VERSION = '1.7.2';
 const STORE_KEY = 'psp_db_v1';
 
 const PET_TYPES = ['Cane','Gatto','Coniglio','Roditore','Uccello','Rettile','Pesce','Altro'];
@@ -1250,7 +1250,7 @@ views.exportPage = () => `${subHead('Esporta CSV', '#/more')}
 views.backup = () => {
   const lb = db.meta.lastBackup;
   return `${subHead('Backup e ripristino', '#/more')}
-  <div class="card notice ${lb ? '' : 'warn'}">${ico(lb ? 'checkCircle' : 'alert', 22)}<div class="grow"><b>${lb ? 'Ultimo backup: ' + new Date(lb).toLocaleString('it-IT', { dateStyle: 'medium', timeStyle: 'short' }) : 'Nessun backup eseguito'}</b><span>I dati sono salvati solo su questo telefono. Se cancelli i dati del browser o disinstalli l'app, li perdi.</span></div></div>
+  <div class="card notice ${lb ? '' : 'warn'}">${ico(lb ? 'checkCircle' : 'alert', 22)}<div class="grow"><b>${lb ? 'Ultimo backup: ' + new Date(lb).toLocaleString('it-IT', { dateStyle: 'medium', timeStyle: 'short' }) : 'Nessun backup eseguito'}</b><span>I dati sono salvati solo su questo telefono. ${isNative() ? 'Se disinstalli l\'app o cancelli i dati da Android, li perdi.' : 'Se cancelli i dati del browser o disinstalli l\'app, li perdi.'}</span></div></div>
   <div class="stack mt">
     <button class="btn btn-primary btn-block btn-lg" data-act="backupDownload">${ico('download', 22)} Scarica backup</button>
     <button class="btn btn-block" data-act="backupShare">${ico('share', 20)} Condividi backup (Drive, WhatsApp…)</button>
@@ -1287,16 +1287,16 @@ views.about = () => {
       const est = navigator.storage && navigator.storage.estimate ? await navigator.storage.estimate() : null;
       const per = navigator.storage && navigator.storage.persisted ? await navigator.storage.persisted() : null;
       const kb = Math.round(JSON.stringify(db).length / 1024);
-      el.innerHTML = `${kv('Dati dell\'app', kb + ' KB')}${est ? kv('Spazio usato dal sito', Math.round((est.usage || 0) / 1024) + ' KB') : ''}${per !== null ? kv('Archiviazione protetta', per ? 'Sì' : 'No') : ''}`;
+      el.innerHTML = isNative() ? kv('Dati dell\'app', kb + ' KB') : `${kv('Dati dell\'app', kb + ' KB')}${est ? kv('Spazio usato dal sito', Math.round((est.usage || 0) / 1024) + ' KB') : ''}${per !== null ? kv('Archiviazione protetta', per ? 'Sì' : 'No') : ''}`;
     } catch (e) { el.innerHTML = ''; }
   };
   const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
   return `${subHead('Informazioni', '#/more')}
   <div class="card about"><div class="logo-lg">${ico('paw', 40)}</div><h2>Pet Sitter Profit</h2><p class="muted">Versione ${APP_VERSION}</p><p>Gestisci lavori, clienti, animali, spese e guadagni della tua attività di pet sitter. Funziona anche senza internet.</p></div>
-  <div class="card kvs">${kv('Clienti', db.clients.length)}${kv('Animali', db.pets.length)}${kv('Lavori', db.jobs.length)}${kv('Pagamenti', db.payments.length)}${kv('Spese', db.expenses.length)}${kv('Installata come app', standalone ? 'Sì' : 'No')}<div id="store"></div></div>
-  <div class="stack mt"><button class="btn btn-block" data-act="persist">${ico('shield', 20)} Proteggi i dati dalla pulizia automatica</button>
+  <div class="card kvs">${kv('Clienti', db.clients.length)}${kv('Animali', db.pets.length)}${kv('Lavori', db.jobs.length)}${kv('Pagamenti', db.payments.length)}${kv('Spese', db.expenses.length)}${isNative() ? '' : kv('Installata come app', standalone ? 'Sì' : 'No')}<div id="store"></div></div>
+  ${isNative() ? `<div class="card notice warn mt">${ico('alert', 22)}<div class="grow"><b>Fai i backup</b><span>I dati sono solo su questo telefono. Se disinstalli l'app o tocchi «Cancella dati» nelle impostazioni di Android, li perdi.</span></div></div>` : `<div class="stack mt"><button class="btn btn-block" data-act="persist">${ico('shield', 20)} Proteggi i dati dalla pulizia automatica</button>
   <button class="btn btn-block" data-act="checkUpdate">${ico('refresh', 20)} Controlla aggiornamenti</button>
-  <button class="btn btn-block" data-act="installHelp">${ico('smartphone', 20)} Come installare su Android</button></div>`;
+  <button class="btn btn-block" data-act="installHelp">${ico('smartphone', 20)} Come installare su Android</button></div>`}`;
 };
 
 /* ---------- ROUTER ---------- */
