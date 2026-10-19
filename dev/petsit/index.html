@@ -318,7 +318,7 @@ noscript{display:block;padding:24px;text-align:center}
 <script>
 'use strict';
 /* Pet Sitter Profit — dati, utilità, calcoli, ricorrenze, import/export */
-const APP_VERSION = '1.7.0';
+const APP_VERSION = '1.7.1';
 const STORE_KEY = 'psp_db_v1';
 
 const PET_TYPES = ['Cane','Gatto','Coniglio','Roditore','Uccello','Rettile','Pesce','Altro'];
@@ -594,13 +594,26 @@ function removeFutureSeriesJobs(rid, fromDate) {
 }
 
 /* ---------- file: download, condivisione, CSV, ICS ---------- */
+const isNative = () => { try { return !!(window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform()); } catch (_) { return false; } };
+/* App Android (Capacitor): il download del browser non funziona nella WebView → salvo il file e apro il pannello Condividi */
+async function nativeSave(name, content, mime) {
+  const P = window.Capacitor.Plugins || {}, FS = P.Filesystem, SH = P.Share;
+  if (!FS || !SH) throw new Error('plugin mancanti');
+  let data = content;
+  if (content instanceof Blob) data = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(String(fr.result).split(',')[1]); fr.readAsDataURL(content); });
+  const o = { path: name, data, directory: 'CACHE' }; if (!(content instanceof Blob)) o.encoding = 'utf8';
+  const res = await FS.writeFile(o);
+  await SH.share({ title: name, url: res.uri, dialogTitle: name });
+}
 function download(name, content, mime) {
+  if (isNative()) { nativeSave(name, content, mime).catch(e => { if (!(e && /cancel/i.test(String(e.message || e)))) toast('Impossibile salvare il file', { type: 'err' }); }); return; }
   const blob = content instanceof Blob ? content : new Blob([content], { type: mime });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
 async function shareFile(name, content, mime) {
+  if (isNative()) { download(name, content, mime); return true; }
   try {
     const file = new File([content], name, { type: mime });
     if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: name }); return true; }
@@ -1912,7 +1925,7 @@ if (autoCompleteJobs()) save();
 (function midnight() { const n = new Date(), t = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1, 0, 0, 5); setTimeout(() => { generateRecurring(); if (autoCompleteJobs()) save(); if (!overlays.length) render(); midnight(); }, t - n); })();
 route();
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
-if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+if ('serviceWorker' in navigator && location.protocol !== 'file:' && !isNative()) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 }
 
