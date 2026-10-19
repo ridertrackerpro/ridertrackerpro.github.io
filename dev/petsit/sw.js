@@ -1,7 +1,7 @@
 /* Pet Sitter Profit — service worker: funziona offline, si aggiorna da solo.
    Strategia "stale-while-revalidate": apre subito dalla cache e scarica in background
    la versione nuova, che viene usata al prossimo avvio. */
-const CACHE = 'psp-v1.4.0';
+const CACHE = 'psp-v1.5.0';
 const SHELL = ['./', 'index.html', 'manifest.json', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png', 'favicon-32.png'];
 
 self.addEventListener('install', e => {

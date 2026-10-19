@@ -318,7 +318,7 @@ noscript{display:block;padding:24px;text-align:center}
 <script>
 'use strict';
 /* Pet Sitter Profit — dati, utilità, calcoli, ricorrenze, import/export */
-const APP_VERSION = '1.4.0';
+const APP_VERSION = '1.5.0';
 const STORE_KEY = 'psp_db_v1';
 
 const PET_TYPES = ['Cane','Gatto','Coniglio','Roditore','Uccello','Rettile','Pesce','Altro'];
@@ -1436,6 +1436,12 @@ function jobForm(o = {}) {
         title: (d.title || '').trim() || (sv ? sv.name : 'Lavoro'), date: dt, time: d.time || db.settings.defaultTime || '09:00',
         minutes: Math.max(1, Math.round(num(d.minutes)) || 30), price: num(d.price), km: num(d.km), notes: (d.notes || '').trim(),
         paid: !!d.paid, paidOn: d.paid ? ((edit && edit.paidOn) || todayStr()) : null };
+      const sameKind = x => sv ? x.serviceId === sv.id : (!x.serviceId && (x.title || '').trim().toLowerCase() === base.title.toLowerCase());
+      const dups = dates.filter(day => db.jobs.some(x => x !== edit && x.date === day && x.clientId === base.clientId && (x.petId || null) === base.petId && sameKind(x)));
+      const multi = dates.length > 1;
+      const commit = skip => {
+      const dates = (d.dates || '').split(',').filter(Boolean).sort().filter(x => !skip || !dups.includes(x));
+      if (!dates.length) { toast('Nessun lavoro aggiunto: tutte le date erano già occupate'); return; }
       if (edit) {
         const r = db.recurring.find(x => x.id === edit.recurringId);
         if (r && edit.date !== dt && !r.skipped.includes(edit.date)) r.skipped.push(edit.date);
@@ -1447,9 +1453,9 @@ function jobForm(o = {}) {
         }
         save(); render(); toast('Lavoro aggiornato');
       } else {
-        if (dates.length > 1) {
+        if (multi) {
           dates.forEach(x => addJob(Object.assign({}, base, { date: x })));
-          save(); ui.jobsMonth = dt.slice(0, 7); render(); toast(`${dates.length} lavori aggiunti al calendario ✓`); return;
+          save(); ui.jobsMonth = dates[0].slice(0, 7); render(); toast(`${dates.length} lavori aggiunti al calendario ✓`); return;
         }
         const job = addJob(base);
         if (d.repeat) {
@@ -1459,6 +1465,15 @@ function jobForm(o = {}) {
         }
         save(); render(); toast(d.repeat ? 'Lavoro e serie creati' : 'Lavoro aggiunto');
       }
+      };
+      if (!dups.length) { commit(false); return; }
+      const lab = (edit ? 'Salva comunque' : 'Aggiungi comunque');
+      const what = `${base.title}${p ? ' per ' + p.name : ''}`, cl = (client(base.clientId) || {}).name || '';
+      const txt = dups.length === 1 ? `Per ${cl} hai già inserito «${what}» il ${fmtShort(dups[0])}.` : `Per ${cl} hai già inserito «${what}» in ${dups.length} di questi giorni: ${dups.map(fmtShort).join(', ')}.`;
+      const items = [{ label: lab, icon: 'check', fn: () => { commit(false); closeTop(); } }];
+      if (multi && dups.length < dates.length) items.push({ label: 'Salta i doppioni', icon: 'calendar', fn: () => { commit(true); closeTop(); } });
+      actionSheet({ title: 'Servizio già inserito', text: txt, items });
+      return false;
     }
   });
 }
