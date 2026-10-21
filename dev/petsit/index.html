@@ -318,7 +318,7 @@ noscript{display:block;padding:24px;text-align:center}
 <script>
 'use strict';
 /* Pet Sitter Profit — dati, utilità, calcoli, ricorrenze, import/export */
-const APP_VERSION = '1.7.2';
+const APP_VERSION = '1.7.3';
 const STORE_KEY = 'psp_db_v1';
 
 const PET_TYPES = ['Cane','Gatto','Coniglio','Roditore','Uccello','Rettile','Pesce','Altro'];
@@ -903,9 +903,9 @@ const empty = (icon, title, text, btn = '') => `<div class="empty">${`<div class
 const missing = (t, back) => `${subHead(t, back)}${empty('alert', t, 'Potrebbe essere stato eliminato.', `<a class="btn btn-primary" href="${back}">Torna indietro</a>`)}`;
 const kv = (k, v) => v === '' || v == null ? '' : `<div class="kv"><span>${k}</span><b>${v}</b></div>`;
 
-function jobRow(j, { quick = false } = {}) {
+function jobRow(j, { quick = false, showDate = false } = {}) {
   const c = client(j.clientId), done = j.status === 'completed', L = jl(j);
-  const sub = [j.time, petNameOf(j), j.title].filter(Boolean).join(' · ');
+  const dd = String(j.date || '').slice(0, 10).split('-'), sub = [showDate && dd.length === 3 ? dd[2] + '/' + dd[1] : j.time, petNameOf(j), j.title].filter(Boolean).join(' · ');
   const warn = L.debtStart ? `<div class="t-warn">${ico('alert', 14)} ${done ? 'Da qui è in debito' : 'Credito finito'} · mancano ${money(L.short)}</div>`
     : L.state === 'partial' ? `<div class="t-warn">Mancano ${money(L.short)}</div>` : '';
   const cr = L.state === 'credit' ? `<div class="t-credit">Credito residuo dopo: ${money(L.left)}</div>` : '';
@@ -1119,7 +1119,7 @@ views.client = ({ id }) => {
   ${pets.length ? `<div class="stack">${pets.map(p => { const sv = service(p.serviceId); return `<button class="card petcard" data-act="petEdit" data-id="${p.id}">${petAvatar(p, 56, 'blue')}<div class="grow"><div class="t1">${esc(p.name)}</div><div class="t2">${esc(p.type)}${p.breed ? ' · ' + esc(p.breed) : ''}</div>${sv ? `<div class="t3">${esc(sv.name)} · ${fmtDur(sv.minutes)} · ${money(sv.price)}</div>` : ''}${p.notes ? `<div class="t3 clamp">${esc(p.notes)}</div>` : ''}</div>${ico('chevR', 18, 'chev')}</button>`; }).join('')}</div>` : `<div class="card empty-row">${petAvatar(null, 46)}<div class="grow"><b>Nessun animale</b><span>Aggiungi il primo animale di ${esc(c.name.split(' ')[0])}.</span></div></div>`}
   ${paysHTML}
   ${secHead('Lavori')}
-  ${jobs.length ? jobList(ui.cjAll ? jobs : jobs.slice(0, 10), { quick: true }) + (jobs.length > 10 ? `<button class="btn btn-block mt-s" data-act="cjToggle">${ui.cjAll ? 'Mostra meno' : `Mostra tutti i ${jobs.length} lavori`}</button>` : '') : `<div class="card empty-row"><div class="grow"><b>Nessun lavoro</b><span>Registra il primo lavoro per questo cliente.</span></div></div>`}`;
+  ${jobs.length ? jobList(ui.cjAll ? jobs : jobs.slice(0, 10), { quick: true, showDate: true }) + (jobs.length > 10 ? `<button class="btn btn-block mt-s" data-act="cjToggle">${ui.cjAll ? 'Mostra meno' : `Mostra tutti i ${jobs.length} lavori`}</button>` : '') : `<div class="card empty-row"><div class="grow"><b>Nessun lavoro</b><span>Registra il primo lavoro per questo cliente.</span></div></div>`}`;
 };
 
 /* ---------- ALTRO ---------- */
