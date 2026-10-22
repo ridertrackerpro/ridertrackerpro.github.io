@@ -320,7 +320,7 @@ noscript{display:block;padding:24px;text-align:center}
 <script>
 'use strict';
 /* Pet Sitter Profit — dati, utilità, calcoli, ricorrenze, import/export */
-const APP_VERSION = '1.7.5';
+const APP_VERSION = '1.8.0';
 const STORE_KEY = 'psp_db_v1';
 
 const PET_TYPES = ['Cane','Gatto','Coniglio','Roditore','Uccello','Rettile','Pesce','Altro'];
@@ -411,12 +411,13 @@ function loadDB() {
 }
 let db = loadDB();
 let saveFailed = false;
-/* Un lavoro programmato la cui data è passata (da mezzanotte in poi) diventa «svolto» da solo.
+/* Un lavoro programmato diventa «svolto» da solo quando passa il suo orario di fine (data + ora + durata).
    Il pagamento non viene toccato: resta com'è (non pagato, salvo che l'abbia segnato tu). */
 function autoCompleteJobs() {
-  const today = todayStr(); let n = 0;
+  const now = Date.now(); let n = 0;
+  const endOf = j => { const d = parseD(String(j.date).slice(0, 10)), [h, m] = String(j.time || '00:00').split(':').map(Number); d.setHours(h || 0, m || 0, 0, 0); return d.getTime() + Math.max(1, +j.minutes || 30) * 60000; };
   db.jobs.forEach(j => {
-    if (j.status === 'scheduled' && j.date < today && !j.keep) {
+    if (j.status === 'scheduled' && !j.keep && endOf(j) <= now) {
       j.status = 'completed'; j.finalPrice = j.price || 0; j.tip = j.tip || 0; j.auto = true;
       j.completedOn = j.date; if (!j.paid) j.paidOn = null; n++;
     }
@@ -1929,7 +1930,7 @@ if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListen
 applyTheme();
 generateRecurring();
 if (autoCompleteJobs()) save();
-(function midnight() { const n = new Date(), t = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1, 0, 0, 5); setTimeout(() => { generateRecurring(); if (autoCompleteJobs()) save(); if (!overlays.length) render(); midnight(); }, t - n); })();
+setInterval(() => { if (document.visibilityState === 'visible' && autoCompleteJobs()) { save(); if (!overlays.length) render(); } }, 30000);
 route();
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
 if ('serviceWorker' in navigator && location.protocol !== 'file:' && !isNative()) {
