@@ -309,6 +309,13 @@ noscript{display:block;padding:24px;text-align:center}
 .r-credit{color:var(--violet);font-size:12px;font-weight:800;white-space:nowrap;margin-top:-2px}
 .t-credit{color:var(--violet);font-size:12.5px;font-weight:700;margin-top:2px}
 
+.owed-box{padding:12px 14px;margin:0 0 14px}
+.owed-lab{display:block;font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.owed-res{margin-top:10px;padding:10px 12px;border-radius:12px;font-size:15px;line-height:1.35}
+.owed-res b{font-weight:800;font-size:17px}
+.owed-res.debt{background:var(--amber-bg);color:var(--amber)}
+.owed-res.ok{background:var(--brand-l);color:var(--brand-d)}
+
 </style>
 </head>
 <body>
@@ -320,7 +327,7 @@ noscript{display:block;padding:24px;text-align:center}
 <script>
 'use strict';
 /* Pet Sitter Profit — dati, utilità, calcoli, ricorrenze, import/export */
-const APP_VERSION = '1.8.0';
+const APP_VERSION = '1.9.0';
 const STORE_KEY = 'psp_db_v1';
 
 const PET_TYPES = ['Cane','Gatto','Coniglio','Roditore','Uccello','Rettile','Pesce','Altro'];
@@ -878,7 +885,7 @@ function destructive(msg, fn, o = {}) {
 /* Pet Sitter Profit — schermate e router */
 const ui = {
   cjAll: false, jobsMonth: monthKey(new Date()), moneyMonth: monthKey(new Date()), expMonth: monthKey(new Date()),
-  jobsFilter: 'all', clientQuery: '',
+  jobsFilter: 'all', clientQuery: '', owedClient: '',
   repMode: 'month', repMonth: monthKey(new Date()), repYear: new Date().getFullYear(),
   exportRange: 'all'
 };
@@ -1066,6 +1073,13 @@ views.money = () => {
 };
 
 /* ---------- CLIENTI ---------- */
+function owedHTML() {
+  const c = client(ui.owedClient); if (!c) return '';
+  const L = clLedger(c.id);
+  if (L.debt > 0) return `<div class="owed-res debt">Ad oggi mi deve <b>${money(L.debt)}</b></div>`;
+  const extra = L.credit > 0 ? ` · credito di <b>${money(L.credit)}</b>${L.coveredSched > 0 ? ` (più ${money(L.coveredSched)} già assegnati a lavori futuri)` : ''}` : (L.coveredSched > 0 ? ` · anticipo di <b>${money(L.coveredSched)}</b> già assegnato a lavori futuri` : '');
+  return `<div class="owed-res ok">Ad oggi non mi deve nulla${extra}</div>`;
+}
 function clientListHTML() {
   const q = ui.clientQuery.trim().toLowerCase();
   let list = db.clients.filter(c => !c.archived).sort((a, b) => a.name.localeCompare(b.name, 'it'));
@@ -1085,6 +1099,7 @@ views.clients = () => {
   <div class="two stats2"><div class="card stat-h"><div class="tico g">${ico('users', 22)}</div><div><b>${act.length}</b><span>Clienti</span></div></div>
   <div class="card stat-h"><div class="tico g">${ico('paw', 22)}</div><div><b>${db.pets.filter(p => act.some(c => c.id === p.clientId)).length}</b><span>Animali</span></div></div></div>
   ${act.length ? `<button class="btn btn-primary btn-block mb" data-act="payQuick">${ico('coin', 20)} Registra un pagamento ricevuto</button>` : ''}
+  ${act.length ? `<div class="card owed-box"><label class="owed-lab" for="owedSel">Quanto mi deve?</label><select class="inp" id="owedSel" data-input="owedClient"><option value="">Scegli un cliente…</option>${act.slice().sort((a, b) => a.name.localeCompare(b.name, 'it')).map(c => `<option value="${c.id}" ${c.id === ui.owedClient ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select><div id="owedRes">${owedHTML()}</div></div>` : ''}
   ${act.length > 4 ? `<label class="searchbox">${ico('search', 20)}<input type="search" id="cq" data-input="clientQuery" placeholder="Cerca cliente o animale" value="${esc(ui.clientQuery)}" autocomplete="off"></label>` : ''}
   ${secHead('I tuoi clienti', archived ? `<a class="link" href="#/archived">Archiviati (${archived})</a>` : '')}
   <div id="clist">${clientListHTML()}</div>`;
@@ -1891,6 +1906,7 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('input', e => {
   const t = e.target;
+  if (t.dataset && t.dataset.input === 'owedClient') { ui.owedClient = t.value; const r = $('#owedRes'); if (r) r.innerHTML = owedHTML(); return; }
   if (t.dataset && t.dataset.input === 'clientQuery') { ui.clientQuery = t.value; const l = $('#clist'); if (l) l.innerHTML = clientListHTML(); return; }
   if (t.dataset && t.dataset.setting) applySetting(t);
   if (current.path === '/pricing' && t.closest && t.closest('#view')) { if (t.name === 'svc') return; calcPricing(); }
