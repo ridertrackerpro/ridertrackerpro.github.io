@@ -327,7 +327,7 @@ noscript{display:block;padding:24px;text-align:center}
 <script>
 'use strict';
 /* Pet Sitter Profit — dati, utilità, calcoli, ricorrenze, import/export */
-const APP_VERSION = '1.9.0';
+const APP_VERSION = '1.9.1';
 const STORE_KEY = 'psp_db_v1';
 
 const PET_TYPES = ['Cane','Gatto','Coniglio','Roditore','Uccello','Rettile','Pesce','Altro'];
@@ -921,7 +921,7 @@ const kv = (k, v) => v === '' || v == null ? '' : `<div class="kv"><span>${k}</s
 function jobRow(j, { quick = false, showDate = false } = {}) {
   const c = client(j.clientId), done = j.status === 'completed', L = jl(j);
   const dd = String(j.date || '').slice(0, 10).split('-'), sub = [showDate && dd.length === 3 ? dd[2] + '/' + dd[1] : j.time, petNameOf(j), j.title].filter(Boolean).join(' · ');
-  const warn = L.debtStart ? `<div class="t-warn">${ico('alert', 14)} ${done ? 'Da qui è in debito' : 'Credito finito'} · mancano ${money(L.short)}</div>`
+  const warn = L.debtStart && done ? `<div class="t-warn">${ico('alert', 14)} Da qui è in debito · mancano ${money(L.short)}</div>`
     : L.state === 'partial' ? `<div class="t-warn">Mancano ${money(L.short)}</div>` : '';
   const cr = L.state === 'credit' ? `<div class="r-credit">resta ${money(L.left)}</div>` : '';
   return `<div class="jobrow ${done ? 'st-done' : 'st-sched'} ps-${L.state}"><a class="jobmain" href="#/job/${j.id}">${petAvatar(pet(j.petId), 46)}
